@@ -1,0 +1,152 @@
+#version 430
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+#define PI (3.1415926535)
+#define INF (1.0 / 0.0)
+
+layout(location=1) uniform sampler3D grid;
+layout(location=2) uniform int halveCount;
+layout(location=3) uniform sampler2D normalBuffer;
+layout(location=4) uniform sampler2D positionBuffer;
+layout(location=5,rgba32f) restrict uniform image2D lightingBuffer;
+layout(location=6) uniform int lightType;
+layout(location=7) uniform vec3 lightColour;
+layout(location=8) uniform vec3 lightDirection;
+layout(location=9) uniform vec3 lightPosition;
+layout(location=10) uniform float lightConeAngle;
+layout(location=11) uniform float intensity;
+layout(location=12) uniform bool firstPass;
+
+ivec2 pCoord = ivec2(gl_GlobalInvocationID.xy);
+#define STARTING_OFFSET (0.01)
+
+void getGridData(in ivec3 position, out int safeStep, out int cell) {
+    ivec4 texel = ivec4(floor(texelFetch(grid, position, 0) * 256.0));
+    int embedded = (texel.a << 24) | (texel.b << 16) | (texel.g << 8) | (texel.r << 0);
+    safeStep = (embedded & 0x000001FF) >> 0;
+    cell = (embedded & 0x000FFE00) >> 9;
+    int unused = (embedded & 0xFFF00000) >> 20;
+}
+
+bool isDirectionClear(vec3 rayPos, vec3 rayDir) {
+    const ivec3 mapBounds = ivec3(256, 256, 256);
+
+    // Sample grid and get safe cell step count via x + y + z)
+    // Step ray that many cells
+    // If current cell is (0, 0, 0, sdf id), then sample SDF in cell
+    // Ray march via sdf when in cell with SDF
+
+    vec3 mapPos = vec3(floor(rayPos + 0.));
+    vec3 deltaDist = abs(1.0 / rayDir);
+    ivec3 rayStep = ivec3(sign(rayDir));
+    vec3 tMax = (sign(rayDir) * (mapPos - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
+
+    rayPos = floor(rayPos);
+    ivec3 iMapPos = ivec3(mapPos);
+
+    int cellId;
+    int cellStep;
+
+    int iter;
+    const int ITER_MAX = 64;
+    for (iter = 0; iter < ITER_MAX; iter++) {
+        iMapPos = ivec3(floor(mapPos));
+        bool inBounds = all(lessThan(iMapPos, mapBounds)) && all(greaterThanEqual(iMapPos, ivec3(0)));
+        if (!inBounds) {
+            return true;
+        }
+        getGridData(iMapPos, cellStep, cellId);
+
+        if (cellId == 1) {
+            return false;
+        }
+
+        iter += cellStep;
+        for (int i = 0; i < cellStep; i++) {
+            bvec3 mask = lessThanEqual(tMax.xyz, min(tMax.yzx, tMax.zxy));
+            tMax += vec3(mask) * deltaDist;
+            mapPos += vec3(mask) * rayStep;
+        }
+    }
+    return true;
+}
+
+ivec2 rescaledPosition(ivec2 base) {
+    const int SCALE = int(pow(2, halveCount));
+    return base * SCALE;
+}
+
+vec3 directional() {
+    vec3 position = texelFetch(positionBuffer, rescaledPosition(pCoord), 0).xyz;
+    vec3 direction = texelFetch(normalBuffer, rescaledPosition(pCoord), 0).xyz;
+    float angle = clamp(-dot(direction, lightDirection), 0.0, 1.0);
+    if (!isDirectionClear(position - lightDirection * STARTING_OFFSET, -lightDirection)) {
+        return vec3(0.0);
+    }
+    return lightColour * angle;
+}
+
+vec3 point() {
+    vec3 position = texelFetch(positionBuffer, rescaledPosition(pCoord), 0).xyz;
+    if (position == vec3(0.0)) {
+        return vec3(0.0);
+    }
+    vec3 direction = texelFetch(normalBuffer, rescaledPosition(pCoord), 0).xyz;
+    vec3 lightDirection = normalize(lightPosition - position);
+    float angle = dot(direction, lightDirection);
+    if (angle < 0.0) {
+        return vec3(0.0);
+    }
+
+    if (!isDirectionClear(position + lightDirection * STARTING_OFFSET, lightDirection)) {
+        return vec3(0.0);
+    }
+
+    float distance = length(lightPosition - position);
+    return angle * lightColour / (distance * distance);
+}
+
+vec3 spotlight() {
+    vec3 position = texelFetch(positionBuffer, rescaledPosition(pCoord), 0).xyz;
+    if (position == vec3(0.0)) {
+        return vec3(0.0);
+    }
+    vec3 directionToLight = normalize(lightPosition - position);
+    float angleToLight = -dot(directionToLight, lightDirection);
+    if (angleToLight <= cos(lightConeAngle)) {
+        return vec3(0.0);
+    }
+
+    vec3 direction = texelFetch(normalBuffer, rescaledPosition(pCoord), 0).xyz;
+    float angle = -dot(normalize(direction + directionToLight), lightDirection);
+    if (angle < 0.0) {
+        return vec3(0.0);
+    }
+
+    if (!isDirectionClear(position + directionToLight * STARTING_OFFSET, directionToLight)) {
+        return vec3(0.0);
+    }
+
+    float distance = length(lightPosition - position);
+    return angle * lightColour / (distance * distance);
+}
+
+void main() {
+    vec3 light;
+    if (lightType == 1) {
+        light = directional();
+    } else if (lightType == 2) {
+        light = point();
+    } else if (lightType == 3) {
+        light = spotlight();
+    }
+    light *= intensity;
+
+    vec3 existingLight;
+    if (firstPass) {
+        existingLight = vec3(0.0);
+    } else {
+        existingLight = imageLoad(lightingBuffer, pCoord).rgb;
+    }
+    imageStore(lightingBuffer, pCoord, vec4(light + existingLight, 1.0));
+}
