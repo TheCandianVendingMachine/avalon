@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "avalon",
+    "avalon", "avalon_gl",
     "game"
 ]
