@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bitfield = "0.17.0"
+bitflags = "2.6.0"
+gl = "0.14.0"
+sdl2 = { version = "0.37.0", features = ["static-link", "bundled"] }
+thiserror = "2.0.9"
+
