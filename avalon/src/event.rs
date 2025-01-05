@@ -57,12 +57,27 @@ pub struct Event<TEid: Clone + std::fmt::Debug, TId: std::fmt::Debug + Copy + Cl
     pub id: TEid
 }
 
+impl<TEid: Clone + std::fmt::Debug, TId: std::fmt::Debug + Copy + Clone + Eq + std::hash::Hash> Event<TEid, TId> {
+    pub fn new(id: TEid) -> Event<TEid, TId> {
+        Event {
+            data: Library::new(),
+            id
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Library<TId: Clone + std::fmt::Debug + Copy + Clone + Eq + std::hash::Hash> {
     entries: HashMap<TId, entry::Entry>
 }
 
 impl<TId: std::fmt::Debug + Copy + Eq + std::hash::Hash> Library<TId> {
+    pub fn new() -> Library<TId> {
+        Library {
+            entries: HashMap::new()
+        }
+    }
+
     pub fn retrieve<T: TryFrom<entry::Entry, Error=error::Entry>>(&self, id: TId) -> Result<T, error::Library<TId>> {
         if !self.entries.contains_key(&id) {
             return Err(error::Library::KeyNotPresent(id));

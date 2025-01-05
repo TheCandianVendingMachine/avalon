@@ -35,8 +35,8 @@ impl<TEid: Clone + std::fmt::Debug, TId: std::fmt::Debug + Copy + Clone + Eq + s
             alive: AtomicBool::new(true)
         });
         (
-            Channel { synced: sync.clone(), role: Role::Sender },
             Channel { synced: sync.clone(), role: Role::Receiver },
+            Channel { synced: sync.clone(), role: Role::Sender },
         )
     }
 
