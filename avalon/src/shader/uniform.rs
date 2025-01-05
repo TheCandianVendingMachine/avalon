@@ -3,6 +3,7 @@ use nalgebra_glm::{ Vec2, Vec3, Vec4, Mat2, Mat3, Mat4 };
 
 use crate::shader::program::AttachedProgram;
 
+#[derive(Copy, Clone)]
 pub struct Uniform<'program> {
     pub(super) program: &'program AttachedProgram<'program>,
     pub(super) location: gl::types::GLint,

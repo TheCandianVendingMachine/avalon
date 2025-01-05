@@ -82,12 +82,15 @@ pub trait Source: MetaShader {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Vertex {
     id: gl::types::GLuint
 }
+#[derive(Copy, Clone)]
 pub struct Fragment {
     id: gl::types::GLuint
 }
+#[derive(Copy, Clone)]
 pub struct Compute {
     id: gl::types::GLuint
 }
@@ -144,6 +147,7 @@ impl Source for Vertex {}
 impl Source for Fragment {}
 impl Source for Compute {}
 
+#[derive(Copy, Clone)]
 enum Shader {
     Vertex(Vertex),
     Fragment(Fragment),

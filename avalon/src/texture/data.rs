@@ -1,10 +1,12 @@
 use crate::texture::Component;
 
+#[derive(Clone)]
 pub struct Data {
     pub(super) data: Pixels,
     pub(super) components: Component,
 }
 
+#[derive(Clone)]
 pub enum Pixels {
     UnsignedByte(Vec<u8>),
     Byte(Vec<i8>),
@@ -93,6 +95,15 @@ impl Pixels {
             Pixels::RGBA5_5_5_1(data) => data.as_mut_ptr() as *mut std::ffi::c_void,
             Pixels::RGBA8(data) => data.as_mut_ptr() as *mut std::ffi::c_void,
             Pixels::RGBA10_10_10_2(data) => data.as_mut_ptr() as *mut std::ffi::c_void,
+        }
+    }
+}
+
+impl Data {
+    pub fn empty(components: Component, size: usize) -> Data {
+        Data {
+            components,
+            data: Pixels::UnsignedByte(vec![0; size])
         }
     }
 }

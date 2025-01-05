@@ -9,11 +9,13 @@ use crate::shader::{
 use crate::shader::uniform::Uniform;
 use crate::shader::error;
 
+#[derive(Clone)]
 pub struct Program {
     program: gl::types::GLuint,
     shaders: Vec<Shader>
 }
 
+#[derive(Clone)]
 pub struct AttachedProgram<'program> {
     program: &'program Program
 }
@@ -130,6 +132,7 @@ impl AttachedProgram<'_> {
     }
 }
 
+#[derive(Clone)]
 pub struct ProgramBuilder {
     shaders: Vec<Shader>
 }

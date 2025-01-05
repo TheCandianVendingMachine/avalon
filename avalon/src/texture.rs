@@ -4,8 +4,7 @@ pub mod data;
 pub mod texture_2d;
 
 pub use gpu::Texture2d as GpuTexture2d;
-pub use cpu::Texture as CpuTexture;
-
+pub use cpu::Texture2d as CpuTexture2d;
 pub use texture_2d::Texture2d as Texture2d;
 
 #[derive(Debug, Copy, Clone)]

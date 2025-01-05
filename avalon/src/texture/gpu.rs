@@ -41,6 +41,23 @@ impl TextureBind2d<'_> {
             );
         }
     }
+
+    pub fn clear(&self, mip_level: u32) {
+        let pixels = data::Pixels::from_api(self.texture.internal_size.map_to_cpu_types(), self.texture.internal_size.component_count());
+        unsafe {
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                mip_level as i32,
+                self.texture.internal_size.as_api(),
+                self.texture.dimensions.x,
+                self.texture.dimensions.y,
+                0,
+                self.texture.internal_size.map_to_cpu_types(),
+                gl::RGBA,
+                pixels.as_ptr()
+            );
+        }
+    }
 }
 
 impl Drop for TextureBind2d<'_> {
@@ -51,6 +68,7 @@ impl Drop for TextureBind2d<'_> {
     }
 }
 
+#[derive(Clone)]
 pub struct Texture2d {
     handle: gl::types::GLuint,
     internal_components: Component,
@@ -96,7 +114,8 @@ impl Texture2d {
         Texture2d {
             handle,
             internal_components: arguments.internal_components,
-            internal_size: arguments.internal_size
+            internal_size: arguments.internal_size,
+            dimensions: arguments.dimensions
         }
     }
 
@@ -119,18 +138,20 @@ impl Drop for Texture2d {
     }
 }
 
+#[derive(Clone)]
 pub enum Mipmap {
     None,
     Inbuilt{ count: u8 },
     Custom{ count: u8, shader: shader::Program }
 }
 
+#[derive(Clone)]
 pub struct Arguments {
-    dimensions: IVec2,
-    pub(super) internal_components: Component,
-    internal_size: SizedComponent,
-    mipmap_type: Mipmap,
-    data: Option<Data>
+    pub dimensions: IVec2,
+    pub internal_components: Component,
+    pub internal_size: SizedComponent,
+    pub mipmap_type: Mipmap,
+    pub data: Option<Data>
 }
 
 #[derive(Copy, Clone, Debug)]

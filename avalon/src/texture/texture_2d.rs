@@ -1,9 +1,10 @@
 use nalgebra_glm::IVec2;
-use crate::texture::{ GpuTexture2d, CpuTexture, Component, gpu };
+use crate::texture::{ data::Data, GpuTexture2d, CpuTexture2d, Component, gpu, cpu };
 
+#[derive(Clone)]
 pub struct Texture2d {
     gpu: Option<GpuTexture2d>,
-    cpu: Option<CpuTexture>,
+    cpu: Option<CpuTexture2d>,
     dimensions: IVec2,
     components: Component,
 }
@@ -18,31 +19,43 @@ impl Texture2d {
     }
 
     pub fn cpu_to_gpu(&mut self) {
-        if let None = self.gpu {
+        if let Some(gpu) = &mut self.gpu {
+            if let None = self.cpu {
+                gpu.bind().clear(0);
+            } else {
 
+            }
+        } else {
+            let arguments = gpu::Arguments {
+                dimensions: self.dimensions,
+                internal_components: Component::RGBA,
+                internal_size: gpu::SizedComponent::RGBA8,
+                mipmap_type: gpu::Mipmap::None,
+                data: None
+            };
+            self.gpu = Some(gpu::Texture2d::generate(arguments));
         }
-        self.gpu().unwrap();
     }
 
     pub fn gpu_to_cpu(&mut self) {
-        if let None = self.cpu {
+        if let Some(cpu) = &mut self.cpu {
 
         }
-        self.cpu().unwrap();
     }
 
     pub fn gpu(&self) -> Option<&GpuTexture2d> {
         self.gpu.as_ref()
     }
 
-    pub fn cpu(&self) -> Option<&CpuTexture> {
+    pub fn cpu(&self) -> Option<&CpuTexture2d> {
         self.cpu.as_ref()
     }
 }
 
 pub struct Texture2dBuilder {
+    data: Option<Data>,
+    generate_cpu: bool,
     pub(super) gpu_texture_arguments: Option<gpu::Arguments>,
-    pub(super) cpu_texture_arguments: Option<cpu::Arguments>,
     pub(super) dimensions: IVec2,
     pub(super) components: Component,
 }
@@ -50,8 +63,9 @@ pub struct Texture2dBuilder {
 impl Texture2dBuilder {
     fn new(dimensions: IVec2) -> Texture2dBuilder {
         Texture2dBuilder {
+            data: None,
             gpu_texture_arguments: None,
-            cpu_texture_arguments: None,
+            generate_cpu: false,
             dimensions,
             components: Component::RGBA,
         }
@@ -61,8 +75,9 @@ impl Texture2dBuilder {
         gpu::TextureBuilder2d::new(self)
     }
 
-    pub fn cpu(self) -> cpu::TextureBuilder2d {
-        cpu::TextureBuilder2d::new(self)
+    pub fn cpu(mut self) -> Texture2dBuilder {
+        self.generate_cpu = true;
+        self
     }
 
     pub fn components(mut self, components: Component) -> Texture2dBuilder {
@@ -70,16 +85,26 @@ impl Texture2dBuilder {
         self
     }
 
+    pub fn data(mut self, data: Data) -> Texture2dBuilder {
+        self.data = Some(data);
+        self
+    }
+
     pub fn build(mut self) -> Texture2d {
         let gpu = if let Some(gpu) = &mut self.gpu_texture_arguments {
             gpu.internal_components = self.components;
-            Some(gpu::Texture2d::generate(*gpu))
+            Some(gpu::Texture2d::generate(gpu.clone()))
         } else {
             None
         };
 
-        let cpu = if let Some(cpu) = &mut self.cpu_texture_arguments {
-            Some(cpu::Texture2d::generate(*cpu))
+        let cpu = if self.generate_cpu {
+            if let Some(data) = self.data {
+                Some(cpu::Texture2d::generate(self.dimensions, data))
+            } else {
+                let count = self.dimensions.x * self.dimensions.y;
+                Some(cpu::Texture2d::generate(self.dimensions, Data::empty(self.components, count as usize)))
+            }
         } else {
             None
         };
