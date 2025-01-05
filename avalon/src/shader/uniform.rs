@@ -52,6 +52,6 @@ impl Uniform<'_> {
     }
 
     pub fn set_texture_2d(self, value: &gpu::TextureAttachment2d) {
-        unsafe { gl::Uniform1i(self.location, value.attachment() as i32); }
+        unsafe { gl::Uniform1i(self.location, value.unit() as i32); }
     }
 }
