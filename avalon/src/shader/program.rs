@@ -133,6 +133,12 @@ impl<'p> AttachedProgram<'p> {
         self.uniform(name)?.set_texture_2d(self.attachments.last().unwrap());
         Ok(())
     }
+
+    pub fn attach_to_location<'t: 'p>(&'p mut self, location: u32, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
+        self.attachments.push(texture.attach(self.attachments.len() as u32));
+        self.location(location)?.set_texture_2d(self.attachments.last().unwrap());
+        Ok(())
+    }
 }
 
 impl Drop for AttachedProgram<'_> {
