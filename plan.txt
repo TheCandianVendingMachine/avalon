@@ -10,3 +10,46 @@ good use case
 Probably a few weeks of work. But worth it. Since all of the code I've been working on
 recently was shader code, and that is the only code that remained, this should be quick.
 I'm pissed but its my fucking fault.
+
+Renderer
+[x] Shaders
+[x] Textures
+[ ] SSBO struct
+[ ] Viewport
+[ ] Pre-bound primitives
+
+Transform struct
+[ ] position
+[ ] orientation
+[ ] euler angles
+
+Voxel Grid
+[ ] up to 256 in size
+[ ] distance field baking
+[ ] serialization
+[ ] setting cell data
+[ ] cpu raycasts
+[ ] storing in gpu
+
+Player
+[ ] mouse look
+[ ] movement
+[ ] collision
+
+ECS
+[ ] Entities as bags
+[ ] Generic systems
+[ ] Generic components
+[ ] Registering systems
+[ ] Querying for components
+
+Input
+[ ] Modifiers
+[ ] Mouse input
+[ ] Keyboard Input
+[ ] Controller Input
+[ ] Querying for data on input
+[ ] Input Contexts
+[ ] Input Layers
+[ ] Input blocking
+[ ] Setting input priority
