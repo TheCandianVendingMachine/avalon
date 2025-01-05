@@ -1,11 +1,12 @@
-1) Rewrite main window system and game loop
-2) Rewrite input system, supporting same gamepads and mouses. I can rewrite better now
+[x] 1) Rewrite main window system and game loop
+[ ] 2) Rewrite input system, supporting same gamepads and mouses. I can rewrite better now
 that I understand it. I think I can make it support more as well, especially since I got a
 good use case
-3) Rewrite shader struct. I liked how it worked yknow
-4) Rewrite ECS
-5) Rewrite voxel grid
-6) Rewrite game up to the point. This will be where I was at
+[x] 3) Rewrite shader struct. I liked how it worked yknow
+[ ] 4) Rewrite ECS
+[ ] 5) Rewrite voxel grid
+[ ] 6) Rewrite game up to the point. This will be where I was at
+
 Probably a few weeks of work. But worth it. Since all of the code I've been working on
 recently was shader code, and that is the only code that remained, this should be quick.
 I'm pissed but its my fucking fault.

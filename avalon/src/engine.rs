@@ -2,6 +2,9 @@ mod event;
 use crate::event::Channel;
 use sdl2;
 
+use std::time::{ Instant, Duration };
+use ringbuffer::{ RingBuffer, AllocRingBuffer };
+
 pub struct Window {
     video: sdl2::VideoSubsystem,
     window: sdl2::video::Window,
@@ -33,10 +36,51 @@ impl Window {
     }
 }
 
+pub struct Quantatives {
+    start_time: Instant,
+    loop_start_time: Instant,
+    running_frame_time: AllocRingBuffer<Duration>
+}
+
+impl Quantatives {
+    fn new() -> Quantatives {
+        Quantatives {
+            start_time: Instant::now(),
+            loop_start_time: Instant::now(),
+            running_frame_time: AllocRingBuffer::new(120)
+        }
+    }
+
+    fn start_frame(&mut self) {
+        self.loop_start_time = Instant::now();
+    }
+
+    fn end_frame(&mut self) {
+        let frame_time = self.loop_start_time.elapsed();
+        self.running_frame_time.push(frame_time);
+    }
+
+    pub fn average_frame_time(&self) -> Duration {
+        if self.running_frame_time.is_empty() {
+            return Duration::ZERO;
+        }
+        let mut average = Duration::ZERO;
+        for duration in self.running_frame_time.iter() {
+            average += *duration;
+        }
+        average / self.running_frame_time.len() as u32
+    }
+
+    pub fn total_runtime(&self) -> Duration {
+        self.start_time.elapsed()
+    }
+}
+
 pub struct Engine {
     sdl: sdl2::Sdl,
     window_listener: Channel<sdl2::event::Event, ()>,
     window: Window,
+    pub quantatives: Quantatives,
     is_open: bool,
 }
 
@@ -49,8 +93,17 @@ impl Engine {
             sdl,
             window,
             window_listener,
+            quantatives: Quantatives::new(),
             is_open: true
         }
+    }
+
+    pub fn start_frame(&mut self) {
+        self.quantatives.start_frame();
+    }
+
+    pub fn end_frame(&mut self) {
+        self.quantatives.end_frame();
     }
 
     pub fn is_open(&mut self) -> bool {
