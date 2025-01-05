@@ -119,7 +119,6 @@ impl Texture2dBuilder {
 
         Texture2d {
             dimensions: self.dimensions,
-            components: self.components,
             gpu,
             cpu
         }
