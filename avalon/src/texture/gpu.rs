@@ -2,14 +2,64 @@ use nalgebra_glm::IVec2;
 use crate::shader;
 use crate::texture::{ texture_2d, data, data::Data, Component };
 
+pub struct TextureBind2d<'t> {
+    texture: &'t mut Texture2d
+}
+
+impl TextureBind2d<'_> {
+    pub fn fetch_pixels(&self, mip_level: u32) -> Data {
+        let pixels = unsafe {
+            let mut pixels = data::Pixels::from_api(self.texture.internal_size.map_to_cpu_types(), self.texture.internal_size.component_count());
+            gl::GetTextureImage(
+                self.texture.handle,
+                mip_level as i32,
+                self.texture.internal_components.as_api(),
+                self.texture.internal_size.map_to_cpu_types(),
+                self.texture.internal_size.component_count() as i32,
+                pixels.as_mut()
+            );
+            pixels
+        };
+        Data {
+            data: pixels,
+            components: self.texture.internal_components
+        }
+    }
+
+    pub fn write_pixels(&self, mip_level: u32, data: Data) {
+        unsafe {
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                mip_level as i32,
+                self.texture.internal_size.as_api(),
+                self.texture.dimensions.x,
+                self.texture.dimensions.y,
+                0,
+                data.components.as_api(),
+                data.data.as_api(),
+                data.data.as_ptr()
+            );
+        }
+    }
+}
+
+impl Drop for TextureBind2d<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
+}
+
 pub struct Texture2d {
     handle: gl::types::GLuint,
     internal_components: Component,
     internal_size: SizedComponent,
+    dimensions: IVec2,
 }
 
 impl Texture2d {
-    pub fn generate(arguments: Arguments) -> Texture2d {
+    pub(super) fn generate(arguments: Arguments) -> Texture2d {
         arguments.verify();
         let handle = unsafe {
             let mut texture = 0;
@@ -40,6 +90,7 @@ impl Texture2d {
                 data_type,
                 data
             );
+            gl::BindTexture(gl::TEXTURE_2D, 0);
         }
 
         Texture2d {
@@ -49,24 +100,15 @@ impl Texture2d {
         }
     }
 
-    fn fetch_pixels(&self, mip_level: u32) -> Data {
-        let pixels = unsafe {
-            let mut pixels = data::Pixels::from_api(self.internal_size.map_to_cpu_types(), self.internal_size.component_count());
-            gl::GetTextureImage(
-                self.handle,
-                mip_level as i32,
-                self.internal_components.as_api(),
-                self.internal_size.map_to_cpu_types(),
-                self.internal_size.component_count() as i32,
-                pixels.as_mut()
-            );
-            pixels
-        };
-        Data {
-            data: pixels,
-            components: self.internal_components
+    pub fn bind(&mut self) -> TextureBind2d {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.handle);
+        }
+        TextureBind2d {
+            texture: self
         }
     }
+
 }
 
 impl Drop for Texture2d {

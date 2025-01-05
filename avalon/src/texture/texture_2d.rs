@@ -17,18 +17,18 @@ impl Texture2d {
         self.dimensions
     }
 
-    pub fn generate_gpu(&mut self) -> &GpuTexture2d {
+    pub fn cpu_to_gpu(&mut self) {
         if let None = self.gpu {
 
         }
-        self.gpu().unwrap()
+        self.gpu().unwrap();
     }
 
-    pub fn generate_cpu(&mut self) -> &CpuTexture {
+    pub fn gpu_to_cpu(&mut self) {
         if let None = self.cpu {
 
         }
-        self.cpu().unwrap()
+        self.cpu().unwrap();
     }
 
     pub fn gpu(&self) -> Option<&GpuTexture2d> {
@@ -42,6 +42,7 @@ impl Texture2d {
 
 pub struct Texture2dBuilder {
     pub(super) gpu_texture_arguments: Option<gpu::Arguments>,
+    pub(super) cpu_texture_arguments: Option<cpu::Arguments>,
     pub(super) dimensions: IVec2,
     pub(super) components: Component,
 }
@@ -50,6 +51,7 @@ impl Texture2dBuilder {
     fn new(dimensions: IVec2) -> Texture2dBuilder {
         Texture2dBuilder {
             gpu_texture_arguments: None,
+            cpu_texture_arguments: None,
             dimensions,
             components: Component::RGBA,
         }
@@ -57,6 +59,10 @@ impl Texture2dBuilder {
 
     pub fn gpu(self) -> gpu::TextureBuilder2d {
         gpu::TextureBuilder2d::new(self)
+    }
+
+    pub fn cpu(self) -> cpu::TextureBuilder2d {
+        cpu::TextureBuilder2d::new(self)
     }
 
     pub fn components(mut self, components: Component) -> Texture2dBuilder {
@@ -68,6 +74,12 @@ impl Texture2dBuilder {
         let gpu = if let Some(gpu) = &mut self.gpu_texture_arguments {
             gpu.internal_components = self.components;
             Some(gpu::Texture2d::generate(*gpu))
+        } else {
+            None
+        };
+
+        let cpu = if let Some(cpu) = &mut self.cpu_texture_arguments {
+            Some(cpu::Texture2d::generate(*cpu))
         } else {
             None
         };
