@@ -1,8 +1,97 @@
 use nalgebra_glm::IVec2;
 use crate::shader;
-use crate::texture::{ texture_2d, data::Data, Component };
+use crate::texture::{ texture_2d, data, data::Data, Component };
 
-#[derive(Debug)]
+pub struct Texture2d {
+    handle: gl::types::GLuint,
+    internal_components: Component,
+    internal_size: SizedComponent,
+}
+
+impl Texture2d {
+    pub fn generate(arguments: Arguments) -> Texture2d {
+        arguments.verify();
+        let handle = unsafe {
+            let mut texture = 0;
+            gl::GenTextures(1, &mut texture);
+            texture
+        };
+
+        let (data_format, data_type, data) = if let Some(data) = arguments.data {
+            (
+                data.components.as_api(),
+                data.data.as_api(),
+                data.data.as_ptr()
+            )
+        } else {
+            (gl::RED, gl::UNSIGNED_BYTE, std::ptr::null())
+        };
+
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, handle);
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                arguments.internal_size.as_api(),
+                arguments.dimensions.x,
+                arguments.dimensions.y,
+                0,
+                data_format,
+                data_type,
+                data
+            );
+        }
+
+        Texture2d {
+            handle,
+            internal_components: arguments.internal_components,
+            internal_size: arguments.internal_size
+        }
+    }
+
+    fn fetch_pixels(&self, mip_level: u32) -> Data {
+        let pixels = unsafe {
+            let mut pixels = data::Pixels::from_api(self.internal_size.map_to_cpu_types(), self.internal_size.component_count());
+            gl::GetTextureImage(
+                self.handle,
+                mip_level as i32,
+                self.internal_components.as_api(),
+                self.internal_size.map_to_cpu_types(),
+                self.internal_size.component_count() as i32,
+                pixels.as_mut()
+            );
+            pixels
+        };
+        Data {
+            data: pixels,
+            components: self.internal_components
+        }
+    }
+}
+
+impl Drop for Texture2d {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteTextures(1, &self.handle);
+        }
+    }
+}
+
+pub enum Mipmap {
+    None,
+    Inbuilt{ count: u8 },
+    Custom{ count: u8, shader: shader::Program }
+}
+
+pub struct Arguments {
+    dimensions: IVec2,
+    pub(super) internal_components: Component,
+    internal_size: SizedComponent,
+    mipmap_type: Mipmap,
+    data: Option<Data>
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum SizedComponent {
     R8,
     R16,
@@ -72,7 +161,7 @@ pub enum SizedComponent {
 }
 
 impl SizedComponent {
-    fn api_size(self) -> gl::types::GLint {
+    fn as_api(self) -> gl::types::GLint {
         (match self {
             SizedComponent::R8 => gl::R8,
             SizedComponent::R16 => gl::R16,
@@ -141,26 +230,152 @@ impl SizedComponent {
             SizedComponent::FloatDepth32 => gl::DEPTH_COMPONENT32,
         }) as gl::types::GLint
     }
-}
 
-pub enum Mipmap {
-    None,
-    Inbuilt{ count: u8 },
-    Custom{ count: u8, shader: shader::Program }
-}
+    fn map_to_cpu_types(self) -> gl::types::GLenum {
+        match self {
+            SizedComponent::R8 => gl::UNSIGNED_BYTE,
+            SizedComponent::RG8 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGB332 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGB4 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGB5 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGB8 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGBA2 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGBA4 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGB5A1 => gl::UNSIGNED_BYTE,
+            SizedComponent::RGBA8 => gl::UNSIGNED_BYTE,
+            SizedComponent::SRGB8 => gl::UNSIGNED_BYTE,
+            SizedComponent::SRGB8A8 => gl::UNSIGNED_BYTE,
+            SizedComponent::UnsignedIntR8 => gl::UNSIGNED_BYTE,
+            SizedComponent::UnsignedIntRG8 => gl::UNSIGNED_BYTE,
+            SizedComponent::UnsignedIntRGB8 => gl::UNSIGNED_BYTE,
+            SizedComponent::UnsignedIntRGBA8 => gl::UNSIGNED_BYTE,
+            SizedComponent::NormalR8 => gl::UNSIGNED_BYTE,
+            SizedComponent::NormalRG8 => gl::UNSIGNED_BYTE,
+            SizedComponent::NormalRGB8 => gl::UNSIGNED_BYTE,
+            SizedComponent::NormalRGBA8 => gl::UNSIGNED_BYTE,
+            SizedComponent::IntR8 => gl::BYTE,
+            SizedComponent::IntRG8 => gl::BYTE,
+            SizedComponent::IntRGB8 => gl::BYTE,
+            SizedComponent::IntRGBA8 => gl::BYTE,
+            SizedComponent::R16 => gl::UNSIGNED_SHORT,
+            SizedComponent::RG16 => gl::UNSIGNED_SHORT,
+            SizedComponent::RGB10 => gl::UNSIGNED_SHORT,
+            SizedComponent::RGB12 => gl::UNSIGNED_SHORT,
+            SizedComponent::RGB10A2 => gl::UNSIGNED_SHORT,
+            SizedComponent::RGBA12 => gl::UNSIGNED_SHORT,
+            SizedComponent::RGBA16 => gl::UNSIGNED_SHORT,
+            SizedComponent::Depth16 => gl::UNSIGNED_SHORT,
+            SizedComponent::UnsignedIntR16 => gl::UNSIGNED_SHORT,
+            SizedComponent::UnsignedIntRG16 => gl::UNSIGNED_SHORT,
+            SizedComponent::UnsignedIntRGB16 => gl::UNSIGNED_SHORT,
+            SizedComponent::UnsignedIntRGBA16 => gl::UNSIGNED_SHORT,
+            SizedComponent::NormalR16 => gl::UNSIGNED_SHORT,
+            SizedComponent::NormalRG16 => gl::UNSIGNED_SHORT,
+            SizedComponent::NormalRGB16 => gl::UNSIGNED_SHORT,
+            SizedComponent::IntR16 => gl::SHORT,
+            SizedComponent::IntRG16 => gl::SHORT,
+            SizedComponent::IntRGB16 => gl::SHORT,
+            SizedComponent::IntRGBA16 => gl::SHORT,
+            SizedComponent::UnsignedIntR32 => gl::UNSIGNED_INT,
+            SizedComponent::UnsignedIntRG32 => gl::UNSIGNED_INT,
+            SizedComponent::UnsignedIntRGB32 => gl::UNSIGNED_INT,
+            SizedComponent::UnsignedIntRGBA32 => gl::UNSIGNED_INT,
+            SizedComponent::DepthStencil => gl::UNSIGNED_INT,
+            SizedComponent::Depth => gl::UNSIGNED_INT,
+            SizedComponent::Depth24 => gl::UNSIGNED_INT,
+            SizedComponent::IntR32 => gl::INT,
+            SizedComponent::IntRG32 => gl::INT,
+            SizedComponent::IntRGB32 => gl::INT,
+            SizedComponent::IntRGBA32 => gl::INT,
+            SizedComponent::UnsignedIntRGB10A2 => gl::UNSIGNED_INT_10_10_10_2,
+            SizedComponent::FloatR16 => gl::HALF_FLOAT,
+            SizedComponent::FloatRG16 => gl::HALF_FLOAT,
+            SizedComponent::FloatRGB16 => gl::HALF_FLOAT,
+            SizedComponent::FloatRGBA16 => gl::HALF_FLOAT,
+            SizedComponent::FloatR11G11B10 => gl::HALF_FLOAT,
+            SizedComponent::FloatR32 => gl::FLOAT,
+            SizedComponent::FloatRG32 => gl::FLOAT,
+            SizedComponent::FloatRGB32 => gl::FLOAT,
+            SizedComponent::FloatRGBA32 => gl::FLOAT,
+            SizedComponent::FloatDepth32 => gl::FLOAT,
+        }
+    }
 
-pub struct Arguments {
-    dimensions: IVec2,
-    pub(super) internal_components: Component,
-    internal_size: SizedComponent,
-    mipmap_type: Mipmap,
-    data: Option<Data>
+    fn component_count(self) -> usize {
+        match self {
+            SizedComponent::R8 => 1,
+            SizedComponent::R16 => 1,
+            SizedComponent::RG8 => 2,
+            SizedComponent::RG16 => 2,
+            SizedComponent::RGB332 => 3,
+            SizedComponent::RGB4 => 3,
+            SizedComponent::RGB5 => 3,
+            SizedComponent::RGB8 => 3,
+            SizedComponent::RGB10 => 3,
+            SizedComponent::RGB12 => 3,
+            SizedComponent::RGBA2 => 4,
+            SizedComponent::RGBA4 => 4,
+            SizedComponent::RGB5A1 => 4,
+            SizedComponent::RGBA8 => 4,
+            SizedComponent::RGB10A2 => 4,
+            SizedComponent::UnsignedIntRGB10A2 => 4,
+            SizedComponent::RGBA12 => 4,
+            SizedComponent::RGBA16 => 4,
+            SizedComponent::SRGB8 => 3,
+            SizedComponent::SRGB8A8 => 4,
+            SizedComponent::FloatR16 => 1,
+            SizedComponent::FloatRG16 => 2,
+            SizedComponent::FloatRGB16 => 3,
+            SizedComponent::FloatRGBA16 => 4,
+            SizedComponent::FloatR32 => 1,
+            SizedComponent::FloatRG32 => 2,
+            SizedComponent::FloatRGB32 => 3,
+            SizedComponent::FloatRGBA32 => 4,
+            SizedComponent::FloatR11G11B10 => 3,
+            SizedComponent::IntR8 => 1,
+            SizedComponent::UnsignedIntR8 => 1,
+            SizedComponent::IntR16 => 1,
+            SizedComponent::UnsignedIntR16 => 1,
+            SizedComponent::IntR32 => 1,
+            SizedComponent::UnsignedIntR32 => 1,
+            SizedComponent::IntRG8 => 2,
+            SizedComponent::UnsignedIntRG8 => 2,
+            SizedComponent::IntRG16 => 2,
+            SizedComponent::UnsignedIntRG16 => 2,
+            SizedComponent::IntRG32 => 2,
+            SizedComponent::UnsignedIntRG32 => 2,
+            SizedComponent::IntRGB8 => 3,
+            SizedComponent::UnsignedIntRGB8 => 3,
+            SizedComponent::IntRGB16 => 3,
+            SizedComponent::UnsignedIntRGB16 => 3,
+            SizedComponent::IntRGB32 => 3,
+            SizedComponent::UnsignedIntRGB32 => 3,
+            SizedComponent::IntRGBA8 => 4,
+            SizedComponent::UnsignedIntRGBA8 => 4,
+            SizedComponent::IntRGBA16 => 4,
+            SizedComponent::UnsignedIntRGBA16 => 4,
+            SizedComponent::IntRGBA32 => 4,
+            SizedComponent::UnsignedIntRGBA32 => 4,
+            SizedComponent::NormalR8 => 1,
+            SizedComponent::NormalR16 => 1,
+            SizedComponent::NormalRG8 => 2,
+            SizedComponent::NormalRG16 => 2,
+            SizedComponent::NormalRGB8 => 3,
+            SizedComponent::NormalRGB16 => 3,
+            SizedComponent::NormalRGBA8 => 4,
+            SizedComponent::Depth => 1,
+            SizedComponent::DepthStencil => 2,
+            SizedComponent::Depth16 => 1,
+            SizedComponent::Depth24 => 1,
+            SizedComponent::FloatDepth32 => 1,
+        }
+    }
 }
 
 impl Arguments {
     fn verify(&self) {
         match self.internal_components {
-            Component::R => {
+            Component::IntR | Component::R => {
                 match self.internal_size {
                     SizedComponent::R8 => (),
                     SizedComponent::NormalR8 => (),
@@ -177,7 +392,7 @@ impl Arguments {
                     _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
                 }
             },
-            Component::RG => {
+            Component::IntRG | Component::RG => {
                 match self.internal_size {
                     SizedComponent::RG8 => (),
                     SizedComponent::NormalRG8 => (),
@@ -194,7 +409,7 @@ impl Arguments {
                     _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
                 }
             },
-            Component::RGB => {
+            Component::IntRGB | Component::RGB => {
                 match self.internal_size {
                     SizedComponent::RGB332 => (),
                     SizedComponent::RGB4 => (),
@@ -218,7 +433,7 @@ impl Arguments {
                     _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
                 }
             },
-            Component::RGBA => {
+            Component::IntRGBA | Component::RGBA => {
                 match self.internal_size {
                     SizedComponent::RGB5A1 => (),
                     SizedComponent::RGBA8 => (),
@@ -248,58 +463,6 @@ impl Arguments {
             },
             Component::DepthStencil => {},
         };
-    }
-}
-
-pub struct Texture2d {
-    handle: gl::types::GLuint
-}
-
-impl Texture2d {
-    pub fn generate(arguments: Arguments) -> Texture2d {
-        arguments.verify();
-        let handle = unsafe {
-            let mut texture = 0;
-            gl::GenTextures(1, &mut texture);
-            texture
-        };
-
-        let (data_format, data_type, data) = if let Some(data) = arguments.data {
-            (
-                data.components.as_api(),
-                data.data.as_api(),
-                data.data.as_ptr()
-            )
-        } else {
-            (gl::RED, gl::UNSIGNED_BYTE, std::ptr::null())
-        };
-
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, handle);
-            gl::TexImage2D(
-                gl::TEXTURE_2D,
-                0,
-                arguments.internal_size.api_size(),
-                arguments.dimensions.x,
-                arguments.dimensions.y,
-                0,
-                data_format,
-                data_type,
-                data
-            );
-        }
-
-        Texture2d {
-            handle
-        }
-    }
-}
-
-impl Drop for Texture2d {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteTextures(1, &self.handle);
-        }
     }
 }
 

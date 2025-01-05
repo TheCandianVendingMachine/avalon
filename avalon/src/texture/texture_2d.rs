@@ -8,6 +8,38 @@ pub struct Texture2d {
     components: Component,
 }
 
+impl Texture2d {
+    pub fn new(dimensions: IVec2) -> Texture2dBuilder {
+        Texture2dBuilder::new(dimensions)
+    }
+
+    pub fn dimensions(&self) -> IVec2 {
+        self.dimensions
+    }
+
+    pub fn generate_gpu(&mut self) -> &GpuTexture2d {
+        if let None = self.gpu {
+
+        }
+        self.gpu().unwrap()
+    }
+
+    pub fn generate_cpu(&mut self) -> &CpuTexture {
+        if let None = self.cpu {
+
+        }
+        self.cpu().unwrap()
+    }
+
+    pub fn gpu(&self) -> Option<&GpuTexture2d> {
+        self.gpu.as_ref()
+    }
+
+    pub fn cpu(&self) -> Option<&CpuTexture> {
+        self.cpu.as_ref()
+    }
+}
+
 pub struct Texture2dBuilder {
     pub(super) gpu_texture_arguments: Option<gpu::Arguments>,
     pub(super) dimensions: IVec2,
@@ -49,34 +81,3 @@ impl Texture2dBuilder {
     }
 }
 
-impl Texture2d {
-    pub fn new(dimensions: IVec2) -> Texture2dBuilder {
-        Texture2dBuilder::new(dimensions)
-    }
-
-    pub fn dimensions(&self) -> IVec2 {
-        self.dimensions
-    }
-
-    pub fn generate_gpu(&mut self) -> &GpuTexture2d {
-        if let None = self.gpu {
-
-        }
-        self.gpu().unwrap()
-    }
-
-    pub fn generate_cpu(&mut self) -> &CpuTexture {
-        if let None = self.cpu {
-
-        }
-        self.cpu().unwrap()
-    }
-
-    pub fn gpu(&self) -> Option<&GpuTexture2d> {
-        self.gpu.as_ref()
-    }
-
-    pub fn cpu(&self) -> Option<&CpuTexture> {
-        self.cpu.as_ref()
-    }
-}

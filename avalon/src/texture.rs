@@ -8,14 +8,18 @@ pub use cpu::Texture as CpuTexture;
 
 pub use texture_2d::Texture2d as Texture2d;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Component {
     Depth,
     DepthStencil,
     R,
     RG,
     RGB,
-    RGBA
+    RGBA,
+    IntR,
+    IntRG,
+    IntRGB,
+    IntRGBA,
 }
 
 impl Component {
@@ -25,6 +29,10 @@ impl Component {
             Component::RG => gl::RG,
             Component::RGB => gl::RGB,
             Component::RGBA => gl::RGBA,
+            Component::IntR => gl::RED_INTEGER,
+            Component::IntRG => gl::RG_INTEGER,
+            Component::IntRGB => gl::RGB_INTEGER,
+            Component::IntRGBA => gl::RGBA_INTEGER,
             Component::Depth => gl::DEPTH_COMPONENT,
             Component::DepthStencil => gl::DEPTH_STENCIL,
         }
