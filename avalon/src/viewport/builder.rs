@@ -160,6 +160,13 @@ impl ViewportBuilder {
         };
 
         unsafe {
+            let complete = gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
+            if !complete {
+                panic!("Framebuffer is incomplete");
+            }
+        }
+
+        unsafe {
             gl::BindTexture(gl::TEXTURE_2D, 0);
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
