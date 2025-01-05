@@ -1,6 +1,6 @@
 use nalgebra_glm::IVec3;
 use crate::texture::{ texture_3d, data, data::Data, Component };
-use crate::texture::gpu::{ Mipmap, SizedComponent };
+use crate::texture::gpu::{ Sampler, Image, ImageAttachment, TextureAttachment, TextureDimension, Access, Mipmap, SizedComponent };
 
 pub struct TextureBind3d<'t> {
     texture: &'t mut Texture3d
@@ -71,27 +71,6 @@ impl Drop for TextureBind3d<'_> {
 }
 
 #[derive(Clone)]
-pub struct TextureAttachment3d<'t> {
-    texture: &'t Texture3d,
-    unit: gl::types::GLenum
-}
-
-impl Drop for TextureAttachment3d<'_> {
-    fn drop(&mut self) {
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_3D, 0);
-        }
-    }
-}
-
-impl TextureAttachment3d<'_> {
-    pub fn unit(&self) -> gl::types::GLenum {
-        self.unit
-    }
-}
-
-#[derive(Clone)]
 pub struct Texture3d {
     handle: gl::types::GLuint,
     internal_components: Component,
@@ -151,18 +130,47 @@ impl Texture3d {
             texture: self
         }
     }
+}
 
-    pub fn attach(&self, unit: gl::types::GLenum) -> TextureAttachment3d {
+impl Sampler for Texture3d {
+    fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t> {
         unsafe {
             gl::ActiveTexture(unit);
             gl::BindTexture(unit, self.handle);
         }
-        TextureAttachment3d {
-            texture: self,
+        TextureAttachment {
+            _lifetime: &std::marker::PhantomData,
+            dimension: TextureDimension::Dimension3d,
             unit
         }
     }
 }
+
+impl Image for Texture3d {
+    fn image<'t>(&'t self, idx: gl::types::GLuint, access: Access) -> ImageAttachment<'t> {
+        unsafe {
+            gl::BindImageTexture(
+                idx,
+                self.handle,
+                0,
+                gl::FALSE,
+                0,
+                match access {
+                    Access::Read => gl::READ_ONLY,
+                    Access::Write => gl::WRITE_ONLY,
+                    Access::ReadWrite => gl::READ_WRITE,
+                },
+                self.internal_size.as_api() as u32
+            );
+        }
+        ImageAttachment {
+            _lifetime: &std::marker::PhantomData,
+            dimension: TextureDimension::Dimension3d,
+            unit: idx
+        }
+    }
+}
+
 
 impl Drop for Texture3d {
     fn drop(&mut self) {

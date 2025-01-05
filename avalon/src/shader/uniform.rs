@@ -51,7 +51,11 @@ impl Uniform<'_> {
         unsafe { gl::UniformMatrix4fv(self.location, 1, gl::FALSE, value.as_ref().as_slice().as_ptr()); }
     }
 
-    pub fn set_texture_2d(self, value: &gpu::TextureAttachment2d) {
+    pub fn set_texture(self, value: &gpu::TextureAttachment) {
+        unsafe { gl::Uniform1i(self.location, value.unit() as i32); }
+    }
+
+    pub fn set_image(self, value: &gpu::ImageAttachment) {
         unsafe { gl::Uniform1i(self.location, value.unit() as i32); }
     }
 }

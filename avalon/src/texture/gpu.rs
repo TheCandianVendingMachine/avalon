@@ -1,10 +1,84 @@
 use crate::shader;
 use crate::texture::Component;
+use std::marker::PhantomData;
+
+pub trait Image {
+    fn image<'t>(&'t self, idx: gl::types::GLuint, access: Access) -> ImageAttachment<'t>;
+}
+
+pub trait Sampler {
+    fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t>;
+}
+
+#[derive(Clone, Copy)]
+enum TextureDimension {
+    Dimension2d,
+    Dimension3d,
+}
+
+impl TextureDimension {
+    pub fn as_api(self) -> gl::types::GLenum {
+        match self {
+            TextureDimension::Dimension2d => gl::TEXTURE_2D,
+            TextureDimension::Dimension3d => gl::TEXTURE_3D,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TextureAttachment<'t> {
+    unit: gl::types::GLenum,
+    dimension: TextureDimension,
+    _lifetime: &'t PhantomData<()>
+}
+
+impl Drop for TextureAttachment<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::ActiveTexture(self.unit);
+            gl::BindTexture(self.dimension.as_api(), 0);
+        }
+    }
+}
+
+impl TextureAttachment<'_> {
+    pub fn unit(&self) -> gl::types::GLenum {
+        self.unit
+    }
+}
+
+#[derive(Clone)]
+pub struct ImageAttachment<'t> {
+    unit: gl::types::GLenum,
+    dimension: TextureDimension,
+    _lifetime: &'t PhantomData<()>
+}
+
+impl Drop for ImageAttachment<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::BindImageTexture(
+                self.unit,
+                0,
+                0,
+                gl::FALSE,
+                0,
+                gl::READ_ONLY,
+                gl::R8
+            );
+        }
+    }
+}
+
+impl ImageAttachment<'_> {
+    pub fn unit(&self) -> gl::types::GLenum {
+        self.unit
+    }
+}
 
 pub mod texture_2d;
 pub use texture_2d::{
     TextureBind2d,
-    TextureAttachment2d,
     Texture2d,
     Arguments as Arguments2d,
 };
@@ -12,10 +86,15 @@ pub use texture_2d::{
 pub mod texture_3d;
 pub use texture_3d::{
     TextureBind3d,
-    TextureAttachment3d,
     Texture3d,
     Arguments as Arguments3d,
 };
+
+pub enum Access {
+    Read,
+    Write,
+    ReadWrite
+}
 
 #[derive(Clone)]
 pub enum Mipmap {

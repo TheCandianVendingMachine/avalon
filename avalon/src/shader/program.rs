@@ -8,7 +8,7 @@ use crate::shader::{
 };
 use crate::shader::uniform::Uniform;
 use crate::shader::error;
-use crate::texture::gpu;
+use crate::texture::gpu::{ Access, Sampler, Image, TextureAttachment, ImageAttachment };
 
 #[derive(Clone)]
 pub struct Program {
@@ -16,10 +16,10 @@ pub struct Program {
     shaders: Vec<Shader>
 }
 
-#[derive(Clone)]
 pub struct AttachedProgram<'program> {
     program: &'program Program,
-    attachments: Vec<gpu::TextureAttachment2d<'program>>
+    texture_attachments: Vec<TextureAttachment<'program>>,
+    image_attachments: Vec<ImageAttachment<'program>>
 }
 
 impl Program {
@@ -35,7 +35,8 @@ impl Program {
         }
         AttachedProgram {
             program: self,
-            attachments: Vec::new()
+            texture_attachments: Vec::new(),
+            image_attachments: Vec::new()
         }
     }
 
@@ -128,15 +129,27 @@ impl AttachedProgram<'_> {
 }
 
 impl<'p, 't: 'p> AttachedProgram<'p> {
-    pub fn attach(&mut self, name: impl Into<String>, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
-        self.attachments.push(texture.attach(self.attachments.len() as u32));
-        self.uniform(name)?.set_texture_2d(self.attachments.last().unwrap());
+    pub fn sampler(&mut self, name: impl Into<String>, texture: &'t impl Sampler) -> Result<(), error::Program> {
+        self.texture_attachments.push(texture.sampler(self.texture_attachments.len() as u32));
+        self.uniform(name)?.set_texture(self.texture_attachments.last().unwrap());
         Ok(())
     }
 
-    pub fn attach_to_location(&mut self, location: u32, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
-        self.attachments.push(texture.attach(self.attachments.len() as u32));
-        self.location(location)?.set_texture_2d(self.attachments.last().unwrap());
+    pub fn sampler_with_location(&mut self, location: u32, texture: &'t impl Sampler) -> Result<(), error::Program> {
+        self.texture_attachments.push(texture.sampler(self.texture_attachments.len() as u32));
+        self.location(location)?.set_texture(self.texture_attachments.last().unwrap());
+        Ok(())
+    }
+
+    pub fn image(&mut self, name: impl Into<String>, texture: &'t impl Image, access: Access) -> Result<(), error::Program> {
+        self.image_attachments.push(texture.image(self.image_attachments.len() as u32, access));
+        self.uniform(name)?.set_image(self.image_attachments.last().unwrap());
+        Ok(())
+    }
+
+    pub fn image_with_location(&mut self, location: u32, texture: &'t impl Image, access: Access) -> Result<(), error::Program> {
+        self.image_attachments.push(texture.image(self.image_attachments.len() as u32, access));
+        self.location(location)?.set_image(self.image_attachments.last().unwrap());
         Ok(())
     }
 }
