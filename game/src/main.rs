@@ -8,8 +8,10 @@ fn main() {
         .colour_attachment().format(avalon::texture::gpu::SizedComponent::RGBA8)
         .colour_attachment().format(avalon::texture::gpu::SizedComponent::R8)
         .colour_attachment().format(avalon::texture::gpu::SizedComponent::FloatRGBA32)
-        .depth_stencil(avalon::viewport::DepthStencil::Depth)
+        //.depth_stencil(avalon::viewport::DepthStencil::Depth)
         .build();
+
+    framebuffer.bind().clear();
 
     while engine.is_open() {
         engine.start_frame();

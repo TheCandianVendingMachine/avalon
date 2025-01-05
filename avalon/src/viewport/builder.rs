@@ -1,4 +1,4 @@
-use nalgebra_glm::IVec2;
+use nalgebra_glm::{ IVec2, vec3 };
 use crate::viewport::Viewport;
 use crate::texture::Component;
 use crate::texture::gpu::{ self, SizedComponent };
@@ -188,7 +188,8 @@ impl ViewportBuilder {
             colours,
             depth_stencil,
             dimensions: self.dimensions,
-            handle
+            handle,
+            clear_colour: vec3(0.2, 0.3, 0.4)
         }
     }
 }
