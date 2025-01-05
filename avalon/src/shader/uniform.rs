@@ -2,6 +2,7 @@ use gl;
 use nalgebra_glm::{ Vec2, Vec3, Vec4, Mat2, Mat3, Mat4 };
 
 use crate::shader::program::AttachedProgram;
+use crate::texture::gpu;
 
 #[derive(Copy, Clone)]
 pub struct Uniform<'program> {
@@ -48,5 +49,9 @@ impl Uniform<'_> {
 
     pub fn set_mat4(self, value: impl AsRef<Mat4>) {
         unsafe { gl::UniformMatrix4fv(self.location, 1, gl::FALSE, value.as_ref().as_slice().as_ptr()); }
+    }
+
+    pub fn set_texture_2d(self, value: &gpu::TextureAttachment2d) {
+        unsafe { gl::Uniform1i(self.location, value.attachment() as i32); }
     }
 }

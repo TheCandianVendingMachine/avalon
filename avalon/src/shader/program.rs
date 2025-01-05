@@ -8,6 +8,7 @@ use crate::shader::{
 };
 use crate::shader::uniform::Uniform;
 use crate::shader::error;
+use crate::texture::gpu;
 
 #[derive(Clone)]
 pub struct Program {
@@ -17,15 +18,8 @@ pub struct Program {
 
 #[derive(Clone)]
 pub struct AttachedProgram<'program> {
-    program: &'program Program
-}
-
-impl Drop for AttachedProgram<'_> {
-    fn drop(&mut self) {
-        unsafe {
-            gl::UseProgram(0);
-        }
-    }
+    program: &'program Program,
+    attachments: Vec<gpu::TextureAttachment2d<'program>>
 }
 
 impl Program {
@@ -35,12 +29,13 @@ impl Program {
         }
     }
 
-    pub fn attach(&self) -> AttachedProgram {
+    pub fn activate(&self) -> AttachedProgram {
         unsafe {
             gl::UseProgram(self.program);
         }
         AttachedProgram {
-            program: self
+            program: self,
+            attachments: Vec::new()
         }
     }
 
@@ -129,6 +124,22 @@ impl AttachedProgram<'_> {
             program: self,
             location: location as i32
         })
+    }
+}
+
+impl<'p> AttachedProgram<'p> {
+    pub fn attach<'t: 'p>(&'p mut self, name: impl Into<String>, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
+        self.attachments.push(texture.attach(self.attachments.len() as u32));
+        self.uniform(name)?.set_texture_2d(self.attachments.last().unwrap());
+        Ok(())
+    }
+}
+
+impl Drop for AttachedProgram<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::UseProgram(0);
+        }
     }
 }
 

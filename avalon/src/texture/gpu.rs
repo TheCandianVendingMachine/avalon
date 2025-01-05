@@ -69,6 +69,27 @@ impl Drop for TextureBind2d<'_> {
 }
 
 #[derive(Clone)]
+pub struct TextureAttachment2d<'t> {
+    texture: &'t Texture2d,
+    unit: gl::types::GLenum
+}
+
+impl Drop for TextureAttachment2d<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
+}
+
+impl TextureAttachment2d<'_> {
+    pub fn unit(&self) -> gl::types::GLenum {
+        self.unit
+    }
+}
+
+#[derive(Clone)]
 pub struct Texture2d {
     handle: gl::types::GLuint,
     internal_components: Component,
@@ -128,6 +149,16 @@ impl Texture2d {
         }
     }
 
+    pub fn attach(&self, unit: gl::types::GLenum) -> TextureAttachment2d {
+        unsafe {
+            gl::ActiveTexture(unit);
+            gl::BindTexture(unit, self.handle);
+        }
+        TextureAttachment2d {
+            texture: self,
+            unit
+        }
+    }
 }
 
 impl Drop for Texture2d {
