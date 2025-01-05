@@ -9,7 +9,7 @@ pub struct Window {
 impl Window {
     fn new(sdl: &sdl2::Sdl) -> Window {
         let video = sdl.video().unwrap();
-        let window = video.window("Avalon Engine", 1280, 720)
+        let window = video.window("Avalon Engine", 1920, 1080)
             .opengl()
             .build()
             .unwrap();
@@ -25,7 +25,8 @@ impl Window {
 
 pub struct Engine {
     sdl: sdl2::Sdl,
-    window: Window
+    window: Window,
+    is_open: bool
 }
 
 impl Engine {
@@ -34,12 +35,22 @@ impl Engine {
         let window = Window::new(&sdl);
         Engine {
             sdl,
-            window
+            window,
+            is_open: true
         }
     }
 
     pub fn is_open(&self) -> bool {
-        true
+        self.is_open
+    }
+
+    pub fn render(&self) {
+        unsafe {
+            gl::ClearColor(0.30, 0.20, 0.40, 1.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT);
+        }
+
+        self.window.window.gl_swap_window();
     }
 }
 

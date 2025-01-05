@@ -10,9 +10,8 @@ fn main() {
     dbg!(test_program.info_log());
     test_program.attach().uniform("halveCount").unwrap().set_i32(0);
     test_program.attach().location(1).unwrap().set_i32(0);
-    test_program.attach().uniform("halveCounts").unwrap().set_i32(0);
 
     while engine.is_open() {
-
+        engine.render();
     }
 }
