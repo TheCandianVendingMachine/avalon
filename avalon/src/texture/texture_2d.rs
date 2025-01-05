@@ -25,7 +25,7 @@ impl Texture2d {
 
             }
         } else {
-            let arguments = gpu::Arguments {
+            let arguments = gpu::texture_2d::Arguments {
                 dimensions: self.dimensions,
                 internal_components: Component::RGBA,
                 internal_size: gpu::SizedComponent::RGBA8,
@@ -63,7 +63,7 @@ impl Texture2d {
 pub struct Texture2dBuilder {
     data: Option<Data>,
     generate_cpu: bool,
-    pub(super) gpu_texture_arguments: Option<gpu::Arguments>,
+    pub(super) gpu_texture_arguments: Option<gpu::texture_2d::Arguments>,
     pub(super) dimensions: IVec2,
     pub(super) components: Component,
 }
@@ -79,8 +79,8 @@ impl Texture2dBuilder {
         }
     }
 
-    pub fn gpu(self) -> gpu::TextureBuilder2d {
-        gpu::TextureBuilder2d::new(self)
+    pub fn gpu(self) -> gpu::texture_2d::TextureBuilder2d {
+        gpu::texture_2d::TextureBuilder2d::new(self)
     }
 
     pub fn cpu(mut self) -> Texture2dBuilder {
