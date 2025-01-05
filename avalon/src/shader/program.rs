@@ -50,8 +50,7 @@ impl Program {
         };
 
         let log_buffer = unsafe {
-            let mut log_buffer = Vec::new();
-            log_buffer.resize(log_length, 0);
+            let mut log_buffer = vec![0; log_length];
             gl::GetProgramInfoLog(
                 self.program,
                 log_length as i32,

@@ -30,8 +30,7 @@ pub trait Source: MetaShader {
         };
 
         let log_buffer = unsafe {
-            let mut log_buffer = Vec::new();
-            log_buffer.resize(log_length, 0);
+            let mut log_buffer = vec![0; log_length];
             gl::GetShaderInfoLog(
                 self.id(),
                 log_length as i32,
@@ -77,9 +76,9 @@ pub trait Source: MetaShader {
         if !path.is_file() {
             return Err(error::Creation::ShaderNotFound { path: path.to_string_lossy().to_string() });
         }
-        let file = fs::read(path).map_err(|e| error::Creation::FileReadError(e))?;
+        let file = fs::read(path).map_err(error::Creation::FileReadError)?;
 
-        Self::load_from_source(String::from_utf8(file).map_err(|e| error::Creation::FileParseError(e))?)
+        Self::load_from_source(String::from_utf8(file).map_err(error::Creation::FileParseError)?)
     }
 }
 

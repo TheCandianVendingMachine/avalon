@@ -70,7 +70,7 @@ impl<TId: std::fmt::Debug + Copy + Eq + std::hash::Hash> Library<TId> {
 
        T::try_from(
             *self.entries.get(&id).unwrap()
-        ).map_err(|e| error::Library::ConversionError(e))
+        ).map_err(error::Library::ConversionError)
     }
 
     pub fn store<T: Into<entry::Entry>>(&mut self, key: TId, value: T) -> Result<(), error::Library<TId>> {
