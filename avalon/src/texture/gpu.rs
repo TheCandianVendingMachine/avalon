@@ -173,7 +173,7 @@ pub enum SizedComponent {
 }
 
 impl SizedComponent {
-    fn verify(&self, components: Component) {
+    pub(crate) fn verify(&self, components: Component) {
         match components {
             Component::IntR | Component::R => {
                 match self {
@@ -261,10 +261,15 @@ impl SizedComponent {
                     _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
                 }
             },
-            Component::DepthStencil => {},
+            Component::DepthStencil => {
+                match self {
+                    SizedComponent::DepthStencil => (),
+                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                }
+            },
         };
     }
-    fn as_api(self) -> gl::types::GLint {
+    pub(crate) fn as_api(self) -> gl::types::GLint {
         (match self {
             SizedComponent::R8 => gl::R8,
             SizedComponent::R16 => gl::R16,
@@ -334,7 +339,7 @@ impl SizedComponent {
         }) as gl::types::GLint
     }
 
-    fn map_to_cpu_types(self) -> gl::types::GLenum {
+    pub(crate) fn map_to_cpu_types(self) -> gl::types::GLenum {
         match self {
             SizedComponent::R8 => gl::UNSIGNED_BYTE,
             SizedComponent::RG8 => gl::UNSIGNED_BYTE,
@@ -404,18 +409,50 @@ impl SizedComponent {
         }
     }
 
-    fn component_count(self) -> usize {
+    pub(crate) fn component_count(self) -> usize {
         match self {
             SizedComponent::R8 => 1,
             SizedComponent::R16 => 1,
+            SizedComponent::FloatR16 => 1,
+            SizedComponent::FloatR32 => 1,
+            SizedComponent::IntR8 => 1,
+            SizedComponent::UnsignedIntR8 => 1,
+            SizedComponent::IntR16 => 1,
+            SizedComponent::UnsignedIntR16 => 1,
+            SizedComponent::IntR32 => 1,
+            SizedComponent::UnsignedIntR32 => 1,
+            SizedComponent::NormalR8 => 1,
+            SizedComponent::NormalR16 => 1,
             SizedComponent::RG8 => 2,
             SizedComponent::RG16 => 2,
+            SizedComponent::FloatRG16 => 2,
+            SizedComponent::FloatRG32 => 2,
+            SizedComponent::IntRG8 => 2,
+            SizedComponent::UnsignedIntRG8 => 2,
+            SizedComponent::IntRG16 => 2,
+            SizedComponent::UnsignedIntRG16 => 2,
+            SizedComponent::IntRG32 => 2,
+            SizedComponent::UnsignedIntRG32 => 2,
+            SizedComponent::NormalRG8 => 2,
+            SizedComponent::NormalRG16 => 2,
             SizedComponent::RGB332 => 3,
             SizedComponent::RGB4 => 3,
             SizedComponent::RGB5 => 3,
             SizedComponent::RGB8 => 3,
             SizedComponent::RGB10 => 3,
             SizedComponent::RGB12 => 3,
+            SizedComponent::SRGB8 => 3,
+            SizedComponent::FloatRGB16 => 3,
+            SizedComponent::FloatRGB32 => 3,
+            SizedComponent::FloatR11G11B10 => 3,
+            SizedComponent::IntRGB8 => 3,
+            SizedComponent::UnsignedIntRGB8 => 3,
+            SizedComponent::IntRGB16 => 3,
+            SizedComponent::UnsignedIntRGB16 => 3,
+            SizedComponent::IntRGB32 => 3,
+            SizedComponent::UnsignedIntRGB32 => 3,
+            SizedComponent::NormalRGB8 => 3,
+            SizedComponent::NormalRGB16 => 3,
             SizedComponent::RGBA2 => 4,
             SizedComponent::RGBA4 => 4,
             SizedComponent::RGB5A1 => 4,
@@ -424,47 +461,15 @@ impl SizedComponent {
             SizedComponent::UnsignedIntRGB10A2 => 4,
             SizedComponent::RGBA12 => 4,
             SizedComponent::RGBA16 => 4,
-            SizedComponent::SRGB8 => 3,
             SizedComponent::SRGB8A8 => 4,
-            SizedComponent::FloatR16 => 1,
-            SizedComponent::FloatRG16 => 2,
-            SizedComponent::FloatRGB16 => 3,
             SizedComponent::FloatRGBA16 => 4,
-            SizedComponent::FloatR32 => 1,
-            SizedComponent::FloatRG32 => 2,
-            SizedComponent::FloatRGB32 => 3,
             SizedComponent::FloatRGBA32 => 4,
-            SizedComponent::FloatR11G11B10 => 3,
-            SizedComponent::IntR8 => 1,
-            SizedComponent::UnsignedIntR8 => 1,
-            SizedComponent::IntR16 => 1,
-            SizedComponent::UnsignedIntR16 => 1,
-            SizedComponent::IntR32 => 1,
-            SizedComponent::UnsignedIntR32 => 1,
-            SizedComponent::IntRG8 => 2,
-            SizedComponent::UnsignedIntRG8 => 2,
-            SizedComponent::IntRG16 => 2,
-            SizedComponent::UnsignedIntRG16 => 2,
-            SizedComponent::IntRG32 => 2,
-            SizedComponent::UnsignedIntRG32 => 2,
-            SizedComponent::IntRGB8 => 3,
-            SizedComponent::UnsignedIntRGB8 => 3,
-            SizedComponent::IntRGB16 => 3,
-            SizedComponent::UnsignedIntRGB16 => 3,
-            SizedComponent::IntRGB32 => 3,
-            SizedComponent::UnsignedIntRGB32 => 3,
             SizedComponent::IntRGBA8 => 4,
             SizedComponent::UnsignedIntRGBA8 => 4,
             SizedComponent::IntRGBA16 => 4,
             SizedComponent::UnsignedIntRGBA16 => 4,
             SizedComponent::IntRGBA32 => 4,
             SizedComponent::UnsignedIntRGBA32 => 4,
-            SizedComponent::NormalR8 => 1,
-            SizedComponent::NormalR16 => 1,
-            SizedComponent::NormalRG8 => 2,
-            SizedComponent::NormalRG16 => 2,
-            SizedComponent::NormalRGB8 => 3,
-            SizedComponent::NormalRGB16 => 3,
             SizedComponent::NormalRGBA8 => 4,
             SizedComponent::Depth => 1,
             SizedComponent::DepthStencil => 2,

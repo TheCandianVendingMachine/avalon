@@ -6,6 +6,7 @@ pub mod event;
 pub mod shader;
 pub mod input;
 pub mod texture;
+pub mod viewport;
 
 use engine::Engine;
 

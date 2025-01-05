@@ -77,6 +77,20 @@ pub struct Texture2d {
 }
 
 impl Texture2d {
+    pub(crate) fn from_handle(
+        handle: gl::types::GLuint,
+        internal_components: Component,
+        internal_size: SizedComponent,
+        dimensions: IVec2
+    ) -> Texture2d {
+        Texture2d {
+            handle,
+            internal_components,
+            internal_size,
+            dimensions
+        }
+    }
+
     pub fn generate(arguments: Arguments) -> Texture2d {
         arguments.internal_size.verify(arguments.internal_components);
         let handle = unsafe {
