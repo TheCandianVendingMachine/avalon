@@ -110,7 +110,7 @@ impl Texture3dBuilder {
             if let Some(data) = self.data {
                 Some(cpu::Texture3d::generate(self.dimensions, data))
             } else {
-                let count = self.dimensions.x * self.dimensions.y;
+                let count = self.dimensions.x * self.dimensions.y * self.dimensions.z;
                 Some(cpu::Texture3d::generate(self.dimensions, Data::empty(self.components, count as usize)))
             }
         } else {
