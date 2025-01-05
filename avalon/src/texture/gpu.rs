@@ -10,7 +10,7 @@ pub trait Sampler {
     fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t>;
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 enum TextureDimension {
     Dimension2d,
     Dimension3d,
@@ -25,7 +25,7 @@ impl TextureDimension {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TextureAttachment<'t> {
     unit: gl::types::GLenum,
     dimension: TextureDimension,
@@ -47,7 +47,7 @@ impl TextureAttachment<'_> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ImageAttachment<'t> {
     unit: gl::types::GLenum,
     dimension: TextureDimension,
@@ -388,9 +388,9 @@ impl SizedComponent {
             SizedComponent::UnsignedIntRG32 => gl::UNSIGNED_INT,
             SizedComponent::UnsignedIntRGB32 => gl::UNSIGNED_INT,
             SizedComponent::UnsignedIntRGBA32 => gl::UNSIGNED_INT,
-            SizedComponent::DepthStencil => gl::UNSIGNED_INT,
+            SizedComponent::DepthStencil => gl::UNSIGNED_INT_24_8,
             SizedComponent::Depth => gl::UNSIGNED_INT,
-            SizedComponent::Depth24 => gl::UNSIGNED_INT,
+            SizedComponent::Depth24 => gl::UNSIGNED_INT_24_8,
             SizedComponent::IntR32 => gl::INT,
             SizedComponent::IntRG32 => gl::INT,
             SizedComponent::IntRGB32 => gl::INT,

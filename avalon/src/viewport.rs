@@ -8,6 +8,7 @@ struct DepthStencilTexture {
     texture: texture::gpu::Texture2d
 }
 
+#[derive(Debug)]
 pub enum DepthStencil {
     Depth,
     DepthStencil,

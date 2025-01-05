@@ -27,7 +27,7 @@ pub enum Component {
 }
 
 impl Component {
-    fn as_api(self) -> gl::types::GLenum {
+    pub(super) fn as_api(self) -> gl::types::GLenum {
         match self {
             Component::R => gl::RED,
             Component::RG => gl::RG,

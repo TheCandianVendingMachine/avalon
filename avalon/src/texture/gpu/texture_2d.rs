@@ -101,12 +101,12 @@ impl Texture2d {
 
         let (data_format, data_type, data) = if let Some(data) = arguments.data {
             (
-                data.components.as_api(),
+                data.components,
                 data.data.as_api(),
                 data.data.as_ptr()
             )
         } else {
-            (gl::RED, gl::UNSIGNED_BYTE, std::ptr::null())
+            (arguments.internal_components, gl::FLOAT, std::ptr::null())
         };
 
         unsafe {
@@ -118,7 +118,7 @@ impl Texture2d {
                 arguments.dimensions.x,
                 arguments.dimensions.y,
                 0,
-                data_format,
+                data_format.as_api(),
                 data_type,
                 data
             );

@@ -1,5 +1,6 @@
 use nalgebra_glm::IVec2;
 use crate::viewport::Viewport;
+use crate::texture::Component;
 use crate::texture::gpu::{ self, SizedComponent };
 
 pub struct ColourAttachmentBuilder {
@@ -8,7 +9,7 @@ pub struct ColourAttachmentBuilder {
 }
 
 impl ColourAttachmentBuilder {
-    fn format(mut self, size: SizedComponent) -> ViewportBuilder {
+    pub fn format(mut self, size: SizedComponent) -> ViewportBuilder {
         self.internal_format = size;
         self.viewport_builder.colour_attachments.push(ColourAttachmentData {
             internal_format: size
@@ -17,10 +18,12 @@ impl ColourAttachmentBuilder {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct ColourAttachmentData {
     internal_format: SizedComponent
 }
 
+#[derive(Debug)]
 pub(super) struct DepthAttachmentData {
     internal_format: SizedComponent,
     kind: super::DepthStencil
@@ -44,7 +47,7 @@ impl ViewportBuilder {
         self.depth_stencil = Some(DepthAttachmentData {
             internal_format: match depth {
                 super::DepthStencil::DepthStencil => SizedComponent::DepthStencil,
-                super::DepthStencil::Depth => SizedComponent::FloatDepth32,
+                super::DepthStencil::Depth => SizedComponent::Depth,
             },
             kind: depth
         });
@@ -81,8 +84,8 @@ impl ViewportBuilder {
                     self.dimensions.x,
                     self.dimensions.y,
                     0,
-                    gl::RGB,
-                    gl::UNSIGNED_BYTE,
+                    Into::<Component>::into(colour.internal_format).as_api(),
+                    colour.internal_format.map_to_cpu_types(),
                     std::ptr::null()
                 );
                 gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
@@ -125,8 +128,8 @@ impl ViewportBuilder {
                     self.dimensions.x,
                     self.dimensions.y,
                     0,
-                    gl::RGB,
-                    gl::UNSIGNED_BYTE,
+                    Into::<Component>::into(depth_stencil.internal_format).as_api(),
+                    depth_stencil.internal_format.map_to_cpu_types(),
                     std::ptr::null()
                 );
                 gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
@@ -160,9 +163,19 @@ impl ViewportBuilder {
         };
 
         unsafe {
-            let complete = gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
-            if !complete {
-                panic!("Framebuffer is incomplete");
+            let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+            if status != gl::FRAMEBUFFER_COMPLETE {
+                panic!("Framebuffer is incomplete: {}", match status {
+                    gl::FRAMEBUFFER_UNDEFINED => "Constructed framebuffer is the default read/draw framebuffer, but the default framebuffer does not exist",
+                    gl::FRAMEBUFFER_INCOMPLETE_ATTACHMENT => "One of the framebuffer attachments are framebuffer incomplete",
+                    gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => "Framebuffer does not have an image attached",
+                    gl::FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER => "Draw buffer incomplete",
+                    gl::FRAMEBUFFER_INCOMPLETE_READ_BUFFER => "Read buffer incomplete",
+                    gl::FRAMEBUFFER_UNSUPPORTED => "Internal formats of attachments are not valid for this implementation",
+                    gl::FRAMEBUFFER_INCOMPLETE_MULTISAMPLE => "Some multisample targets are not equivalent",
+                    gl::FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS => "Some attachments are not layered",
+                    _ => "unknown"
+                });
             }
         }
 
