@@ -2,12 +2,19 @@ use crate::shader;
 use crate::texture::Component;
 
 pub mod texture_2d;
-
 pub use texture_2d::{
     TextureBind2d,
     TextureAttachment2d,
     Texture2d,
     Arguments as Arguments2d,
+};
+
+pub mod texture_3d;
+pub use texture_3d::{
+    TextureBind3d,
+    TextureAttachment3d,
+    Texture3d,
+    Arguments as Arguments3d,
 };
 
 #[derive(Clone)]

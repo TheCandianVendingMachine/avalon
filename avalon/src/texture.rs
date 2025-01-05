@@ -2,10 +2,15 @@ pub mod gpu;
 pub mod cpu;
 pub mod data;
 pub mod texture_2d;
+pub mod texture_3d;
 
 pub use gpu::Texture2d as GpuTexture2d;
 pub use cpu::Texture2d as CpuTexture2d;
 pub use texture_2d::Texture2d as Texture2d;
+
+pub use gpu::Texture3d as GpuTexture3d;
+pub use cpu::Texture3d as CpuTexture3d;
+pub use texture_3d::Texture3d as Texture3d;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Component {
