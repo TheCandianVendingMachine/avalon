@@ -6,7 +6,6 @@ pub struct Texture2d {
     gpu: Option<GpuTexture2d>,
     cpu: Option<CpuTexture2d>,
     dimensions: IVec2,
-    components: Component,
 }
 
 impl Texture2d {
@@ -38,6 +37,7 @@ impl Texture2d {
     }
 
     pub fn gpu_to_cpu(&mut self) {
+        todo!();
         if let Some(cpu) = &mut self.cpu {
 
         }
@@ -49,6 +49,14 @@ impl Texture2d {
 
     pub fn cpu(&self) -> Option<&CpuTexture2d> {
         self.cpu.as_ref()
+    }
+
+    pub fn free_gpu(&mut self) {
+        self.gpu = None;
+    }
+
+    pub fn free_cpu(&mut self) {
+        self.cpu = None;
     }
 }
 
