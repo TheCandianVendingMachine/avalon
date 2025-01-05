@@ -16,12 +16,16 @@ pub struct Window {
 impl Window {
     fn new(sdl: &sdl2::Sdl) -> Window {
         let video = sdl.video().unwrap();
+
+        video.gl_attr().set_context_profile(sdl2::video::GLProfile::Core);
+        video.gl_attr().set_context_version(4, 5);
+
         let window = video.window("Avalon Engine", 1920, 1080)
             .opengl()
             .build()
             .unwrap();
         let gl_context = window.gl_create_context().unwrap();
-        gl::load_with(|s| video.gl_get_proc_address(s) as *const std::ffi::c_void);
+        let gl = gl::load_with(|s| video.gl_get_proc_address(s) as *const std::ffi::c_void);
 
         let event = event::Event::new(&sdl);
         Window {

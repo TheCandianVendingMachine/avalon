@@ -129,6 +129,10 @@ impl Texture2d {
                 data_type,
                 data
             );
+            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
             gl::BindTexture(gl::TEXTURE_2D, 0);
         }
 
@@ -192,8 +196,14 @@ impl TextureBuilder2d {
             mipmap_type: Mipmap::None,
         }
     }
+
     pub fn mipmap(mut self, mipmap: Mipmap) -> Self {
         self.mipmap_type = mipmap;
+        self
+    }
+
+    pub fn vram_data(mut self, size: SizedComponent) -> Self {
+        self.size = size;
         self
     }
 

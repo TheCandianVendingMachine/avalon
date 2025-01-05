@@ -127,14 +127,14 @@ impl AttachedProgram<'_> {
     }
 }
 
-impl<'p> AttachedProgram<'p> {
-    pub fn attach<'t: 'p>(&'p mut self, name: impl Into<String>, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
+impl<'p, 't: 'p> AttachedProgram<'p> {
+    pub fn attach(&mut self, name: impl Into<String>, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
         self.attachments.push(texture.attach(self.attachments.len() as u32));
         self.uniform(name)?.set_texture_2d(self.attachments.last().unwrap());
         Ok(())
     }
 
-    pub fn attach_to_location<'t: 'p>(&'p mut self, location: u32, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
+    pub fn attach_to_location(&mut self, location: u32, texture: &'t gpu::Texture2d) -> Result<(), error::Program> {
         self.attachments.push(texture.attach(self.attachments.len() as u32));
         self.location(location)?.set_texture_2d(self.attachments.last().unwrap());
         Ok(())

@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 avalon = { path = "../avalon" }
+nalgebra-glm = "0.19.0"
