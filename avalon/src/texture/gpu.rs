@@ -1,4 +1,5 @@
 use crate::shader;
+use crate::texture::Component;
 
 pub mod texture_2d;
 
@@ -86,6 +87,97 @@ pub enum SizedComponent {
 }
 
 impl SizedComponent {
+    fn verify(&self, components: Component) {
+        match components {
+            Component::IntR | Component::R => {
+                match self {
+                    SizedComponent::R8 => (),
+                    SizedComponent::NormalR8 => (),
+                    SizedComponent::R16 => (),
+                    SizedComponent::NormalR16 => (),
+                    SizedComponent::FloatR16 => (),
+                    SizedComponent::FloatR32 => (),
+                    SizedComponent::IntR8 => (),
+                    SizedComponent::UnsignedIntR8 => (),
+                    SizedComponent::IntR16 => (),
+                    SizedComponent::UnsignedIntR16 => (),
+                    SizedComponent::IntR32 => (),
+                    SizedComponent::UnsignedIntR32 => (),
+                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                }
+            },
+            Component::IntRG | Component::RG => {
+                match self {
+                    SizedComponent::RG8 => (),
+                    SizedComponent::NormalRG8 => (),
+                    SizedComponent::RG16 => (),
+                    SizedComponent::NormalRG16 => (),
+                    SizedComponent::FloatRG16 => (),
+                    SizedComponent::FloatRG32 => (),
+                    SizedComponent::IntRG8 => (),
+                    SizedComponent::UnsignedIntRG8 => (),
+                    SizedComponent::IntRG16 => (),
+                    SizedComponent::UnsignedIntRG16 => (),
+                    SizedComponent::IntRG32 => (),
+                    SizedComponent::UnsignedIntRG32 => (),
+                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                }
+            },
+            Component::IntRGB | Component::RGB => {
+                match self {
+                    SizedComponent::RGB332 => (),
+                    SizedComponent::RGB4 => (),
+                    SizedComponent::RGB5 => (),
+                    SizedComponent::RGB8 => (),
+                    SizedComponent::NormalRGB8 => (),
+                    SizedComponent::RGB10 => (),
+                    SizedComponent::RGB12 => (),
+                    SizedComponent::NormalRGB16 => (),
+                    SizedComponent::RGBA2 => (),
+                    SizedComponent::RGBA4 => (),
+                    SizedComponent::SRGB8 => (),
+                    SizedComponent::FloatRGB16 => (),
+                    SizedComponent::FloatRGB32 => (),
+                    SizedComponent::IntRGB8 => (),
+                    SizedComponent::UnsignedIntRGB8 => (),
+                    SizedComponent::IntRGB16 => (),
+                    SizedComponent::UnsignedIntRGB16 => (),
+                    SizedComponent::IntRGB32 => (),
+                    SizedComponent::UnsignedIntRGB32 => (),
+                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                }
+            },
+            Component::IntRGBA | Component::RGBA => {
+                match self {
+                    SizedComponent::RGB5A1 => (),
+                    SizedComponent::RGBA8 => (),
+                    SizedComponent::NormalRGBA8 => (),
+                    SizedComponent::RGB10A2 => (),
+                    SizedComponent::RGBA12 => (),
+                    SizedComponent::SRGB8A8 => (),
+                    SizedComponent::FloatRGBA16 => (),
+                    SizedComponent::FloatRGBA32 => (),
+                    SizedComponent::IntRGBA8 => (),
+                    SizedComponent::UnsignedIntRGBA8 => (),
+                    SizedComponent::IntRGBA16 => (),
+                    SizedComponent::UnsignedIntRGBA16 => (),
+                    SizedComponent::IntRGBA32 => (),
+                    SizedComponent::UnsignedIntRGBA32 => (),
+                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                }
+            },
+            Component::Depth => {
+                match self {
+                    SizedComponent::Depth => (),
+                    SizedComponent::Depth16 => (),
+                    SizedComponent::Depth24 => (),
+                    SizedComponent::FloatDepth32 => (),
+                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                }
+            },
+            Component::DepthStencil => {},
+        };
+    }
     fn as_api(self) -> gl::types::GLint {
         (match self {
             SizedComponent::R8 => gl::R8,

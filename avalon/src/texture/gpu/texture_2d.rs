@@ -99,7 +99,7 @@ pub struct Texture2d {
 
 impl Texture2d {
     pub fn generate(arguments: Arguments) -> Texture2d {
-        arguments.verify();
+        arguments.internal_size.verify(arguments.internal_components);
         let handle = unsafe {
             let mut texture = 0;
             gl::GenTextures(1, &mut texture);
@@ -176,100 +176,6 @@ pub struct Arguments {
     pub internal_size: SizedComponent,
     pub mipmap_type: Mipmap,
     pub data: Option<Data>
-}
-
-impl Arguments {
-    fn verify(&self) {
-        match self.internal_components {
-            Component::IntR | Component::R => {
-                match self.internal_size {
-                    SizedComponent::R8 => (),
-                    SizedComponent::NormalR8 => (),
-                    SizedComponent::R16 => (),
-                    SizedComponent::NormalR16 => (),
-                    SizedComponent::FloatR16 => (),
-                    SizedComponent::FloatR32 => (),
-                    SizedComponent::IntR8 => (),
-                    SizedComponent::UnsignedIntR8 => (),
-                    SizedComponent::IntR16 => (),
-                    SizedComponent::UnsignedIntR16 => (),
-                    SizedComponent::IntR32 => (),
-                    SizedComponent::UnsignedIntR32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
-                }
-            },
-            Component::IntRG | Component::RG => {
-                match self.internal_size {
-                    SizedComponent::RG8 => (),
-                    SizedComponent::NormalRG8 => (),
-                    SizedComponent::RG16 => (),
-                    SizedComponent::NormalRG16 => (),
-                    SizedComponent::FloatRG16 => (),
-                    SizedComponent::FloatRG32 => (),
-                    SizedComponent::IntRG8 => (),
-                    SizedComponent::UnsignedIntRG8 => (),
-                    SizedComponent::IntRG16 => (),
-                    SizedComponent::UnsignedIntRG16 => (),
-                    SizedComponent::IntRG32 => (),
-                    SizedComponent::UnsignedIntRG32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
-                }
-            },
-            Component::IntRGB | Component::RGB => {
-                match self.internal_size {
-                    SizedComponent::RGB332 => (),
-                    SizedComponent::RGB4 => (),
-                    SizedComponent::RGB5 => (),
-                    SizedComponent::RGB8 => (),
-                    SizedComponent::NormalRGB8 => (),
-                    SizedComponent::RGB10 => (),
-                    SizedComponent::RGB12 => (),
-                    SizedComponent::NormalRGB16 => (),
-                    SizedComponent::RGBA2 => (),
-                    SizedComponent::RGBA4 => (),
-                    SizedComponent::SRGB8 => (),
-                    SizedComponent::FloatRGB16 => (),
-                    SizedComponent::FloatRGB32 => (),
-                    SizedComponent::IntRGB8 => (),
-                    SizedComponent::UnsignedIntRGB8 => (),
-                    SizedComponent::IntRGB16 => (),
-                    SizedComponent::UnsignedIntRGB16 => (),
-                    SizedComponent::IntRGB32 => (),
-                    SizedComponent::UnsignedIntRGB32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
-                }
-            },
-            Component::IntRGBA | Component::RGBA => {
-                match self.internal_size {
-                    SizedComponent::RGB5A1 => (),
-                    SizedComponent::RGBA8 => (),
-                    SizedComponent::NormalRGBA8 => (),
-                    SizedComponent::RGB10A2 => (),
-                    SizedComponent::RGBA12 => (),
-                    SizedComponent::SRGB8A8 => (),
-                    SizedComponent::FloatRGBA16 => (),
-                    SizedComponent::FloatRGBA32 => (),
-                    SizedComponent::IntRGBA8 => (),
-                    SizedComponent::UnsignedIntRGBA8 => (),
-                    SizedComponent::IntRGBA16 => (),
-                    SizedComponent::UnsignedIntRGBA16 => (),
-                    SizedComponent::IntRGBA32 => (),
-                    SizedComponent::UnsignedIntRGBA32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
-                }
-            },
-            Component::Depth => {
-                match self.internal_size {
-                    SizedComponent::Depth => (),
-                    SizedComponent::Depth16 => (),
-                    SizedComponent::Depth24 => (),
-                    SizedComponent::FloatDepth32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", self.internal_components, self.internal_size),
-                }
-            },
-            Component::DepthStencil => {},
-        };
-    }
 }
 
 pub struct TextureBuilder2d {
