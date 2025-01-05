@@ -1,5 +1,6 @@
 mod event;
 use crate::event::Channel;
+use crate::render_engine::RenderEngine;
 use sdl2;
 
 use std::time::{ Instant, Duration };
@@ -39,7 +40,9 @@ impl Window {
 pub struct Quantatives {
     start_time: Instant,
     loop_start_time: Instant,
-    running_frame_time: AllocRingBuffer<Duration>
+    render_start_time: Instant,
+    running_frame_time: AllocRingBuffer<Duration>,
+    running_render_time: AllocRingBuffer<Duration>
 }
 
 impl Quantatives {
@@ -47,7 +50,9 @@ impl Quantatives {
         Quantatives {
             start_time: Instant::now(),
             loop_start_time: Instant::now(),
-            running_frame_time: AllocRingBuffer::new(120)
+            render_start_time: Instant::now(),
+            running_frame_time: AllocRingBuffer::new(120),
+            running_render_time: AllocRingBuffer::new(120),
         }
     }
 
@@ -58,6 +63,15 @@ impl Quantatives {
     fn end_frame(&mut self) {
         let frame_time = self.loop_start_time.elapsed();
         self.running_frame_time.push(frame_time);
+    }
+
+    fn start_render(&mut self) {
+        self.render_start_time = Instant::now();
+    }
+
+    fn end_render(&mut self) {
+        let frame_time = self.render_start_time.elapsed();
+        self.running_render_time.push(frame_time);
     }
 
     pub fn average_frame_time(&self) -> Duration {
@@ -71,6 +85,17 @@ impl Quantatives {
         average / self.running_frame_time.len() as u32
     }
 
+    pub fn average_render_time(&self) -> Duration {
+        if self.running_render_time.is_empty() {
+            return Duration::ZERO;
+        }
+        let mut average = Duration::ZERO;
+        for duration in self.running_render_time.iter() {
+            average += *duration;
+        }
+        average / self.running_render_time.len() as u32
+    }
+
     pub fn total_runtime(&self) -> Duration {
         self.start_time.elapsed()
     }
@@ -80,6 +105,7 @@ pub struct Engine {
     sdl: sdl2::Sdl,
     window_listener: Channel<sdl2::event::Event, ()>,
     window: Window,
+    render: RenderEngine,
     pub quantatives: Quantatives,
     is_open: bool,
 }
@@ -93,6 +119,7 @@ impl Engine {
             sdl,
             window,
             window_listener,
+            render: RenderEngine::new(),
             quantatives: Quantatives::new(),
             is_open: true
         }
@@ -119,11 +146,10 @@ impl Engine {
         self.window.poll_events();
     }
 
-    pub fn render(&self) {
-        unsafe {
-            gl::ClearColor(0.30, 0.20, 0.40, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-        }
+    pub fn render(&mut self) {
+        self.quantatives.start_render();
+        self.render.render();
+        self.quantatives.end_render();
 
         self.window.window.gl_swap_window();
     }
