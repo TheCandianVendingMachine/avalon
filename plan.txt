@@ -19,9 +19,9 @@ Renderer
 [ ] Pre-bound primitives
 
 Transform struct
-[ ] position
-[ ] orientation
-[ ] euler angles
+[x] position
+[x] orientation
+[x] euler angles
 
 Voxel Grid
 [ ] up to 256 in size
