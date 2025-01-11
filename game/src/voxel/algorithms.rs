@@ -28,12 +28,10 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
 
         {
             let data = {
-                let mut data = Data::empty_u8(Component::RGBA, SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH);
+                let mut data = Data::empty_u8(Component::IntRGBA, SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH);
                 for (idx, voxel) in self.cells.iter().enumerate() {
                     if !voxel.is_empty() {
                         let position = self.index_to_vec(idx);
-                        // not working: entire value assumed to be pixel. need to fix at
-                        // data api level
                         data.set(idx + 0, position.x);
                         data.set(idx + 1, position.y);
                         data.set(idx + 2, position.z);
@@ -44,8 +42,8 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
             };
             let buffer_args = Arguments3d {
                 dimensions: vec3(SIDE_LENGTH, SIDE_LENGTH, SIDE_LENGTH).cast(),
-                internal_components: Component::RGBA,
-                internal_size: SizedComponent::RGBA8,
+                internal_components: Component::IntRGBA,
+                internal_size: SizedComponent::UnsignedIntRGBA8,
                 mipmap_type: Mipmap::None,
                 data: Some(data)
             };
@@ -56,7 +54,7 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
 
             let distance_buffer = Texture3d::generate(Arguments3d {
                 dimensions: vec3(SIDE_LENGTH, SIDE_LENGTH, SIDE_LENGTH).cast(),
-                internal_components: Component::R,
+                internal_components: Component::IntR,
                 internal_size: SizedComponent::UnsignedIntR16,
                 mipmap_type: Mipmap::None,
                 data: None

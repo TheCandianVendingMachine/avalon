@@ -1,3 +1,4 @@
+use aligned_vec::{ avec, AVec, ConstAlign };
 use crate::texture::Component;
 
 pub mod error {
@@ -9,7 +10,7 @@ pub mod error {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Data {
     pub(super) data: Pixels,
     pub(super) components: Component,
@@ -27,25 +28,43 @@ pub enum Datum {
     Float32(f32),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Pixels {
-    UnsignedByte(Vec<u8>),
-    Byte(Vec<i8>),
-    UnsignedShort(Vec<u16>),
-    Short(Vec<i16>),
-    UnsignedInt(Vec<u32>),
-    Int(Vec<i32>),
+    UnsignedByte(AVec<u8, ConstAlign<4>>),
+    Byte(AVec<i8, ConstAlign<4>>),
+    UnsignedShort(AVec<u16, ConstAlign<4>>),
+    Short(AVec<i16, ConstAlign<4>>),
+    UnsignedInt(AVec<u32, ConstAlign<4>>),
+    Int(AVec<i32, ConstAlign<4>>),
     //Float16(f16),
-    Float32(Vec<f32>),
-    RGB3_3_2(Vec<u8>),
-    RGB5_6_5(Vec<u16>),
-    RGBA4(Vec<u16>),
-    RGBA5_5_5_1(Vec<u16>),
-    RGBA8(Vec<u32>),
-    RGBA10_10_10_2(Vec<u32>),
+    Float32(AVec<f32, ConstAlign<4>>),
+    RGB3_3_2(AVec<u8, ConstAlign<4>>),
+    RGB5_6_5(AVec<u16, ConstAlign<4>>),
+    RGBA4(AVec<u16, ConstAlign<4>>),
+    RGBA5_5_5_1(AVec<u16, ConstAlign<4>>),
+    RGBA8(AVec<u32, ConstAlign<4>>),
+    RGBA10_10_10_2(AVec<u32, ConstAlign<4>>),
 }
 
 impl Pixels {
+    fn len(&self) -> usize {
+        match self {
+            Pixels::UnsignedByte(data) => data.len(),
+            Pixels::Byte(data) => data.len(),
+            Pixels::UnsignedShort(data) => data.len(),
+            Pixels::Short(data) => data.len(),
+            Pixels::UnsignedInt(data) => data.len(),
+            Pixels::Int(data) => data.len(),
+            Pixels::Float32(data) => data.len(),
+            Pixels::RGB3_3_2(data) => data.len(),
+            Pixels::RGB5_6_5(data) => data.len(),
+            Pixels::RGBA4(data) => data.len(),
+            Pixels::RGBA5_5_5_1(data) => data.len(),
+            Pixels::RGBA8(data) => data.len(),
+            Pixels::RGBA10_10_10_2(data) => data.len(),
+        }
+    }
+
     fn set(&mut self, idx: usize, datum: Datum) {
         match self {
             Pixels::UnsignedByte(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
@@ -84,38 +103,38 @@ impl Pixels {
 
     pub(super) fn from_api(api: gl::types::GLenum, size: usize) -> Pixels {
         match api {
-            gl::UNSIGNED_BYTE => Pixels::UnsignedByte(vec![0; size]),
-            gl::BYTE => Pixels::Byte(vec![0; size]),
-            gl::UNSIGNED_SHORT => Pixels::UnsignedShort(vec![0; size]),
-            gl::SHORT => Pixels::Short(vec![0; size]),
-            gl::UNSIGNED_INT => Pixels::UnsignedInt(vec![0; size]),
-            gl::INT => Pixels::Int(vec![0; size]),
-            gl::FLOAT => Pixels::Float32(vec![0.0; size]),
-            gl::UNSIGNED_BYTE_3_3_2 => Pixels::RGB3_3_2(vec![0; size]),
-            gl::UNSIGNED_SHORT_5_6_5 => Pixels::RGB5_6_5(vec![0; size]),
-            gl::UNSIGNED_SHORT_4_4_4_4 => Pixels::RGBA4(vec![0; size]),
-            gl::UNSIGNED_SHORT_5_5_5_1 => Pixels::RGBA5_5_5_1(vec![0; size]),
-            gl::UNSIGNED_INT_8_8_8_8 => Pixels::RGBA8(vec![0; size]),
-            gl::UNSIGNED_INT_10_10_10_2 => Pixels::RGBA10_10_10_2(vec![0; size]),
+            gl::UNSIGNED_BYTE => Pixels::UnsignedByte(avec![[4] | 0; size]),
+            gl::BYTE => Pixels::Byte(avec![[4] | 0; size]),
+            gl::UNSIGNED_SHORT => Pixels::UnsignedShort(avec![[4] | 0; size]),
+            gl::SHORT => Pixels::Short(avec![[4] | 0; size]),
+            gl::UNSIGNED_INT => Pixels::UnsignedInt(avec![[4] | 0; size]),
+            gl::INT => Pixels::Int(avec![[4] | 0; size]),
+            gl::FLOAT => Pixels::Float32(avec![[4] | 0.0; size]),
+            gl::UNSIGNED_BYTE_3_3_2 => Pixels::RGB3_3_2(avec![[4] | 0; size]),
+            gl::UNSIGNED_SHORT_5_6_5 => Pixels::RGB5_6_5(avec![[4] | 0; size]),
+            gl::UNSIGNED_SHORT_4_4_4_4 => Pixels::RGBA4(avec![[4] | 0; size]),
+            gl::UNSIGNED_SHORT_5_5_5_1 => Pixels::RGBA5_5_5_1(avec![[4] | 0; size]),
+            gl::UNSIGNED_INT_8_8_8_8 => Pixels::RGBA8(avec![[4] | 0; size]),
+            gl::UNSIGNED_INT_10_10_10_2 => Pixels::RGBA10_10_10_2(avec![[4] | 0; size]),
             _ => panic!("Invalid API parameter passed")
         }
     }
 
     pub(super) fn as_ptr(&self) -> *const std::ffi::c_void {
         match self {
-            Pixels::UnsignedByte(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::Byte(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::UnsignedShort(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::Short(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::UnsignedInt(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::Int(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::Float32(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::RGB3_3_2(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::RGB5_6_5(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA4(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA5_5_5_1(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA8(data) => data.as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA10_10_10_2(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::UnsignedByte(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::Byte(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::UnsignedShort(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::Short(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::UnsignedInt(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::Int(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::Float32(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::RGB3_3_2(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::RGB5_6_5(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA4(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA5_5_5_1(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA8(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA10_10_10_2(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
         }
     }
 
@@ -139,52 +158,56 @@ impl Pixels {
 }
 
 impl Data {
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
     pub fn empty_u8(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::UnsignedByte(vec![0; size * components.component_count()])
+            data: Pixels::UnsignedByte(avec![[4] | 0; size * components.component_count()])
         }
     }
 
     pub fn empty_u16(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::UnsignedShort(vec![0; size * components.component_count()])
+            data: Pixels::UnsignedShort(avec![[4] | 0; size * components.component_count()])
         }
     }
 
     pub fn empty_u32(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::UnsignedInt(vec![0; size * components.component_count()])
+            data: Pixels::UnsignedInt(avec![[4] | 0; size * components.component_count()])
         }
     }
 
     pub fn empty_i8(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::Byte(vec![0; size * components.component_count()])
+            data: Pixels::Byte(avec![[4] | 0; size * components.component_count()])
         }
     }
 
     pub fn empty_i16(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::Short(vec![0; size * components.component_count()])
+            data: Pixels::Short(avec![[4] | 0; size * components.component_count()])
         }
     }
 
     pub fn empty_i32(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::Int(vec![0; size * components.component_count()])
+            data: Pixels::Int(avec![[4] | 0; size * components.component_count()])
         }
     }
 
     pub fn empty_f32(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::Float32(vec![0.0; size * components.component_count()])
+            data: Pixels::Float32(avec![[4] | 0.0; size * components.component_count()])
         }
     }
 

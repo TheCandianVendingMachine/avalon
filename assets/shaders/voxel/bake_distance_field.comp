@@ -1,8 +1,8 @@
 #version 430
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-layout(location=0) restrict writeonly uniform image3D newParentBuffer;
-layout(location=1,rgba8) restrict readonly uniform image3D oldParentBuffer;
+layout(location=0) restrict writeonly uniform uimage3D newParentBuffer;
+layout(location=1,rgba8ui) restrict readonly uniform uimage3D oldParentBuffer;
 layout(location=2,r16ui) restrict uniform uimage3D distanceBuffer;
 layout(location=3) uniform int jump;
 
@@ -45,7 +45,7 @@ void main() {
     ivec3 pCoord = ivec3(gl_GlobalInvocationID);
 
     int bestDistance = int(imageLoad(distanceBuffer, pCoord).r);
-    ivec4 bestParent = ivec4(imageLoad(oldParentBuffer, pCoord) * 256.0);
+    uvec4 bestParent = imageLoad(oldParentBuffer, pCoord);
     bool pInitialised = 0 != bestParent.a;
 
     for (int idx = 0; idx < OFFSETS.length(); idx++) {
@@ -53,7 +53,7 @@ void main() {
         if (any(lessThan(qCoord, ivec3(0)))) { continue; }
         if (any(greaterThanEqual(qCoord, maximumSize))) { continue; }
 
-        ivec4 qParent = ivec4(imageLoad(oldParentBuffer, qCoord) * 256.0);
+        uvec4 qParent = imageLoad(oldParentBuffer, qCoord);
         if (qParent.a != 0) {
             vec3 p0 = vec3(pCoord);
             vec3 p1 = vec3(qParent.xyz);
@@ -67,6 +67,6 @@ void main() {
         }
     }
 
-    imageStore(newParentBuffer, pCoord, vec4(bestParent / 256.0));
+    imageStore(newParentBuffer, pCoord, bestParent);
     imageStore(distanceBuffer, pCoord, uvec4(bestDistance));
 }

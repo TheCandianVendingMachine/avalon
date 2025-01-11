@@ -94,7 +94,11 @@ impl Texture3d {
                 data.data.as_ptr()
             )
         } else {
-            (gl::RED, gl::UNSIGNED_BYTE, std::ptr::null())
+            (
+                arguments.internal_components.as_api(),
+                arguments.internal_size.map_to_cpu_types(),
+                std::ptr::null()
+            )
         };
 
         unsafe {

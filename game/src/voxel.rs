@@ -14,6 +14,13 @@ bitfield!{
     pub cell_id, set_cell_id: 16, 7; // only usable if `is_empty == 0`
 }
 
+impl Copy for Cell {}
+impl Clone for Cell {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
 impl Cell {
     const EMPTY: Cell = Cell(
         0b000_0000_0000_0000_0000000000_0_1_00000
@@ -27,7 +34,7 @@ impl Cell {
 pub struct Grid<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:,
     {
-    cells: [Cell; SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH],
+    cells: Vec<Cell>,
     dirty: bool,
     gpu_grid: Option<GpuTexture3d>
 }
@@ -36,7 +43,7 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
     pub fn new() -> Grid<SIDE_LENGTH, VOXELS_PER_METER> {
         Grid {
-            cells: [Cell::EMPTY; SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH],
+            cells: vec![Cell::EMPTY; SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH],
             dirty: false,
             gpu_grid: None
         }
@@ -72,7 +79,8 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
 
         // assume if we get a mutable reference that we will be dirty
         self.dirty = true;
-        &mut self.cells[self.vec_to_index(position)]
+        let idx = self.vec_to_index(position);
+        &mut self.cells[idx]
     }
 }
 
