@@ -1,8 +1,18 @@
+#![feature(generic_const_exprs)]
+#![allow(incomplete_features, unused)]
+
+use nalgebra_glm::vec3;
+
+pub mod voxel;
+
 use avalon;
-use nalgebra_glm::vec2;
 
 fn main() {
     let mut engine = avalon::engine();
+
+    let mut grid: voxel::Grid<32, 1> = voxel::Grid::new();
+    grid.cell_mut(vec3(0, 0, 0)).set_empty(0);
+    grid.calculate_distance_field();
 
     while engine.is_open() {
         engine.start_frame();

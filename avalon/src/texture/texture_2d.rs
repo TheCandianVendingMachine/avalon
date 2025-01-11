@@ -111,7 +111,7 @@ impl Texture2dBuilder {
                 Some(cpu::Texture2d::generate(self.dimensions, data))
             } else {
                 let count = self.dimensions.x * self.dimensions.y;
-                Some(cpu::Texture2d::generate(self.dimensions, Data::empty(self.components, count as usize)))
+                Some(cpu::Texture2d::generate(self.dimensions, Data::empty_u8(self.components, count as usize)))
             }
         } else {
             None

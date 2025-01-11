@@ -1,6 +1,6 @@
 use nalgebra_glm::IVec3;
 use crate::texture::{ texture_3d, data, data::Data, Component };
-use crate::texture::gpu::{ Sampler, Image, ImageAttachment, TextureAttachment, TextureDimension, Access, Mipmap, SizedComponent };
+use crate::texture::gpu::{ UniqueTexture, Sampler, Image, ImageAttachment, TextureAttachment, TextureDimension, Access, Mipmap, SizedComponent };
 
 pub struct TextureBind3d<'t> {
     texture: &'t mut Texture3d
@@ -129,6 +129,12 @@ impl Texture3d {
         TextureBind3d {
             texture: self
         }
+    }
+}
+
+impl UniqueTexture for Texture3d {
+    fn handle(&self) -> u32 {
+        self.handle
     }
 }
 

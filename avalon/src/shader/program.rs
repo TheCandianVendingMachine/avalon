@@ -1,4 +1,5 @@
 use gl;
+use std::collections::HashMap;
 
 use crate::shader::{
     Vertex as VertexShader,
@@ -18,8 +19,8 @@ pub struct Program {
 
 pub struct AttachedProgram<'program> {
     program: &'program Program,
-    texture_attachments: Vec<TextureAttachment<'program>>,
-    image_attachments: Vec<ImageAttachment<'program>>
+    texture_attachments: HashMap<gl::types::GLuint, TextureAttachment<'program>>,
+    image_attachments: HashMap<(gl::types::GLuint, Access), ImageAttachment<'program>>
 }
 
 impl Program {
@@ -35,8 +36,8 @@ impl Program {
         }
         AttachedProgram {
             program: self,
-            texture_attachments: Vec::new(),
-            image_attachments: Vec::new()
+            texture_attachments: HashMap::new(),
+            image_attachments: HashMap::new()
         }
     }
 
@@ -126,30 +127,50 @@ impl AttachedProgram<'_> {
             location: location as i32
         })
     }
+
+    pub fn dispatch_compute(&self, groups_x: u32, groups_y: u32, groups_z: u32) {
+        unsafe {
+            gl::DispatchCompute(groups_x, groups_y, groups_z);
+        }
+    }
 }
 
 impl<'p, 't: 'p> AttachedProgram<'p> {
     pub fn sampler(&mut self, name: impl Into<String>, texture: &'t impl Sampler) -> Result<(), error::Program> {
-        self.texture_attachments.push(texture.sampler(self.texture_attachments.len() as u32));
-        self.uniform(name)?.set_texture(self.texture_attachments.last().unwrap());
+        if !self.texture_attachments.contains_key(&texture.handle()) {
+            self.texture_attachments.insert(texture.handle(), texture.sampler(self.texture_attachments.len() as u32));
+        }
+        let attachment = self.texture_attachments.get(&texture.handle()).unwrap();
+        self.uniform(name)?.set_texture(attachment);
         Ok(())
     }
 
     pub fn sampler_with_location(&mut self, location: u32, texture: &'t impl Sampler) -> Result<(), error::Program> {
-        self.texture_attachments.push(texture.sampler(self.texture_attachments.len() as u32));
-        self.location(location)?.set_texture(self.texture_attachments.last().unwrap());
+        if !self.texture_attachments.contains_key(&texture.handle()) {
+            self.texture_attachments.insert(texture.handle(), texture.sampler(self.texture_attachments.len() as u32));
+        }
+        let attachment = self.texture_attachments.get(&texture.handle()).unwrap();
+        self.location(location)?.set_texture(attachment);
         Ok(())
     }
 
     pub fn image(&mut self, name: impl Into<String>, texture: &'t impl Image, access: Access) -> Result<(), error::Program> {
-        self.image_attachments.push(texture.image(self.image_attachments.len() as u32, access));
-        self.uniform(name)?.set_image(self.image_attachments.last().unwrap());
+        let key = (texture.handle(), access);
+        if !self.image_attachments.contains_key(&key) {
+            self.image_attachments.insert(key, texture.image(self.image_attachments.len() as u32, access));
+        }
+        let attachment = self.image_attachments.get(&key).unwrap();
+        self.uniform(name)?.set_image(attachment);
         Ok(())
     }
 
     pub fn image_with_location(&mut self, location: u32, texture: &'t impl Image, access: Access) -> Result<(), error::Program> {
-        self.image_attachments.push(texture.image(self.image_attachments.len() as u32, access));
-        self.location(location)?.set_image(self.image_attachments.last().unwrap());
+        let key = (texture.handle(), access);
+        if !self.image_attachments.contains_key(&key) {
+            self.image_attachments.insert(key, texture.image(self.image_attachments.len() as u32, access));
+        }
+        let attachment = self.image_attachments.get(&key).unwrap();
+        self.location(location)?.set_image(attachment);
         Ok(())
     }
 }

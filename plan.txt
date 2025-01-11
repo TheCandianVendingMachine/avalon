@@ -52,4 +52,4 @@ Input
 [ ] Input Contexts
 [ ] Input Layers
 [ ] Input blocking
-[ ] Setting input priority
+[ ] Setting context priority (2 levels: Regular, Important)

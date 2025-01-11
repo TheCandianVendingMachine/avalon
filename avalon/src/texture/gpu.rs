@@ -2,11 +2,15 @@ use crate::shader;
 use crate::texture::Component;
 use std::marker::PhantomData;
 
-pub trait Image {
+pub trait UniqueTexture {
+    fn handle(&self) -> u32;
+}
+
+pub trait Image: UniqueTexture {
     fn image<'t>(&'t self, idx: gl::types::GLuint, access: Access) -> ImageAttachment<'t>;
 }
 
-pub trait Sampler {
+pub trait Sampler: UniqueTexture {
     fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t>;
 }
 
@@ -90,6 +94,7 @@ pub use texture_3d::{
     Arguments as Arguments3d,
 };
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, std::hash::Hash)]
 pub enum Access {
     Read,
     Write,

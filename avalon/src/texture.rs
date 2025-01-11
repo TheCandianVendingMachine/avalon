@@ -41,6 +41,21 @@ impl Component {
             Component::DepthStencil => gl::DEPTH_STENCIL,
         }
     }
+
+    pub fn component_count(&self) -> usize {
+        match self {
+            Component::R => 1,
+            Component::RG => 2,
+            Component::RGB => 3,
+            Component::RGBA => 4,
+            Component::IntR => 1,
+            Component::IntRG => 2,
+            Component::IntRGB => 3,
+            Component::IntRGBA => 4,
+            Component::Depth => 1,
+            Component::DepthStencil => 2,
+        }
+    }
 }
 
 impl From<gpu::SizedComponent> for Component {

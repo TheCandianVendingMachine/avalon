@@ -1,9 +1,30 @@
 use crate::texture::Component;
 
+pub mod error {
+    use thiserror::Error;
+    #[derive(Debug, Error)]
+    pub enum DatumError {
+        #[error("Datum type and desired component have a mismatch")]
+        ComponentTypeMismatch
+    }
+}
+
 #[derive(Clone)]
 pub struct Data {
     pub(super) data: Pixels,
     pub(super) components: Component,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Datum {
+    UnsignedByte(u8),
+    Byte(i8),
+    UnsignedShort(u16),
+    Short(i16),
+    UnsignedInt(u32),
+    Int(i32),
+    //Float16(f16),
+    Float32(f32),
 }
 
 #[derive(Clone)]
@@ -25,6 +46,24 @@ pub enum Pixels {
 }
 
 impl Pixels {
+    fn set(&mut self, idx: usize, datum: Datum) {
+        match self {
+            Pixels::UnsignedByte(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::Byte(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::UnsignedShort(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::Short(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::UnsignedInt(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::Int(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::Float32(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::RGB3_3_2(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::RGB5_6_5(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::RGBA4(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::RGBA5_5_5_1(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::RGBA8(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+            Pixels::RGBA10_10_10_2(data) => data[idx] = datum.try_into().expect("datum needs to be same type as component"),
+        }
+    }
+
     pub(super) fn as_api(&self) -> gl::types::GLenum {
         match self {
             Pixels::UnsignedByte(..) => gl::UNSIGNED_BYTE,
@@ -100,10 +139,175 @@ impl Pixels {
 }
 
 impl Data {
-    pub fn empty(components: Component, size: usize) -> Data {
+    pub fn empty_u8(components: Component, size: usize) -> Data {
         Data {
             components,
-            data: Pixels::UnsignedByte(vec![0; size])
+            data: Pixels::UnsignedByte(vec![0; size * components.component_count()])
+        }
+    }
+
+    pub fn empty_u16(components: Component, size: usize) -> Data {
+        Data {
+            components,
+            data: Pixels::UnsignedShort(vec![0; size * components.component_count()])
+        }
+    }
+
+    pub fn empty_u32(components: Component, size: usize) -> Data {
+        Data {
+            components,
+            data: Pixels::UnsignedInt(vec![0; size * components.component_count()])
+        }
+    }
+
+    pub fn empty_i8(components: Component, size: usize) -> Data {
+        Data {
+            components,
+            data: Pixels::Byte(vec![0; size * components.component_count()])
+        }
+    }
+
+    pub fn empty_i16(components: Component, size: usize) -> Data {
+        Data {
+            components,
+            data: Pixels::Short(vec![0; size * components.component_count()])
+        }
+    }
+
+    pub fn empty_i32(components: Component, size: usize) -> Data {
+        Data {
+            components,
+            data: Pixels::Int(vec![0; size * components.component_count()])
+        }
+    }
+
+    pub fn empty_f32(components: Component, size: usize) -> Data {
+        Data {
+            components,
+            data: Pixels::Float32(vec![0.0; size * components.component_count()])
+        }
+    }
+
+    pub fn set(&mut self, idx: usize, component: impl Into<Datum>) {
+        self.data.set(idx, component.into());
+    }
+}
+
+impl From<u8> for Datum {
+    fn from(data: u8) -> Datum {
+        Datum::UnsignedByte(data)
+    }
+}
+
+impl From<u16> for Datum {
+    fn from(data: u16) -> Datum {
+        Datum::UnsignedShort(data)
+    }
+}
+
+impl From<u32> for Datum {
+    fn from(data: u32) -> Datum {
+        Datum::UnsignedInt(data)
+    }
+}
+
+impl From<i8> for Datum {
+    fn from(data: i8) -> Datum {
+        Datum::Byte(data)
+    }
+}
+
+impl From<i16> for Datum {
+    fn from(data: i16) -> Datum {
+        Datum::Short(data)
+    }
+}
+
+impl From<i32> for Datum {
+    fn from(data: i32) -> Datum {
+        Datum::Int(data)
+    }
+}
+
+impl From<f32> for Datum {
+    fn from(data: f32) -> Datum {
+        Datum::Float32(data)
+    }
+}
+
+impl TryFrom<Datum> for u8 {
+    type Error = error::DatumError;
+    fn try_from(data: Datum) -> Result<Self, Self::Error> {
+        if let Datum::UnsignedByte(d) = data {
+            Ok(d)
+        } else {
+            Err(error::DatumError::ComponentTypeMismatch)
+        }
+    }
+}
+
+impl TryFrom<Datum> for u16 {
+    type Error = error::DatumError;
+    fn try_from(data: Datum) -> Result<Self, Self::Error> {
+        if let Datum::UnsignedShort(d) = data {
+            Ok(d)
+        } else {
+            Err(error::DatumError::ComponentTypeMismatch)
+        }
+    }
+}
+
+impl TryFrom<Datum> for u32 {
+    type Error = error::DatumError;
+    fn try_from(data: Datum) -> Result<Self, Self::Error> {
+        if let Datum::UnsignedInt(d) = data {
+            Ok(d)
+        } else {
+            Err(error::DatumError::ComponentTypeMismatch)
+        }
+    }
+}
+
+impl TryFrom<Datum> for i8 {
+    type Error = error::DatumError;
+    fn try_from(data: Datum) -> Result<Self, Self::Error> {
+        if let Datum::Byte(d) = data {
+            Ok(d)
+        } else {
+            Err(error::DatumError::ComponentTypeMismatch)
+        }
+    }
+}
+
+impl TryFrom<Datum> for i16 {
+    type Error = error::DatumError;
+    fn try_from(data: Datum) -> Result<Self, Self::Error> {
+        if let Datum::Short(d) = data {
+            Ok(d)
+        } else {
+            Err(error::DatumError::ComponentTypeMismatch)
+        }
+    }
+}
+
+impl TryFrom<Datum> for i32 {
+    type Error = error::DatumError;
+    fn try_from(data: Datum) -> Result<Self, Self::Error> {
+        if let Datum::Int(d) = data {
+            Ok(d)
+        } else {
+            Err(error::DatumError::ComponentTypeMismatch)
+        }
+    }
+}
+
+impl TryFrom<Datum> for f32 {
+    type Error = error::DatumError;
+    fn try_from(data: Datum) -> Result<Self, Self::Error> {
+        if let Datum::Float32(d) = data {
+            Ok(d)
+        } else {
+            Err(error::DatumError::ComponentTypeMismatch)
         }
     }
 }
