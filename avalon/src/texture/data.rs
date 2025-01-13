@@ -122,19 +122,19 @@ impl Pixels {
 
     pub(super) fn as_ptr(&self) -> *const std::ffi::c_void {
         match self {
-            Pixels::UnsignedByte(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::Byte(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::UnsignedShort(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::Short(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::UnsignedInt(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::Int(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::Float32(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::RGB3_3_2(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::RGB5_6_5(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA4(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA5_5_5_1(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA8(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
-            Pixels::RGBA10_10_10_2(data) => data.as_slice().as_ptr() as *const std::ffi::c_void,
+            Pixels::UnsignedByte(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::Byte(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::UnsignedShort(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::Short(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::UnsignedInt(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::Int(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::Float32(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::RGB3_3_2(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::RGB5_6_5(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA4(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA5_5_5_1(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA8(data) => data.as_ptr() as *const std::ffi::c_void,
+            Pixels::RGBA10_10_10_2(data) => data.as_ptr() as *const std::ffi::c_void,
         }
     }
 

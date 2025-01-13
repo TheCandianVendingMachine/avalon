@@ -10,7 +10,7 @@ use avalon;
 fn main() {
     let mut engine = avalon::engine();
 
-    let mut grid: voxel::Grid<4, 1> = voxel::Grid::new();
+    let mut grid: voxel::Grid<8, 1> = voxel::Grid::new();
     grid.cell_mut(vec3(0, 0, 0)).set_empty(0);
     grid.calculate_distance_field();
 

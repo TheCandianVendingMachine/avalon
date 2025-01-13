@@ -1,9 +1,14 @@
+use gl;
+
 use crate::shader;
 use crate::texture::Component;
 use std::marker::PhantomData;
 
-pub trait UniqueTexture {
+pub trait UniqueTexture where Self: Sized {
     fn handle(&self) -> u32;
+    fn as_managed(self) -> ManagedTexture<Self> where Self: Sized {
+        Into::<ManagedTexture<Self>>::into(self)
+    }
 }
 
 pub trait Image: UniqueTexture {
@@ -12,6 +17,60 @@ pub trait Image: UniqueTexture {
 
 pub trait Sampler: UniqueTexture {
     fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t>;
+}
+
+pub struct ManagedTexture<T: UniqueTexture>(T);
+impl<T: UniqueTexture> Drop for ManagedTexture<T> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteTextures(1, &self.0.handle());
+        }
+    }
+}
+
+impl<T: UniqueTexture> UniqueTexture for ManagedTexture<T> {
+    fn handle(&self) -> u32 {
+        self.0.handle()
+    }
+}
+
+impl<T: Image> Image for ManagedTexture<T> {
+    fn image<'t>(&'t self, idx: gl::types::GLuint, access: Access) -> ImageAttachment<'t> {
+        self.0.image(idx, access)
+    }
+}
+
+impl<T: Sampler> Sampler for ManagedTexture<T> {
+    fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t> {
+        self.0.sampler(unit)
+    }
+}
+
+impl<T: UniqueTexture + std::fmt::Debug> std::fmt::Debug for ManagedTexture<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("ManagedTexture")
+            .field("", &self.0)
+            .finish()
+    }
+}
+
+impl<T: UniqueTexture> From<T> for ManagedTexture<T> {
+    fn from(texture: T) -> ManagedTexture<T> {
+        ManagedTexture(texture)
+    }
+}
+
+impl<T: UniqueTexture> std::ops::Deref for ManagedTexture<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: UniqueTexture> std::ops::DerefMut for ManagedTexture<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

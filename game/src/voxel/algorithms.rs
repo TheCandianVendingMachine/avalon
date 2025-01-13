@@ -1,6 +1,6 @@
 use avalon::shader::{ self, Source };
 use avalon::texture::{ Component, data::Data };
-use avalon::texture::gpu::{ Access, SizedComponent, Arguments3d, Texture3d, Mipmap };
+use avalon::texture::gpu::{ UniqueTexture, Access, SizedComponent, Arguments3d, Texture3d, Mipmap };
 use crate::voxel::Grid;
 use nalgebra_glm::vec3;
 
@@ -26,7 +26,7 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
             .build()
             .unwrap();
 
-        {
+        let distance_buffer = {
             let data = {
                 let mut data = Data::empty_u8(Component::IntRGBA, SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH);
                 for (idx, voxel) in self.cells.iter().enumerate() {
@@ -40,46 +40,50 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
                 }
                 data
             };
-            let buffer_args = Arguments3d {
+            let temp_parent_buffers = Texture3d::generate_many::<2>(Arguments3d {
                 dimensions: vec3(SIDE_LENGTH, SIDE_LENGTH, SIDE_LENGTH).cast(),
                 internal_components: Component::IntRGBA,
                 internal_size: SizedComponent::UnsignedIntRGBA8,
                 mipmap_type: Mipmap::None,
                 data: Some(data)
-            };
-            let temp_parent_buffers = [
-                Texture3d::generate(buffer_args.clone()),
-                Texture3d::generate(buffer_args),
-            ];
+            }).map(|t| t.as_managed());
 
-            let distance_buffer = Texture3d::generate(Arguments3d {
+            let mut distance_buffer = Texture3d::generate(Arguments3d {
                 dimensions: vec3(SIDE_LENGTH, SIDE_LENGTH, SIDE_LENGTH).cast(),
                 internal_components: Component::IntR,
                 internal_size: SizedComponent::UnsignedIntR16,
                 mipmap_type: Mipmap::None,
                 data: None
-            });
+            }).as_managed();
 
-            let mut bind = oven.activate();
-            bind.image("distanceBuffer", &distance_buffer, Access::ReadWrite);
+            {
+                let mut bind = oven.activate();
+                bind.image("distanceBuffer", &distance_buffer, Access::ReadWrite);
 
-            let dispatch_n = ((SIDE_LENGTH as f64) / 8.0).ceil() as u32;
+                let dispatch_n = ((SIDE_LENGTH as f64) / 8.0).ceil() as u32;
 
-            let step_count = (SIDE_LENGTH as f64).log2().ceil() as usize;
-            for jump in 0..=(step_count + 1) {
-                let new_idx = jump % 2;
-                let old_idx = (jump + 1) % 2;
+                let step_count = (SIDE_LENGTH as f64).log2().ceil() as usize;
+                for jump in 0..=(step_count + 1) {
+                    let new_idx = jump % 2;
+                    let old_idx = (jump + 1) % 2;
 
-                // the first iteration should initialise all cells; we get less artifacts
-                if jump == 0 {
-                    bind.uniform("jump").unwrap().set_i32(1);
-                } else {
-                    bind.uniform("jump").unwrap().set_i32(2_i32.pow(((step_count + 1) - jump) as u32));
+                    // the first iteration should initialise all cells; we get less artifacts
+                    if jump == 0 {
+                        bind.uniform("jump").unwrap().set_i32(1);
+                    } else {
+                        bind.uniform("jump").unwrap().set_i32(2_i32.pow(((step_count + 1) - jump) as u32));
+                    }
+                    bind.image("newParentBuffer", &temp_parent_buffers[new_idx], Access::Write).unwrap();
+                    bind.image("oldParentBuffer", &temp_parent_buffers[old_idx], Access::Read).unwrap();
+                    bind.dispatch_compute(dispatch_n, dispatch_n, dispatch_n);
                 }
-                bind.image("newParentBuffer", &temp_parent_buffers[new_idx], Access::Write);
-                bind.image("oldParentBuffer", &temp_parent_buffers[old_idx], Access::Read);
-                bind.dispatch_compute(dispatch_n, dispatch_n, dispatch_n);
+
             }
-        }
+
+            let buffer = distance_buffer.bind().fetch_pixels(0);
+            buffer
+        };
+
+        dbg!(distance_buffer.len());
     }
 }

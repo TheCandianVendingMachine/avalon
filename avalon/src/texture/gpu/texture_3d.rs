@@ -9,13 +9,16 @@ pub struct TextureBind3d<'t> {
 impl TextureBind3d<'_> {
     pub fn fetch_pixels(&self, mip_level: u32) -> Data {
         let pixels = unsafe {
-            let mut pixels = data::Pixels::from_api(self.texture.internal_size.map_to_cpu_types(), self.texture.internal_size.component_count());
-            gl::GetTextureImage(
-                self.texture.handle,
+            let volume = self.texture.dimensions.x * self.texture.dimensions.y * self.texture.dimensions.z;
+            let count = self.texture.internal_size.component_count() * volume as usize;
+            let mut pixels = data::Pixels::from_api(self.texture.internal_size.map_to_cpu_types(), count);
+
+            gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            gl::GetTexImage(
+                gl::TEXTURE_3D,
                 mip_level as i32,
                 self.texture.internal_components.as_api(),
                 self.texture.internal_size.map_to_cpu_types(),
-                self.texture.internal_size.component_count() as i32,
                 pixels.as_mut()
             );
             pixels
@@ -28,6 +31,7 @@ impl TextureBind3d<'_> {
 
     pub fn write_pixels(&self, mip_level: u32, data: Data) {
         unsafe {
+            gl::MemoryBarrier(gl::TEXTURE_UPDATE_BARRIER_BIT);
             gl::TexImage3D(
                 gl::TEXTURE_3D,
                 mip_level as i32,
@@ -70,7 +74,7 @@ impl Drop for TextureBind3d<'_> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Texture3d {
     handle: gl::types::GLuint,
     internal_components: Component,
@@ -80,14 +84,18 @@ pub struct Texture3d {
 
 impl Texture3d {
     pub fn generate(arguments: Arguments) -> Texture3d {
+        Texture3d::generate_many::<1>(arguments)[0]
+    }
+
+    pub fn generate_many<const COUNT: usize>(arguments: Arguments) -> [Texture3d; COUNT] {
         arguments.internal_size.verify(arguments.internal_components);
-        let handle = unsafe {
-            let mut texture = 0;
-            gl::GenTextures(1, &mut texture);
-            texture
+        let handles = unsafe {
+            let mut textures = [0; COUNT];
+            gl::GenTextures(COUNT as i32, textures.as_mut_ptr());
+            textures
         };
 
-        let (data_format, data_type, data) = if let Some(data) = arguments.data {
+        let (data_format, data_type, data) = if let Some(data) = arguments.data.as_ref() {
             (
                 data.components.as_api(),
                 data.data.as_api(),
@@ -101,29 +109,33 @@ impl Texture3d {
             )
         };
 
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_3D, handle);
-            gl::TexImage3D(
-                gl::TEXTURE_3D,
-                0,
-                arguments.internal_size.as_api(),
-                arguments.dimensions.x,
-                arguments.dimensions.y,
-                arguments.dimensions.z,
-                0,
-                data_format,
-                data_type,
-                data
-            );
-            gl::BindTexture(gl::TEXTURE_3D, 0);
+        for handle in handles.iter() {
+            unsafe {
+                gl::BindTexture(gl::TEXTURE_3D, *handle);
+                gl::TexImage3D(
+                    gl::TEXTURE_3D,
+                    0,
+                    arguments.internal_size.as_api(),
+                    arguments.dimensions.x,
+                    arguments.dimensions.y,
+                    arguments.dimensions.z,
+                    0,
+                    data_format,
+                    data_type,
+                    data
+                );
+                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                gl::BindTexture(gl::TEXTURE_3D, 0);
+            }
         }
 
-        Texture3d {
-            handle,
+        core::array::from_fn(|idx| Texture3d {
+            handle: handles[idx],
             internal_components: arguments.internal_components,
             internal_size: arguments.internal_size,
             dimensions: arguments.dimensions
-        }
+        })
     }
 
     pub fn bind(&mut self) -> TextureBind3d {
@@ -163,7 +175,7 @@ impl Image for Texture3d {
                 idx,
                 self.handle,
                 0,
-                gl::FALSE,
+                gl::TRUE,
                 0,
                 match access {
                     Access::Read => gl::READ_ONLY,
@@ -177,15 +189,6 @@ impl Image for Texture3d {
             _lifetime: &std::marker::PhantomData,
             dimension: TextureDimension::Dimension3d,
             unit: idx
-        }
-    }
-}
-
-
-impl Drop for Texture3d {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteTextures(1, &self.handle);
         }
     }
 }

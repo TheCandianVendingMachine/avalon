@@ -9,13 +9,16 @@ pub struct TextureBind2d<'t> {
 impl TextureBind2d<'_> {
     pub fn fetch_pixels(&self, mip_level: u32) -> Data {
         let pixels = unsafe {
-            let mut pixels = data::Pixels::from_api(self.texture.internal_size.map_to_cpu_types(), self.texture.internal_size.component_count());
-            gl::GetTextureImage(
-                self.texture.handle,
+            let area = self.texture.dimensions.x * self.texture.dimensions.y;
+            let count = self.texture.internal_size.component_count() * area as usize;
+            let mut pixels = data::Pixels::from_api(self.texture.internal_size.map_to_cpu_types(), count);
+
+            gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            gl::GetTexImage(
+                gl::TEXTURE_3D,
                 mip_level as i32,
                 self.texture.internal_components.as_api(),
                 self.texture.internal_size.map_to_cpu_types(),
-                self.texture.internal_size.component_count() as i32,
                 pixels.as_mut()
             );
             pixels
@@ -68,7 +71,7 @@ impl Drop for TextureBind2d<'_> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Texture2d {
     handle: gl::types::GLuint,
     internal_components: Component,
@@ -92,49 +95,57 @@ impl Texture2d {
     }
 
     pub fn generate(arguments: Arguments) -> Texture2d {
+        Texture2d::generate_many::<1>(arguments)[0]
+    }
+
+    pub fn generate_many<const COUNT: usize>(arguments: Arguments) -> [Texture2d; COUNT] {
         arguments.internal_size.verify(arguments.internal_components);
-        let handle = unsafe {
-            let mut texture = 0;
-            gl::GenTextures(1, &mut texture);
-            texture
+        let handles = unsafe {
+            let mut textures = [0; COUNT];
+            gl::GenTextures(COUNT as i32, textures.as_mut_ptr());
+            textures
         };
 
-        let (data_format, data_type, data) = if let Some(data) = arguments.data {
+        let (data_format, data_type, data) = if let Some(data) = arguments.data.as_ref() {
             (
-                data.components,
+                data.components.as_api(),
                 data.data.as_api(),
                 data.data.as_ptr()
             )
         } else {
-            (arguments.internal_components, gl::FLOAT, std::ptr::null())
+            (
+                arguments.internal_components.as_api(),
+                arguments.internal_size.map_to_cpu_types(),
+                std::ptr::null()
+            )
         };
 
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, handle);
-            gl::TexImage2D(
-                gl::TEXTURE_2D,
-                0,
-                arguments.internal_size.as_api(),
-                arguments.dimensions.x,
-                arguments.dimensions.y,
-                0,
-                data_format.as_api(),
-                data_type,
-                data
-            );
-            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
-            gl::TextureParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
-            gl::BindTexture(gl::TEXTURE_2D, 0);
+        for handle in handles.iter() {
+            unsafe {
+                gl::BindTexture(gl::TEXTURE_2D, *handle);
+                gl::TexImage2D(
+                    gl::TEXTURE_2D,
+                    0,
+                    arguments.internal_size.as_api(),
+                    arguments.dimensions.x,
+                    arguments.dimensions.y,
+                    0,
+                    data_format,
+                    data_type,
+                    data
+                );
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                gl::BindTexture(gl::TEXTURE_2D, 0);
+            }
         }
 
-        Texture2d {
-            handle,
+        core::array::from_fn(|idx| Texture2d {
+            handle: handles[idx],
             internal_components: arguments.internal_components,
             internal_size: arguments.internal_size,
             dimensions: arguments.dimensions
-        }
+        })
     }
 
     pub fn bind(&mut self) -> TextureBind2d {
@@ -188,14 +199,6 @@ impl Image for Texture2d {
             _lifetime: &std::marker::PhantomData,
             dimension: TextureDimension::Dimension2d,
             unit: idx
-        }
-    }
-}
-
-impl Drop for Texture2d {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteTextures(1, &self.handle);
         }
     }
 }
