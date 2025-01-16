@@ -136,6 +136,12 @@ impl AttachedProgram<'_> {
             gl::DispatchCompute(groups_x, groups_y, groups_z);
         }
     }
+
+    pub fn barrier(&self) {
+        unsafe {
+            gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        }
+    }
 }
 
 impl<'p, 't: 'p> AttachedProgram<'p> {

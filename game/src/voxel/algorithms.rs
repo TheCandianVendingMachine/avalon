@@ -63,7 +63,7 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
                 let dispatch_n = ((SIDE_LENGTH as f64) / 8.0).ceil() as u32;
 
                 let step_count = (SIDE_LENGTH as f64).log2().ceil() as usize;
-                for jump in 0..=(step_count + 1) {
+                for jump in 0..=step_count {
                     let new_idx = jump % 2;
                     let old_idx = (jump + 1) % 2;
 
@@ -71,10 +71,11 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
                     if jump == 0 {
                         bind.uniform("jump").unwrap().set_i32(1);
                     } else {
-                        bind.uniform("jump").unwrap().set_i32(2_i32.pow(((step_count + 1) - jump) as u32));
+                        bind.uniform("jump").unwrap().set_i32(2_i32.pow((step_count - jump) as u32));
                     }
                     bind.image("newParentBuffer", &temp_parent_buffers[new_idx], Access::Write).unwrap();
                     bind.image("oldParentBuffer", &temp_parent_buffers[old_idx], Access::Read).unwrap();
+                    bind.barrier();
                     bind.dispatch_compute(dispatch_n, dispatch_n, dispatch_n);
                 }
 

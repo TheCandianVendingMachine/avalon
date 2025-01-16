@@ -45,7 +45,8 @@ void main() {
 
     int bestDistance = int(imageLoad(distanceBuffer, pCoord).r);
     uvec4 bestParent = imageLoad(oldParentBuffer, pCoord);
-    bool pInitialised = 0 != bestParent.a;
+    imageStore(newParentBuffer, pCoord, bestParent);
+    bool pInitialised = !(0 == bestParent.a);
 
     for (int idx = 0; idx < OFFSETS.length(); idx++) {
         ivec3 qCoord = pCoord + OFFSETS[idx];
@@ -54,10 +55,10 @@ void main() {
 
         uvec4 qParent = imageLoad(oldParentBuffer, qCoord);
         if (qParent.a != 0) {
-            vec3 p0 = vec3(pCoord);
-            vec3 p1 = vec3(qParent.xyz);
+            ivec3 p0 = pCoord;
+            ivec3 p1 = ivec3(qParent.xyz);
 
-            int candidateDistance = int(dot(abs(p0 - p1), vec3(1)));
+            int candidateDistance = int(dot(abs(p0 - p1), ivec3(1)));
             if (!pInitialised || bestDistance > candidateDistance) {
                 bestDistance = candidateDistance;
                 bestParent = qParent;
