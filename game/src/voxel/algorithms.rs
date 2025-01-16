@@ -85,6 +85,9 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
             buffer
         };
 
-        dbg!(distance_buffer.len());
+        for (idx, cell) in self.cells.iter_mut().enumerate() {
+            let distance = distance_buffer.get(idx).try_into().unwrap();
+            cell.set_safe_step(distance);
+        }
     }
 }

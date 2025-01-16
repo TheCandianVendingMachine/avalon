@@ -83,6 +83,24 @@ impl Pixels {
         }
     }
 
+    fn get(&self, idx: usize) -> Datum {
+        match self {
+            Pixels::UnsignedByte(data) => data[idx].into(),
+            Pixels::Byte(data) => data[idx].into(),
+            Pixels::UnsignedShort(data) => data[idx].into(),
+            Pixels::Short(data) => data[idx].into(),
+            Pixels::UnsignedInt(data) => data[idx].into(),
+            Pixels::Int(data) => data[idx].into(),
+            Pixels::Float32(data) => data[idx].into(),
+            Pixels::RGB3_3_2(data) => data[idx].into(),
+            Pixels::RGB5_6_5(data) => data[idx].into(),
+            Pixels::RGBA4(data) => data[idx].into(),
+            Pixels::RGBA5_5_5_1(data) => data[idx].into(),
+            Pixels::RGBA8(data) => data[idx].into(),
+            Pixels::RGBA10_10_10_2(data) => data[idx].into(),
+        }
+    }
+
     pub(super) fn as_api(&self) -> gl::types::GLenum {
         match self {
             Pixels::UnsignedByte(..) => gl::UNSIGNED_BYTE,
@@ -214,6 +232,10 @@ impl Data {
     pub fn set(&mut self, idx: usize, component: impl Into<Datum>) {
         self.data.set(idx, component.into());
     }
+
+    pub fn get(&self, idx: usize) -> Datum {
+        self.data.get(idx)
+    }
 }
 
 impl From<u8> for Datum {
@@ -261,10 +283,9 @@ impl From<f32> for Datum {
 impl TryFrom<Datum> for u8 {
     type Error = error::DatumError;
     fn try_from(data: Datum) -> Result<Self, Self::Error> {
-        if let Datum::UnsignedByte(d) = data {
-            Ok(d)
-        } else {
-            Err(error::DatumError::ComponentTypeMismatch)
+        match data {
+            Datum::UnsignedByte(d) => Ok(d),
+            _ => Err(error::DatumError::ComponentTypeMismatch)
         }
     }
 }
@@ -272,10 +293,10 @@ impl TryFrom<Datum> for u8 {
 impl TryFrom<Datum> for u16 {
     type Error = error::DatumError;
     fn try_from(data: Datum) -> Result<Self, Self::Error> {
-        if let Datum::UnsignedShort(d) = data {
-            Ok(d)
-        } else {
-            Err(error::DatumError::ComponentTypeMismatch)
+        match data {
+            Datum::UnsignedByte(d) => Ok(d.into()),
+            Datum::UnsignedShort(d) => Ok(d),
+            _ => Err(error::DatumError::ComponentTypeMismatch)
         }
     }
 }
@@ -283,10 +304,11 @@ impl TryFrom<Datum> for u16 {
 impl TryFrom<Datum> for u32 {
     type Error = error::DatumError;
     fn try_from(data: Datum) -> Result<Self, Self::Error> {
-        if let Datum::UnsignedInt(d) = data {
-            Ok(d)
-        } else {
-            Err(error::DatumError::ComponentTypeMismatch)
+        match data {
+            Datum::UnsignedByte(d) => Ok(d.into()),
+            Datum::UnsignedShort(d) => Ok(d.into()),
+            Datum::UnsignedInt(d) => Ok(d),
+            _ => Err(error::DatumError::ComponentTypeMismatch)
         }
     }
 }
@@ -294,10 +316,9 @@ impl TryFrom<Datum> for u32 {
 impl TryFrom<Datum> for i8 {
     type Error = error::DatumError;
     fn try_from(data: Datum) -> Result<Self, Self::Error> {
-        if let Datum::Byte(d) = data {
-            Ok(d)
-        } else {
-            Err(error::DatumError::ComponentTypeMismatch)
+        match data {
+            Datum::Byte(d) => Ok(d),
+            _ => Err(error::DatumError::ComponentTypeMismatch)
         }
     }
 }
@@ -305,10 +326,10 @@ impl TryFrom<Datum> for i8 {
 impl TryFrom<Datum> for i16 {
     type Error = error::DatumError;
     fn try_from(data: Datum) -> Result<Self, Self::Error> {
-        if let Datum::Short(d) = data {
-            Ok(d)
-        } else {
-            Err(error::DatumError::ComponentTypeMismatch)
+        match data {
+            Datum::Byte(d) => Ok(d.into()),
+            Datum::Short(d) => Ok(d),
+            _ => Err(error::DatumError::ComponentTypeMismatch)
         }
     }
 }
@@ -316,10 +337,11 @@ impl TryFrom<Datum> for i16 {
 impl TryFrom<Datum> for i32 {
     type Error = error::DatumError;
     fn try_from(data: Datum) -> Result<Self, Self::Error> {
-        if let Datum::Int(d) = data {
-            Ok(d)
-        } else {
-            Err(error::DatumError::ComponentTypeMismatch)
+        match data {
+            Datum::Byte(d) => Ok(d.into()),
+            Datum::Short(d) => Ok(d.into()),
+            Datum::Int(d) => Ok(d),
+            _ => Err(error::DatumError::ComponentTypeMismatch)
         }
     }
 }
