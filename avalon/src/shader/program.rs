@@ -139,7 +139,7 @@ impl AttachedProgram<'_> {
 
     pub fn barrier(&self) {
         unsafe {
-            gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
         }
     }
 }
