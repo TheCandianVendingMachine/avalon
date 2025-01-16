@@ -4,7 +4,7 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 #define PI (3.1415926535)
 #define INF (1.0 / 0.0)
 
-layout(location=1) uniform sampler3D grid;
+layout(location=1) uniform usampler3D grid;
 layout(location=2) uniform int halveCount;
 layout(location=3) uniform sampler2D normalBuffer;
 layout(location=4) uniform sampler2D positionBuffer;
@@ -21,11 +21,12 @@ ivec2 pCoord = ivec2(gl_GlobalInvocationID.xy);
 #define STARTING_OFFSET (0.01)
 
 void getGridData(in ivec3 position, out int safeStep, out int cell) {
-    ivec4 texel = ivec4(floor(texelFetch(grid, position, 0) * 256.0));
-    int embedded = (texel.a << 24) | (texel.b << 16) | (texel.g << 8) | (texel.r << 0);
-    safeStep = (embedded & 0x000001FF) >> 0;
-    cell = (embedded & 0x000FFE00) >> 9;
-    int unused = (embedded & 0xFFF00000) >> 20;
+    unsigned int texel = texelFetch(grid, position, 0).r;
+    int collisionFlag = (texel & 0x0000001F) >> 0;
+    bool empty = 1 == ((texel & 0x00000020) >> 5);
+    bool opaque = 1 == ((texel & 0x00000040) >> 6);
+    safeStep = (texel & 0x0000FF80) >> 7;
+    cell = (texel & 0x0001FF80) >> 7;
 }
 
 bool isDirectionClear(vec3 rayPos, vec3 rayDir) {

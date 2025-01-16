@@ -1,6 +1,6 @@
 #version 430
 
-layout(location = 1) uniform sampler3D grid;
+layout(location = 1) uniform usampler3D grid;
 layout(location = 2) uniform sampler2D albedo;
 layout(location = 3) uniform ivec3 direction;
 layout(location = 4) uniform vec2 position;
@@ -11,11 +11,12 @@ in vec2 screenSize;
 out vec4 fColor;
 
 void getGridData(in ivec3 position, out int safeStep, out int cell) {
-    ivec4 texel = ivec4(floor(texelFetch(grid, position, 0) * 256.0));
-    int embedded = (texel.a << 24) | (texel.b << 16) | (texel.g << 8) | (texel.r << 0);
-    safeStep = (embedded & 0x000001FF) >> 0;
-    cell = (embedded & 0x000FFE00) >> 9;
-    int unused = (embedded & 0xFFF00000) >> 20;
+    unsigned int texel = texelFetch(grid, position, 0).r;
+    int collisionFlag = (texel & 0x0000001F) >> 0;
+    bool empty = 1 == ((texel & 0x00000020) >> 5);
+    bool opaque = 1 == ((texel & 0x00000040) >> 6);
+    safeStep = (texel & 0x0000FF80) >> 7;
+    cell = (texel & 0x0001FF80) >> 7;
 }
 
 void main() {

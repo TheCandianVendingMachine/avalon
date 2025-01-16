@@ -2,26 +2,24 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout(location=0) restrict writeonly uniform image3D mipmap;
-layout(location=1) uniform sampler3D grid;
+layout(location=1) uniform usampler3D grid;
 layout(location=2) uniform int level;
 
-vec4 encodeGridData(in int safeStep, in int cell) {
-    int unused = 0;
-    int embedded = (safeStep << 0) | (cell << 9) | (unused << 20);
-    vec4 texel;
-    texel.r = (embedded & 0x000000FF);
-    texel.g = (embedded & 0x0000FF00) >> 8;
-    texel.b = (embedded & 0x00FF0000) >> 16;
-    texel.a = (embedded & 0xFF000000) >> 24;
-    return texel / 256.0;
+unsigned int encodeGridData(in int safeStep, in int cell) {
+    int collisionFlag = 0;
+    int empty = 0;
+    int opaque = 0;
+
+    return (collisionFlag << 0) | (empty << 5) | (opaque << 6) | (safeStep << 7) | (cell << 7);
 }
 
 void getGridData(in ivec3 position, out int safeStep, out int cell) {
-    ivec4 texel = ivec4(floor(texelFetch(grid, position, level - 1) * 256.0));
-    int embedded = (texel.a << 24) | (texel.b << 16) | (texel.g << 8) | (texel.r << 0);
-    safeStep = (embedded & 0x000001FF) >> 0;
-    cell = (embedded & 0x000FFE00) >> 9;
-    int unused = (embedded & 0xFFF00000) >> 20;
+    unsigned int texel = texelFetch(grid, position, 0).r;
+    int collisionFlag = (texel & 0x0000001F) >> 0;
+    bool empty = 1 == ((texel & 0x00000020) >> 5);
+    bool opaque = 1 == ((texel & 0x00000040) >> 6);
+    safeStep = (texel & 0x0000FF80) >> 7;
+    cell = (texel & 0x0001FF80) >> 7;
 }
 
 void main() {
@@ -53,6 +51,6 @@ void main() {
         }
     }
 
-    vec4 texel = encodeGridData(minimumSafeStep, 0);
+    uvec4 texel = uvec4(encodeGridData(minimumSafeStep, 0));
     imageStore(mipmap, pCoord, texel);
 }

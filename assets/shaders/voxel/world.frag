@@ -3,7 +3,7 @@
 #define PI (3.1415926535)
 #define INF (1.0 / 0.0)
 
-layout(location=1) uniform sampler3D grid;
+layout(location=1) uniform usampler3D grid;
 layout(location=2) uniform sampler2D albedo;
 layout(location=3) uniform sampler2D tNormal;
 layout(location=4) uniform sampler2D bump;
@@ -54,12 +54,13 @@ vec3 rotate(vec3 p, vec3 axis, float angle) {
     return proj + cos(angle) * (p - proj) + sin(angle) * cross(axis, p);
 }
 
-void getGridData(in ivec3 position, out int safeStep, out int cell) {
-    ivec4 texel = ivec4(floor(texelFetch(grid, position, 0) * 256.0));
-    int embedded = (texel.a << 24) | (texel.b << 16) | (texel.g << 8) | (texel.r << 0);
-    safeStep = (embedded & 0x000001FF) >> 0;
-    cell = (embedded & 0x000FFE00) >> 9;
-    int unused = (embedded & 0xFFF00000) >> 20;
+void getGridData(in ivec3 position, out bool empty, out bool opaque, out int safeStep, out int cell) {
+    unsigned int texel = texelFetch(grid, position, 0).r;
+    int collisionFlag = (texel & 0x0000001F) >> 0;
+    empty = 1 == ((texel & 0x00000020) >> 5);
+    opaque = 1 == ((texel & 0x00000040) >> 6);
+    safeStep = (texel & 0x0000FF80) >> 7;
+    cell = (texel & 0x0001FF80) >> 7;
 }
 
 void main()
@@ -90,7 +91,9 @@ void main()
     const float LIGHT_BEND_T = 0 * PI / 180.0;
     int cellId;
     int cellStep;
-    getGridData(iMapPos, cellStep, cellId);
+    bool cellEmpty;
+    bool cellOpaque
+    getGridData(iMapPos, cellEmpty, cellOpaque, cellStep, cellId);
     int previousCell = -1;
     bvec3 mask;
 
@@ -113,7 +116,7 @@ void main()
         if (!previousBounds) { iter += 3; }
 
         if (inBounds) {
-            getGridData(iMapPos, cellStep, cellId);
+            getGridData(iMapPos, cellEmpty, cellOpaque, cellStep, cellId);
 
             if (cellId == 1) {
                 if (cellStep != 0) {
