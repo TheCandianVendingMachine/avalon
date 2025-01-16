@@ -1,7 +1,7 @@
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features, unused)]
 
-use nalgebra_glm::{ IVec2, vec2, vec3 };
+use nalgebra_glm::{ TVec3, IVec2, vec2, vec3 };
 
 pub mod voxel;
 
@@ -119,7 +119,41 @@ fn main() {
     let mut engine = avalon::engine();
 
     let mut grid: voxel::Grid<32, 1> = voxel::Grid::new();
-    grid.cell_mut(vec3(0, 0, 0)).set_empty(0);
+    let mut set_cell = |position: TVec3<u8>| {
+        let mut cell = grid.cell_mut(position);
+        cell.set_empty(0);
+        cell.set_opaque(1);
+        cell.set_cell_id(1);
+    };
+
+    for x in 0..20 {
+        for z in 0..32 {
+            set_cell(vec3(x, 0, z));
+        }
+    }
+
+    for x in 13..18 {
+        for y in 1..10 {
+            set_cell(vec3(x, y, 15));
+        }
+    }
+
+    for x in 5..10 {
+        for y in 1..10 {
+            set_cell(vec3(x, y, 15));
+        }
+    }
+
+    for x in 0..10 {
+        for y in 1..=5 {
+            set_cell(vec3(x, y, 3));
+            set_cell(vec3(x, y, 8));
+        }
+
+        for z in 3..=8 {
+            set_cell(vec3(x, 5, z));
+        }
+    }
     grid.bake();
 
     let render_pass = RenderPass::new();

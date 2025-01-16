@@ -32,6 +32,7 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
                 for (idx, voxel) in self.cells.iter().enumerate() {
                     if !voxel.is_empty() {
                         let position = self.index_to_vec(idx);
+                        let idx = 4 * idx;
                         data.set(idx + 0, position.x);
                         data.set(idx + 1, position.y);
                         data.set(idx + 2, position.z);
