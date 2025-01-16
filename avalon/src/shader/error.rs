@@ -1,8 +1,8 @@
 use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Creation {
-    #[error("Failed to compile shader: {reason}")]
-    FailedToCompile { reason: String },
+    #[error("Failed to compile shader [id: {id}]: {reason}")]
+    FailedToCompile { id: String, reason: String },
     #[error("Failed to link shader: {reason}")]
     FailedToLink { reason: String },
     #[error("Failed to load shader file `{path}`")]

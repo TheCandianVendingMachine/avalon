@@ -1,6 +1,6 @@
 #version 430
 
-layout(location=0) uniform vec2 uScreenSize;
+layout(location=0) uniform ivec2 uScreenSize;
 
 const float vertices[12] = float[](
     // top left
@@ -13,7 +13,7 @@ const float vertices[12] = float[](
     -1.0, 1.0
 );
 
-out vec2 screenSize;
+out flat ivec2 screenSize;
 
 void main()
 {

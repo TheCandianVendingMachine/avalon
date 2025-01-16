@@ -3,6 +3,7 @@ pub mod algorithms;
 use bitfield::bitfield;
 use nalgebra_glm::TVec3;
 use avalon::texture::GpuTexture3d;
+use anyhow::Error;
 
 bitfield!{
     pub struct Cell(u32);
@@ -81,6 +82,24 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
         self.dirty = true;
         let idx = self.vec_to_index(position);
         &mut self.cells[idx]
+    }
+}
+
+impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32>
+    TryFrom<Grid<SIDE_LENGTH, VOXELS_PER_METER>> for GpuTexture3d where
+    [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+    type Error = String;
+    fn try_from(value: Grid<SIDE_LENGTH, VOXELS_PER_METER>) -> Result<Self, Self::Error> {
+        value.gpu_grid.ok_or("grid needs to be baked before use".to_string())
+    }
+}
+
+impl<'t, 'g: 't, const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32>
+    TryFrom<&'g Grid<SIDE_LENGTH, VOXELS_PER_METER>> for &'t GpuTexture3d where
+    [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+    type Error = String;
+    fn try_from(value: &'g Grid<SIDE_LENGTH, VOXELS_PER_METER>) -> Result<Self, Self::Error> {
+        value.gpu_grid.as_ref().ok_or("grid needs to be baked before use".to_string())
     }
 }
 

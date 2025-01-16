@@ -65,6 +65,7 @@ pub trait Source: MetaShader {
 
         if !successful_compile {
             return Err(error::Creation::FailedToCompile {
+                id: "unknown".to_string(),
                 reason: shader.info_log()
             });
         }
@@ -79,6 +80,13 @@ pub trait Source: MetaShader {
         let file = fs::read(path).map_err(error::Creation::FileReadError)?;
 
         Self::load_from_source(String::from_utf8(file).map_err(error::Creation::FileParseError)?)
+            .map_err(|e| match e {
+                error::Creation::FailedToCompile { reason, .. } => error::Creation::FailedToCompile {
+                    id: path.to_string_lossy().to_string(),
+                    reason
+                },
+                _ => e
+            })
     }
 }
 

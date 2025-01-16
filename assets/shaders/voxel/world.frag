@@ -16,7 +16,7 @@ layout(location=10) restrict writeonly uniform image2D positionBuffer;
 layout(location=11) restrict writeonly uniform image2D normalBuffer;
 layout(location=12) restrict writeonly uniform image2D tangentBuffer;
 
-in vec2 screenSize;
+in flat ivec2 screenSize;
 out vec4 fColor;
 
 void bendRay(in vec3 cameraDir, in float theta, in vec3 normal, in vec3 startRayPos, in vec3 rayPos, inout vec3 rayDir, out vec3 deltaDist, out ivec3 rayStep, out vec3 tMax) {
@@ -55,7 +55,7 @@ vec3 rotate(vec3 p, vec3 axis, float angle) {
 }
 
 void getGridData(in ivec3 position, out bool empty, out bool opaque, out int safeStep, out int cell) {
-    unsigned int texel = texelFetch(grid, position, 0).r;
+    int texel = int(texelFetch(grid, position, 0).r);
     int collisionFlag = (texel & 0x0000001F) >> 0;
     empty = 1 == ((texel & 0x00000020) >> 5);
     opaque = 1 == ((texel & 0x00000040) >> 6);
@@ -66,7 +66,7 @@ void getGridData(in ivec3 position, out bool empty, out bool opaque, out int saf
 void main()
 {
     const ivec3 mapBounds = ivec3(256, 256, 256);
-    vec2 uv = gl_FragCoord.xy / screenSize * 2.0 - 1.0;
+    vec2 uv = gl_FragCoord.xy / vec2(screenSize) * 2.0 - 1.0;
 
     vec3 screenPos = vec3(uv, 0.0);
     vec3 rayPos = cameraPos;
@@ -92,7 +92,7 @@ void main()
     int cellId;
     int cellStep;
     bool cellEmpty;
-    bool cellOpaque
+    bool cellOpaque;
     getGridData(iMapPos, cellEmpty, cellOpaque, cellStep, cellId);
     int previousCell = -1;
     bvec3 mask;
@@ -137,7 +137,7 @@ void main()
                 bendRay(cameraDir, LIGHT_BEND_T, normalCameraDir, cameraPos, mapPos, rayDir, deltaDist, rayStep, tMax);
                 vec3 normal = -vec3(rayStep) * vec3(mask);
                 vec3 backStep = -(0.5 * -rayStep * vec3(mask) + 0.5);
-                vec3 center = mapPos - backStep + vec3(!mask) * 0.5;
+                vec3 center = mapPos - backStep + vec3(not(mask)) * 0.5;
                 float t = getPlaneIntersection(normal, center, cameraPos, rayDir);
 
                 vec3 intersect = cameraPos + rayDir * t;
@@ -194,7 +194,7 @@ void main()
     }
 
     vec3 backStep = -(0.5 * -rayStep * vec3(mask) + 0.5);
-    vec3 center = mapPos - backStep + vec3(!mask) * 0.5;
+    vec3 center = mapPos - backStep + vec3(not(mask)) * 0.5;
     float t = getPlaneIntersection(normal, center, cameraPos, rayDir);
 
     // tiny offset because if we are shooting backwards, this will be position + 1; we

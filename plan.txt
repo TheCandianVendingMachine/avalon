@@ -4,7 +4,7 @@ that I understand it. I think I can make it support more as well, especially sin
 good use case
 [x] 3) Rewrite shader struct. I liked how it worked yknow
 [ ] 4) Rewrite ECS
-[ ] 5) Rewrite voxel grid
+[x] 5) Rewrite voxel grid
 [ ] 6) Rewrite game up to the point. This will be where I was at
 
 Probably a few weeks of work. But worth it. Since all of the code I've been working on
@@ -24,12 +24,12 @@ Transform struct
 [x] euler angles
 
 Voxel Grid
-[ ] up to 256 in size
-[ ] distance field baking
+[x] up to 256 in size
+[x] distance field baking
 [ ] serialization
-[ ] setting cell data
+[x] setting cell data
 [ ] cpu raycasts
-[ ] storing in gpu
+[x] storing in gpu
 
 Player
 [ ] mouse look
