@@ -20,7 +20,7 @@ impl Window {
         video.gl_attr().set_context_profile(sdl2::video::GLProfile::Core);
         video.gl_attr().set_context_version(4, 5);
 
-        let window = video.window("Avalon Engine", 1920, 1080)
+        let window = video.window("Avalon Engine", 1280, 720)
             .opengl()
             .build()
             .unwrap();
@@ -154,7 +154,9 @@ impl Engine {
         self.quantatives.start_render();
         self.render.render();
         self.quantatives.end_render();
+    }
 
+    pub fn swap(&self) {
         self.window.window.gl_swap_window();
     }
 }

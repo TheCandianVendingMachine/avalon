@@ -3,9 +3,9 @@ use nalgebra::Unit;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Euler {
-    axis_x: f32,
-    axis_y: f32,
-    axis_z: f32,
+    pub pitch: f32,
+    pub yaw: f32,
+    pub roll: f32,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -49,9 +49,9 @@ impl Transform {
     pub fn set_euler_angles(&mut self, euler: Euler) {
         self.dirty = true;
         self.orientation_quaternion =
-            Quat::from_polar_decomposition(1.0, euler.axis_x, Unit::new_normalize(vec3(1.0, 0.0, 0.0))) *
-            Quat::from_polar_decomposition(1.0, euler.axis_y, Unit::new_normalize(vec3(0.0, 1.0, 0.0))) *
-            Quat::from_polar_decomposition(1.0, euler.axis_z, Unit::new_normalize(vec3(0.0, 0.0, 1.0)));
+            Quat::from_polar_decomposition(1.0, euler.pitch, Unit::new_normalize(vec3(1.0, 0.0, 0.0))) *
+            Quat::from_polar_decomposition(1.0, euler.yaw, Unit::new_normalize(vec3(0.0, 1.0, 0.0))) *
+            Quat::from_polar_decomposition(1.0, euler.roll, Unit::new_normalize(vec3(0.0, 0.0, 1.0)));
     }
 
     pub fn euler_angles(&self) -> Euler {
@@ -95,9 +95,9 @@ impl std::ops::Mul for Transform {
 impl Default for Euler {
     fn default() -> Euler {
         Euler {
-            axis_x: 0.0,
-            axis_y: 0.0,
-            axis_z: 0.0
+            pitch: 0.0,
+            yaw: 0.0,
+            roll: 0.0
         }
     }
 }
@@ -127,21 +127,21 @@ impl From<Mat4> for Euler {
         };
 
         Euler {
-            axis_x: psi,
-            axis_y: theta,
-            axis_z: phi
+            pitch: psi,
+            yaw: theta,
+            roll: phi
         }
     }
 }
 
 impl From<Euler> for Mat4 {
     fn from(euler: Euler) -> Mat4 {
-        let cos_theta = euler.axis_y.cos();
-        let sin_theta = euler.axis_y.sin();
-        let cos_psi = euler.axis_x.cos();
-        let sin_psi = euler.axis_x.sin();
-        let cos_phi = euler.axis_z.cos();
-        let sin_phi = euler.axis_z.sin();
+        let cos_theta = euler.yaw.cos();
+        let sin_theta = euler.yaw.sin();
+        let cos_psi = euler.pitch.cos();
+        let sin_psi = euler.pitch.sin();
+        let cos_phi = euler.roll.cos();
+        let sin_phi = euler.roll.sin();
 
         let r1 = vec4(
             cos_theta * cos_phi,

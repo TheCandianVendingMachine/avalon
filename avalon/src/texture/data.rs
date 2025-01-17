@@ -1,3 +1,4 @@
+use image;
 use aligned_vec::{ avec, AVec, ConstAlign };
 use crate::texture::Component;
 
@@ -47,6 +48,37 @@ pub enum Pixels {
 }
 
 impl Pixels {
+    fn from_datum(datum: Vec<Datum>) -> Pixels {
+        if datum.is_empty() {
+            return Pixels::UnsignedByte(AVec::new(4));
+        }
+
+        let first_datum = datum[0];
+        match first_datum {
+            Datum::UnsignedByte(..) => Pixels::UnsignedByte(AVec::from_iter(
+                4, datum.iter().map(|d| (*d).try_into().unwrap())
+            )),
+            Datum::Byte(..) => Pixels::Byte(AVec::from_iter(
+                4, datum.iter().map(|d| (*d).try_into().unwrap())
+            )),
+            Datum::UnsignedShort(..) => Pixels::UnsignedShort(AVec::from_iter(
+                4, datum.iter().map(|d| (*d).try_into().unwrap())
+            )),
+            Datum::Short(..) => Pixels::Short(AVec::from_iter(
+                4, datum.iter().map(|d| (*d).try_into().unwrap())
+            )),
+            Datum::UnsignedInt(..) => Pixels::UnsignedInt(AVec::from_iter(
+                4, datum.iter().map(|d| (*d).try_into().unwrap())
+            )),
+            Datum::Int(..) => Pixels::Int(AVec::from_iter(
+                4, datum.iter().map(|d| (*d).try_into().unwrap())
+            )),
+            Datum::Float32(..) => Pixels::Float32(AVec::from_iter(
+                4, datum.iter().map(|d| (*d).try_into().unwrap())
+            )),
+        }
+    }
+
     fn len(&self) -> usize {
         match self {
             Pixels::UnsignedByte(data) => data.len(),
@@ -176,6 +208,57 @@ impl Pixels {
 }
 
 impl Data {
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> Data {
+        let image = image::ImageReader::open(path).unwrap().decode().unwrap();
+        let (components, buffer): (Component, Vec<Datum>) = match image {
+            image::DynamicImage::ImageRgb8(img) => (
+                Component::RGB,
+                img.as_raw().iter()
+                    .map(|p| (*p).into())
+                    .collect()
+            ),
+            image::DynamicImage::ImageRgba8(img) => (
+                Component::RGBA,
+                img.as_raw().iter()
+                    .map(|p| (*p).into())
+                    .collect()
+            ),
+            image::DynamicImage::ImageRgb16(img) => (
+                Component::RGB,
+                img.as_raw().iter()
+                    .map(|p| (*p).into())
+                    .collect()
+            ),
+            image::DynamicImage::ImageRgba16(img) => (
+                Component::RGBA,
+                img.as_raw().iter()
+                    .map(|p| (*p).into())
+                    .collect()
+            ),
+            image::DynamicImage::ImageRgb32F(img) => (
+                Component::RGB,
+                img.as_raw().iter()
+                    .map(|p| (*p).into())
+                    .collect()
+            ),
+            image::DynamicImage::ImageRgba32F(img) => (
+                Component::RGBA,
+                img.as_raw().iter()
+                    .map(|p| (*p).into())
+                    .collect()
+            ),
+            _ => panic!("unsupported image type")
+        };
+        Data {
+            components,
+            data: match components {
+                Component::RGB => Pixels::from_datum(buffer),
+                Component::RGBA => Pixels::from_datum(buffer),
+                _ => panic!("unsupported components")
+            }
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.data.len()
     }

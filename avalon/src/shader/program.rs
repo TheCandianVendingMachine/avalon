@@ -137,6 +137,17 @@ impl AttachedProgram<'_> {
         }
     }
 
+    pub fn temp_render(&self) {
+        unsafe {
+            let mut vao = 0;
+            gl::GenVertexArrays(1, &mut vao);
+            gl::BindVertexArray(vao);
+            gl::DrawArrays(gl::TRIANGLES, 0, 6);
+            gl::BindVertexArray(0);
+            gl::DeleteVertexArrays(1, &vao);
+        }
+    }
+
     pub fn barrier(&self) {
         unsafe {
             gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
@@ -148,12 +159,18 @@ impl<'p, 't: 'p> AttachedProgram<'p> {
     pub fn sampler(&mut self, name: impl Into<String>, texture: &'t impl Sampler) -> Result<(), error::Program> {
         let name = name.into();
         let location = self.location_from_uniform(&name);
+        if location == -1 {
+            return Err(error::Program::UniformNotFound { name });
+        }
         self.sampler_with_location(location as u32, texture)
     }
 
     pub fn sampler_with_location(&mut self, location: u32, texture: &'t impl Sampler) -> Result<(), error::Program> {
         if !self.texture_attachments.contains_key(&texture.handle()) {
-            self.texture_attachments.insert(texture.handle(), texture.sampler(self.texture_attachments.len() as u32));
+            self.texture_attachments.insert(
+                texture.handle(),
+                texture.sampler(gl::TEXTURE0 + self.texture_attachments.len() as u32)
+            );
         }
         let attachment = self.texture_attachments.get(&texture.handle()).unwrap();
         self.location(location)?.set_texture(attachment);
@@ -163,6 +180,9 @@ impl<'p, 't: 'p> AttachedProgram<'p> {
     pub fn image(&mut self, name: impl Into<String>, texture: &'t impl Image, access: Access) -> Result<(), error::Program> {
         let name = name.into();
         let location = self.location_from_uniform(&name);
+        if location == -1 {
+            return Err(error::Program::UniformNotFound { name });
+        }
         self.image_with_location(location as u32, texture, access)
     }
 

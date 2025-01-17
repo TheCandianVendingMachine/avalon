@@ -87,8 +87,10 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
         };
 
         for (idx, cell) in self.cells.iter_mut().enumerate() {
-            let distance = distance_buffer.get(idx).try_into().unwrap();
-            cell.set_safe_step(distance);
+            if cell.is_empty() {
+                let distance = distance_buffer.get(idx).try_into().unwrap();
+                cell.set_safe_step(distance);
+            }
         }
 
         let mut cell_data = Data::empty_u32(Component::IntR, self.cells.len());

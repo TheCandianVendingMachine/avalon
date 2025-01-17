@@ -76,7 +76,7 @@ impl Uniform<'_> {
     }
 
     pub fn set_texture(self, value: &gpu::TextureAttachment) {
-        unsafe { gl::Uniform1i(self.location, value.unit() as i32); }
+        unsafe { gl::Uniform1i(self.location, value.unit() as i32 - gl::TEXTURE0 as i32); }
     }
 
     pub fn set_image(self, value: &gpu::ImageAttachment) {

@@ -15,5 +15,9 @@ impl RenderEngine {
     }
 
     pub fn render(&self) {
+        unsafe {
+            gl::ClearColor(1.0, 0.6, 0.8, 1.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT);
+        }
     }
 }

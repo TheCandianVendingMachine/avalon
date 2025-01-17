@@ -124,8 +124,8 @@ impl Texture3d {
                     data_type,
                     data
                 );
-                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                 gl::BindTexture(gl::TEXTURE_3D, 0);
             }
         }
@@ -158,7 +158,7 @@ impl Sampler for Texture3d {
     fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t> {
         unsafe {
             gl::ActiveTexture(unit);
-            gl::BindTexture(unit, self.handle);
+            gl::BindTexture(gl::TEXTURE_3D, self.handle);
         }
         TextureAttachment {
             _lifetime: &std::marker::PhantomData,
