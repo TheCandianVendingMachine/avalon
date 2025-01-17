@@ -103,6 +103,7 @@ impl From<gpu::SizedComponent> for Component {
             gpu::SizedComponent::UnsignedIntRGB32 => Component::RGB,
             gpu::SizedComponent::NormalRGB8 => Component::RGB,
             gpu::SizedComponent::NormalRGB16 => Component::RGB,
+            gpu::SizedComponent::RGB565 => Component::RGB,
             gpu::SizedComponent::RGBA2 => Component::RGBA,
             gpu::SizedComponent::RGBA4 => Component::RGBA,
             gpu::SizedComponent::RGB5A1 => Component::RGBA,

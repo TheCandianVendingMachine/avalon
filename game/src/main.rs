@@ -61,6 +61,14 @@ impl PassRaytrace {
                 .build()
                 .unwrap(),
             viewport: viewport::Viewport::new(options.final_size)
+                .colour_attachment()
+                    .format(gpu::SizedComponent::RGB8)
+                .colour_attachment()
+                    .format(gpu::SizedComponent::NormalRGB8)
+                .colour_attachment()
+                    .format(gpu::SizedComponent::NormalRGB8)
+                .colour_attachment()
+                    .format(gpu::SizedComponent::FloatRGB32)
                 .depth_stencil(viewport::DepthStencil::Depth)
                 .build(),
             albedo: GpuTexture2d::generate(Arguments2d {
@@ -85,7 +93,6 @@ impl PassRaytrace {
         &self,
         camera: &Camera,
         grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>,
-        buffers: &GeometryBuffers,
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
         let grid_texture: &GpuTexture3d = grid.try_into().unwrap();
@@ -103,9 +110,71 @@ impl PassRaytrace {
         bind.uniform("inverseProjection").unwrap().set_mat3(camera.projection.try_inverse().unwrap());
         bind.uniform("cameraPos").unwrap().set_vec3(camera.transform.position());
 
-        bind.image("positionBuffer", &buffers.position, Access::Write).unwrap();
-        bind.image("normalBuffer", &buffers.normal, Access::Write).unwrap();
-        bind.image("tangentBuffer", &buffers.tangent, Access::Write).unwrap();
+        // draw command
+        let viewport_bind = self.viewport.bind();
+        bind.temp_render();
+    }
+}
+
+struct PassLighting {
+    shader: Program,
+    viewport: viewport::Viewport,
+    albedo: GpuTexture2d,
+    normal: GpuTexture2d,
+    options: PassOptions,
+}
+
+impl PassLighting {
+    fn new(options: PassOptions) -> PassRaytrace {
+        let albedo_data = data::Data::from_file("assets/bins/wall_texture_full.png");
+        let normal_data = data::Data::from_file("assets/bins/wall_texture_full_normal.png");
+        PassRaytrace {
+            shader: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/world.frag").unwrap())
+                .build()
+                .unwrap(),
+            viewport: viewport::Viewport::new(options.final_size)
+                .depth_stencil(viewport::DepthStencil::Depth)
+                .build(),
+            albedo: GpuTexture2d::generate(Arguments2d {
+                data: Some(albedo_data),
+                dimensions: vec2(96, 224),
+                internal_components: Component::RGBA,
+                internal_size: gpu::SizedComponent::RGBA8,
+                mipmap_type: gpu::Mipmap::None,
+            }),
+            normal: GpuTexture2d::generate(Arguments2d {
+                data: Some(normal_data),
+                dimensions: vec2(96, 224),
+                internal_components: Component::RGBA,
+                internal_size: gpu::SizedComponent::RGBA8,
+                mipmap_type: gpu::Mipmap::None,
+            }),
+            options
+        }
+    }
+
+    fn execute<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32>(
+        &self,
+        camera: &Camera,
+        grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>,
+    ) where
+    [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+        let grid_texture: &GpuTexture3d = grid.try_into().unwrap();
+        let mut bind = self.shader.activate();
+        bind.uniform("uScreenSize").unwrap().set_ivec2(self.options.final_size);
+
+        bind.sampler("grid", grid_texture).unwrap();
+        bind.sampler("albedo", &self.albedo).unwrap();
+        bind.sampler("tNormal", &self.normal).unwrap();
+        //bind.sampler("bump", grid_texture).unwrap();
+
+        bind.uniform("view").unwrap().set_mat4(camera.transform.matrix());
+        bind.uniform("inverseView").unwrap().set_mat4(camera.transform.matrix().try_inverse().unwrap());
+        bind.uniform("projection").unwrap().set_mat3(camera.projection);
+        bind.uniform("inverseProjection").unwrap().set_mat3(camera.projection.try_inverse().unwrap());
+        bind.uniform("cameraPos").unwrap().set_vec3(camera.transform.position());
 
         // draw command
         bind.temp_render();
@@ -114,7 +183,6 @@ impl PassRaytrace {
 
 struct RenderPass {
     options: PassOptions,
-    geometry_buffers: GeometryBuffers,
     pass_raytrace: PassRaytrace,
 }
 
@@ -124,25 +192,9 @@ impl RenderPass {
             final_size: vec2(1280, 720)
         };
 
-        let geometry_buffers = {
-            let textures = GpuTexture2d::generate_many::<3>(Arguments2d {
-                dimensions: options.final_size,
-                internal_components: Component::RGBA,
-                internal_size: gpu::SizedComponent::NormalRGBA8,
-                mipmap_type: gpu::Mipmap::None,
-                data: None
-            });
-            GeometryBuffers {
-                position: textures[0],
-                normal: textures[1],
-                tangent: textures[2],
-            }
-        };
-
         let pass_raytrace = PassRaytrace::new(options);
         RenderPass {
             options,
-            geometry_buffers,
             pass_raytrace
         }
     }
@@ -151,7 +203,7 @@ impl RenderPass {
         &self, camera: &Camera, grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
-        self.pass_raytrace.execute(camera, grid, &self.geometry_buffers);
+        self.pass_raytrace.execute(camera, grid);
     }
 }
 

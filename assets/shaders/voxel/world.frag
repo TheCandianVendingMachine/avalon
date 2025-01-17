@@ -12,12 +12,12 @@ layout(location=6) uniform mat4 inverseView;
 layout(location=7) uniform mat3 projection;
 layout(location=8) uniform mat3 inverseProjection;
 layout(location=9) uniform vec3 cameraPos;
-layout(location=10) restrict writeonly uniform image2D positionBuffer;
-layout(location=11) restrict writeonly uniform image2D normalBuffer;
-layout(location=12) restrict writeonly uniform image2D tangentBuffer;
 
 in flat ivec2 screenSize;
-out vec4 fColor;
+out vec4 albedoColour;
+out vec4 normalColour;
+out vec4 tangentColour;
+out vec4 positionColour;
 
 void bendRay(in vec3 cameraDir, in float theta, in vec3 normal, in vec3 startRayPos, in vec3 rayPos, inout vec3 rayDir, out vec3 deltaDist, out ivec3 rayStep, out vec3 tMax) {
     vec3 mapPos = floor(rayPos);
@@ -140,7 +140,7 @@ void main()
                     vec3 intersect = cameraPos + rayDir * t;
                     vec3 dist = abs(intersect - center);
                     float mod = 1.0 - dist.z;
-                    fColor = vec4(vec3(mod), 1.0);
+                    albedoColour = vec4(vec3(mod), 1.0);
 
                     // get distance to next cell
                     // interpolate stretching by this distance to avoid jitter between cells
@@ -177,11 +177,11 @@ void main()
     vec3 normal;
     vec3 tangent;
     if (iter >= ITER_MAX) {
-        imageStore(normalBuffer, ivec2(gl_FragCoord.xy), vec4(0.0));
-        imageStore(tangentBuffer, ivec2(gl_FragCoord.xy), vec4(0.0));
-        imageStore(positionBuffer, ivec2(gl_FragCoord.xy), vec4(0.0));
         gl_FragDepth = 1.0;
-        fColor = vec4(0.0);
+        albedoColour = vec4(0.0);
+        normalColour = vec4(0.0);
+        tangentColour = vec4(0.0);
+        positionColour = vec4(0.0);
         return;
     } else if (mask.x) {
         normal = -vec3(1, 0, 0) * rayStep;
@@ -211,19 +211,19 @@ void main()
     vec3 fragNormal;
     vec3 fragTangent;
     if (mask.x) {
-        fColor = texture(albedo, offset + sizeMod * dist.zy);
+        albedoColour = texture(albedo, offset + sizeMod * dist.zy);
         fragNormal.yz = texture(tNormal, offset + sizeMod * dist.zy).yx + colourOffset.yx;
         normalMod.x = rayStep.x;
         fragTangent = vec3(fragNormal.y, 0, fragNormal.z);
         tangentMod.y = rayStep.x;
     } else if (mask.y) {
-        fColor = texture(albedo, offset + sizeMod * dist.xz);
+        albedoColour = texture(albedo, offset + sizeMod * dist.xz);
         fragNormal.xz = texture(tNormal, offset + sizeMod * dist.xz).xy + colourOffset.xy;
         normalMod.y = rayStep.y;
         fragTangent = vec3(fragNormal.z, fragNormal.x, 0);
         tangentMod.z = rayStep.y;
     } else if (mask.z) {
-        fColor = texture(albedo, offset + sizeMod * dist.xy);
+        albedoColour = texture(albedo, offset + sizeMod * dist.xy);
         fragNormal.xy = texture(tNormal, offset + sizeMod * dist.xy).xy + colourOffset.xy;
         normalMod.z = rayStep.z;
         fragTangent = vec3(0, fragNormal.x, fragNormal.y);
@@ -232,11 +232,11 @@ void main()
 
     vec3 adjustedNormal = normalMod * (2.0 * fragNormal - 1.0);
     vec3 adjustedTangent = tangentMod * (2.0 * fragTangent - 1.0);
-    imageStore(normalBuffer, ivec2(gl_FragCoord.xy), vec4(adjustedNormal, 1.0));
-    imageStore(tangentBuffer, ivec2(gl_FragCoord.xy), vec4(adjustedTangent, 1.0));
-    imageStore(positionBuffer, ivec2(gl_FragCoord.xy), vec4(intersect, 1.0));
+    normalColour = vec4(adjustedNormal, 1.0);
+    tangentColour = vec4(adjustedTangent, 1.0);
+    positionColour = vec4(intersect, 1.0);
 
-    fColor *= vec4(tint, 1.0);
+    albedoColour *= vec4(tint, 1.0);
 
     const float near = 0.01;
     const float m = 128.0;
