@@ -48,7 +48,7 @@ impl Light {
 
 struct Camera {
     transform: avalon::transform::Transform,
-    projection: Mat3
+    projection: Mat3,
 }
 
 impl Camera {
@@ -60,7 +60,7 @@ impl Camera {
                 1.0, 0.0, 0.0,
                 0.0, dimensions.y / dimensions.x, 0.0,
                 0.0, 0.0, 1.0
-            )
+            ),
         }
     }
 }
@@ -74,17 +74,18 @@ struct GeometryBuffers {
 #[derive(Debug, Copy, Clone)]
 struct PassOptions {
     final_size: IVec2,
+    raytrace_size: IVec2,
     lighting_halves: u32,
     ao_halves: u32,
 }
 
 impl PassOptions {
     fn lighting_resolution(&self) -> IVec2 {
-        self.final_size / 2_i32.pow(self.lighting_halves)
+        self.raytrace_size / 2_i32.pow(self.lighting_halves)
     }
 
     fn ao_resolution(&self) -> IVec2 {
-        self.final_size / 2_i32.pow(self.ao_halves)
+        self.raytrace_size / 2_i32.pow(self.ao_halves)
     }
 }
 
@@ -106,7 +107,7 @@ impl PassRaytrace {
                 .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/world.frag").unwrap())
                 .build()
                 .unwrap(),
-            viewport: viewport::Viewport::new(options.final_size)
+            viewport: viewport::Viewport::new(options.raytrace_size)
                 .colour_attachment()
                     .tag("albedo")
                     .format(gpu::SizedComponent::SRGB8A8)
@@ -147,7 +148,7 @@ impl PassRaytrace {
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
         let grid_texture: &GpuTexture3d = grid.try_into().unwrap();
         let mut bind = self.shader.activate();
-        bind.uniform("uScreenSize").unwrap().set_ivec2(self.options.final_size);
+        bind.uniform("uScreenSize").unwrap().set_ivec2(self.options.raytrace_size);
 
         bind.sampler("grid", grid_texture).unwrap();
         bind.sampler("albedo", &self.albedo).unwrap();
@@ -280,7 +281,7 @@ impl PassLightingCombine {
                 .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/combine.frag").unwrap())
                 .build()
                 .unwrap(),
-            viewport: viewport::Viewport::new(options.final_size)
+            viewport: viewport::Viewport::new(options.raytrace_size)
                 .colour_attachment()
                     .format(gpu::SizedComponent::FloatRGBA32)
                 .build(),
@@ -418,7 +419,7 @@ impl PassLightingAoCombine {
                 .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/ao_combine.frag").unwrap())
                 .build()
                 .unwrap(),
-            viewport: viewport::Viewport::new(options.final_size)
+            viewport: viewport::Viewport::new(options.raytrace_size)
                 .colour_attachment()
                     .format(gpu::SizedComponent::FloatRGBA32)
                 .build(),
@@ -549,6 +550,7 @@ impl RenderPass {
 
         let options = PassOptions {
             final_size: vec2(1280, 720),
+            raytrace_size: vec2(896, 504),
             lighting_halves: 0,
             ao_halves: 2
         };
@@ -619,8 +621,12 @@ impl RenderPass {
         );
 
         let finished_scene = self.pass_ao_combine.viewport.colour_attachment(0).colour;
+        let finished_scene_upscaled = self.rescaler.upscale(
+            &finished_scene,
+            self.options.final_size
+        );
         self.pass_post_process.execute(
-            &finished_scene
+            &finished_scene_upscaled
         );
     }
 }

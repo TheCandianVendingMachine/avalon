@@ -7,7 +7,6 @@ pub struct Pass {
 }
 
 pub struct RenderEngine {
-
 }
 
 impl RenderEngine {

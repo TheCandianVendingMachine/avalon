@@ -11,6 +11,7 @@ pub struct Window {
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
     event: event::Event,
+    event_subsystem: sdl2::EventSubsystem,
 }
 
 impl Window {
@@ -33,7 +34,8 @@ impl Window {
             video,
             window,
             gl_context,
-            event
+            event,
+            event_subsystem: sdl.event().unwrap()
         }
     }
 
@@ -140,8 +142,9 @@ impl Engine {
 
     pub fn is_open(&mut self) -> bool {
         while let Some(event) = self.window_listener.pop() {
-            if let sdl2::event::Event::Quit{ .. } = event.id {
-                return false;
+            match event.id {
+                sdl2::event::Event::Quit{ .. } => { return false }
+                _ => {}
             }
         }
         self.is_open

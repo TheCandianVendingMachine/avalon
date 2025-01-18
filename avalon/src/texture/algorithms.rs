@@ -184,7 +184,7 @@ impl Rescaler {
         bind.uniform("originalSize").unwrap().set_ivec2(near_texture.dimensions());
         bind.uniform("newSize").unwrap().set_ivec2(desired_size);
         bind.sampler("original", &near_texture).unwrap();
-        bind.sampler("upscaled", &upscaled).unwrap();
+        bind.image("upscaled", &upscaled, gpu::Access::Write(0)).unwrap();
 
         let (dispatch_x, dispatch_y, dispatch_z) = self.upscale.dispatch_counts(
             desired_size.x as usize,
