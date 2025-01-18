@@ -85,6 +85,15 @@ impl Viewport {
                     .as_ptr()
             );
         }
+
+        if self.depth_stencil.is_some() {
+            unsafe {
+                gl::Enable(gl::DEPTH_TEST);
+                gl::DepthFunc(gl::ALWAYS);
+                gl::DepthMask(gl::TRUE);
+            }
+        }
+
         ViewportBind {
             viewport: self
         }
