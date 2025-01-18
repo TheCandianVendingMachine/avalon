@@ -441,6 +441,54 @@ impl PassLightingAoCombine {
     }
 }
 
+struct PassPostProcess {
+    tone_mapping: Program,
+    gamma_correction: Program,
+    viewport: viewport::Viewport,
+    options: PassOptions,
+}
+
+impl PassPostProcess {
+    fn new(options: PassOptions) -> PassPostProcess {
+        PassPostProcess {
+            tone_mapping: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/reinhard_tonemap.frag").unwrap())
+                .build()
+                .unwrap(),
+            gamma_correction: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/gamma_correction.frag").unwrap())
+                .build()
+                .unwrap(),
+            viewport: viewport::Viewport::new(options.ao_resolution())
+                .colour_attachment()
+                    .format(gpu::SizedComponent::RGBA8)
+                .build(),
+            options
+        }
+    }
+
+    fn execute(
+        &self,
+        pre_processed_scene: &GpuTexture2d
+    ) {
+        {
+            let viewport = self.viewport.bind();
+            let mut bind = self.tone_mapping.activate();
+            bind.sampler("texture", pre_processed_scene).unwrap();
+            bind.uniform("white").unwrap().set_vec3(vec3(2.0, 2.0, 2.0));
+
+            bind.temp_render();
+        }
+
+        let mut bind = self.gamma_correction.activate();
+        bind.sampler("texture", &self.viewport.colour_attachment(0).colour).unwrap();
+
+        bind.temp_render();
+    }
+}
+
 struct RenderPass {
     options: PassOptions,
     pass_raytrace: PassRaytrace,
@@ -448,6 +496,7 @@ struct RenderPass {
     pass_lighting_combine: PassLightingCombine,
     pass_ao: PassLightingAo,
     pass_ao_combine: PassLightingAoCombine,
+    pass_post_process: PassPostProcess,
     lights: Vec<Light>
 }
 
@@ -491,6 +540,7 @@ impl RenderPass {
         let pass_lighting_combine = PassLightingCombine::new(options);
         let pass_ao = PassLightingAo::new(options, 32);
         let pass_ao_combine = PassLightingAoCombine::new(options);
+        let pass_post_process = PassPostProcess::new(options);
         RenderPass {
             options,
             pass_raytrace,
@@ -498,6 +548,7 @@ impl RenderPass {
             pass_lighting_combine,
             pass_ao,
             pass_ao_combine,
+            pass_post_process,
             lights
         }
     }
@@ -544,6 +595,11 @@ impl RenderPass {
             &ao_scene,
             &lighting,
             &albedo,
+        );
+
+        let finished_scene = self.pass_ao_combine.viewport.colour_attachment(0).colour;
+        self.pass_post_process.execute(
+            &finished_scene
         );
     }
 }
