@@ -20,60 +20,69 @@ pub trait Sampler: UniqueTexture {
     fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t>;
 }
 
-pub struct ManagedTexture<T: UniqueTexture>(T);
+pub struct ManagedTexture<T: UniqueTexture>{ texture: T, drop: bool }
+impl<T: Copy + UniqueTexture> ManagedTexture<T> {
+    pub fn take(mut self) -> T {
+        self.drop = false;
+        self.texture
+    }
+}
+
 impl<T: UniqueTexture> Drop for ManagedTexture<T> {
     fn drop(&mut self) {
-        unsafe {
-            gl::DeleteTextures(1, &self.0.handle());
+        if self.drop {
+            unsafe {
+                gl::DeleteTextures(1, &self.texture.handle());
+            }
         }
     }
 }
 
 impl<T: UniqueTexture> UniqueTexture for ManagedTexture<T> {
     fn levels(&self) -> u32 {
-        self.0.levels()
+        self.texture.levels()
     }
     fn handle(&self) -> u32 {
-        self.0.handle()
+        self.texture.handle()
     }
 }
 
 impl<T: Image> Image for ManagedTexture<T> {
     fn image<'t>(&'t self, idx: gl::types::GLuint, access: Access) -> ImageAttachment<'t> {
-        self.0.image(idx, access)
+        self.texture.image(idx, access)
     }
 }
 
 impl<T: Sampler> Sampler for ManagedTexture<T> {
     fn sampler<'t>(&'t self, unit: gl::types::GLenum) -> TextureAttachment<'t> {
-        self.0.sampler(unit)
+        self.texture.sampler(unit)
     }
 }
 
 impl<T: UniqueTexture + std::fmt::Debug> std::fmt::Debug for ManagedTexture<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ManagedTexture")
-            .field("", &self.0)
+            .field("", &self.texture)
             .finish()
     }
 }
 
 impl<T: UniqueTexture> From<T> for ManagedTexture<T> {
     fn from(texture: T) -> ManagedTexture<T> {
-        ManagedTexture(texture)
+        ManagedTexture{ texture, drop: true }
     }
 }
 
 impl<T: UniqueTexture> std::ops::Deref for ManagedTexture<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.texture
     }
 }
 
 impl<T: UniqueTexture> std::ops::DerefMut for ManagedTexture<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.texture
     }
 }
 

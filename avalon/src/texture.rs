@@ -1,3 +1,4 @@
+pub mod algorithms;
 pub mod gpu;
 pub mod cpu;
 pub mod data;

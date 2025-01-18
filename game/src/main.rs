@@ -8,6 +8,7 @@ pub mod voxel;
 use avalon;
 use avalon::viewport;
 use avalon::shader::{ self, Source, Program, };
+use avalon::texture::algorithms;
 use avalon::texture::data;
 use avalon::texture::{ Component, GpuTexture3d, GpuTexture2d };
 use avalon::texture::gpu::{ self, Arguments2d, UniqueTexture, Access, Sampler, Image };
@@ -83,7 +84,7 @@ impl PassOptions {
     }
 
     fn ao_resolution(&self) -> IVec2 {
-        self.final_size / 2_i32.pow(self.lighting_halves)
+        self.final_size / 2_i32.pow(self.ao_halves)
     }
 }
 
@@ -417,7 +418,7 @@ impl PassLightingAoCombine {
                 .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/ao_combine.frag").unwrap())
                 .build()
                 .unwrap(),
-            viewport: viewport::Viewport::new(options.ao_resolution())
+            viewport: viewport::Viewport::new(options.final_size)
                 .colour_attachment()
                     .format(gpu::SizedComponent::FloatRGBA32)
                 .build(),
@@ -461,7 +462,7 @@ impl PassPostProcess {
                 .fragment(shader::Fragment::load_from_path("assets/shaders/gamma_correction.frag").unwrap())
                 .build()
                 .unwrap(),
-            viewport: viewport::Viewport::new(options.ao_resolution())
+            viewport: viewport::Viewport::new(options.final_size)
                 .colour_attachment()
                     .format(gpu::SizedComponent::RGBA8)
                 .build(),
@@ -497,6 +498,7 @@ struct RenderPass {
     pass_ao: PassLightingAo,
     pass_ao_combine: PassLightingAoCombine,
     pass_post_process: PassPostProcess,
+    rescaler: algorithms::Rescaler,
     lights: Vec<Light>
 }
 
@@ -548,7 +550,7 @@ impl RenderPass {
         let options = PassOptions {
             final_size: vec2(1280, 720),
             lighting_halves: 0,
-            ao_halves: 0
+            ao_halves: 2
         };
 
         let pass_raytrace = PassRaytrace::new(options);
@@ -565,6 +567,7 @@ impl RenderPass {
             pass_ao,
             pass_ao_combine,
             pass_post_process,
+            rescaler: algorithms::Rescaler::new(),
             lights
         }
     }
@@ -591,9 +594,10 @@ impl RenderPass {
         );
 
         let lighting = self.pass_lighting.lighting_buffer;
+        let lighting_upscaled = self.rescaler.upscale_doubling(&lighting, self.options.lighting_halves).as_managed();
         self.pass_lighting_combine.execute(
             &albedo,
-            &lighting
+            &lighting_upscaled
         );
 
         let lighted_scene = self.pass_lighting_combine.viewport.colour_attachment(0).colour;
@@ -607,9 +611,10 @@ impl RenderPass {
         );
 
         let ao_scene = self.pass_ao.viewport.colour_attachment(0).colour;
+        let ao_scene_upscaled = self.rescaler.upscale_doubling(&ao_scene, self.options.ao_halves);
         self.pass_ao_combine.execute(
-            &ao_scene,
-            &lighting,
+            &ao_scene_upscaled,
+            &lighting_upscaled,
             &albedo,
         );
 

@@ -74,8 +74,8 @@ impl Drop for TextureBind2d<'_> {
 #[derive(Debug, Copy, Clone)]
 pub struct Texture2d {
     handle: gl::types::GLuint,
-    internal_components: Component,
-    internal_size: SizedComponent,
+    pub(crate) internal_components: Component,
+    pub(crate) internal_size: SizedComponent,
     dimensions: IVec2,
     mip_levels: u32,
 }
@@ -158,6 +158,10 @@ impl Texture2d {
         TextureBind2d {
             texture: self
         }
+    }
+
+    pub fn dimensions(&self) -> IVec2 {
+        self.dimensions
     }
 }
 
