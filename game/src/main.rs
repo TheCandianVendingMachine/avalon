@@ -508,9 +508,9 @@ impl RenderPass {
         let mut lights = Vec::new();
         lights.push(
             Light::Directional {
-                colour: vec3(1.0, 0.90, 0.95),
+                colour: vec3(1.0, 0.50, 0.55),
                 direction: vec3(1.0, -0.4, 0.2).normalize(),
-                intensity: 0.0
+                intensity: 0.9
             }
         );
 
@@ -518,7 +518,7 @@ impl RenderPass {
             Light::Directional {
                 colour: vec3(1.0, 1.0, 1.0),
                 direction: vec3(0.3, -0.9, 0.2).normalize(),
-                intensity: 1.0
+                intensity: 0.1
             }
         );
 
@@ -668,14 +668,14 @@ fn main() {
         }
     }
 
-    for y in 1..=5 {
-        for x in 1..=5 {
+    for x in 1..=5 {
+        for y in 1..=5 {
             set_cell(vec3(x, y, 3));
             set_cell(vec3(x, y, 8));
         }
 
         for z in 3..=8 {
-            set_cell(vec3(5, y, z));
+            set_cell(vec3(x, 6, z));
         }
     }
     grid.bake();

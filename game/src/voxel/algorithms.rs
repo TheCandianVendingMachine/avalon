@@ -61,7 +61,11 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
                 let mut bind = oven.activate();
                 bind.image("distanceBuffer", &distance_buffer, Access::ReadWrite(0));
 
-                let dispatch_n = ((SIDE_LENGTH as f64) / 8.0).ceil() as u32;
+                let (dispatch_x, dispatch_y, dispatch_z) = oven.dispatch_counts(
+                    SIDE_LENGTH,
+                    SIDE_LENGTH,
+                    SIDE_LENGTH
+                );
 
                 let step_count = (SIDE_LENGTH as f64).log2().ceil() as usize;
                 for jump in 0..=step_count {
@@ -77,7 +81,7 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
                     bind.image("newParentBuffer", &temp_parent_buffers[new_idx], Access::Write(0)).unwrap();
                     bind.image("oldParentBuffer", &temp_parent_buffers[old_idx], Access::Read(0)).unwrap();
                     bind.barrier();
-                    bind.dispatch_compute(dispatch_n, dispatch_n, dispatch_n);
+                    bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
                 }
 
             }
