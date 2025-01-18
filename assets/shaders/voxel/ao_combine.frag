@@ -4,7 +4,6 @@ layout(location=1) uniform sampler2D lightBuffer;
 layout(location=2) uniform sampler2D aoBuffer;
 layout(location=3) uniform sampler2D albedoBuffer;
 
-in vec2 screenSize;
 out vec4 fColor;
 
 void main() {

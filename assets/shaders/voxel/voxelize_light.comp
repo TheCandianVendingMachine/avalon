@@ -14,7 +14,7 @@ void main() {
     ivec2 pCoord = ivec2(gl_GlobalInvocationID.xy);
     ivec2 bigCoord = OFFSET * pCoord;
     ivec4 initialPos = ivec4(floor(texelFetch(positions, bigCoord, 0)));
-    if (0.0 == texelFetch(lightedScene, bigCoord, 0).a) {
+    if (0.0 == texelFetch(lightedScene, pCoord, 0).a) {
         imageStore(lightVoxel, initialPos.xyz, vec4(0.0));
         return;
     }

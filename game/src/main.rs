@@ -386,6 +386,58 @@ impl PassLightingAo {
                 bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
             }
         }
+
+        let grid_texture: &GpuTexture3d = grid.try_into().unwrap();
+
+        let viewport = self.viewport.bind();
+        let mut bind = self.shader_conetrace.activate();
+        bind.sampler("positionBuffer", positions).unwrap();
+        bind.sampler("normalBuffer", normals).unwrap();
+        bind.sampler("tangentBuffer", tangents).unwrap();
+        bind.sampler("lightGrid", &self.light_voxels).unwrap();
+        bind.sampler("grid", grid_texture).unwrap();
+        bind.uniform("resolution").unwrap().set_i32(1);
+        bind.uniform("halveCount").unwrap().set_i32(self.options.ao_halves as i32);
+
+        bind.temp_render();
+    }
+}
+
+struct PassLightingAoCombine {
+    shader: Program,
+    viewport: viewport::Viewport,
+    options: PassOptions,
+}
+
+impl PassLightingAoCombine {
+    fn new(options: PassOptions) -> PassLightingAoCombine {
+        PassLightingAoCombine {
+            shader: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/ao_combine.frag").unwrap())
+                .build()
+                .unwrap(),
+            viewport: viewport::Viewport::new(options.ao_resolution())
+                .colour_attachment()
+                    .format(gpu::SizedComponent::FloatRGBA32)
+                .build(),
+            options
+        }
+    }
+
+    fn execute(
+        &self,
+        scene_ao: &GpuTexture2d,
+        scene_lighting: &GpuTexture2d,
+        albedo: &GpuTexture2d,
+    ) {
+        let viewport = self.viewport.bind();
+        let mut bind = self.shader.activate();
+        bind.sampler("lightBuffer", scene_lighting).unwrap();
+        bind.sampler("aoBuffer", scene_ao).unwrap();
+        bind.sampler("albedoBuffer", albedo).unwrap();
+
+        bind.temp_render();
     }
 }
 
@@ -395,6 +447,7 @@ struct RenderPass {
     pass_lighting: PassLighting,
     pass_lighting_combine: PassLightingCombine,
     pass_ao: PassLightingAo,
+    pass_ao_combine: PassLightingAoCombine,
     lights: Vec<Light>
 }
 
@@ -405,7 +458,7 @@ impl RenderPass {
             Light::Directional {
                 colour: vec3(1.0, 0.90, 0.95),
                 direction: vec3(1.0, -0.4, 0.2).normalize(),
-                intensity: 0.3
+                intensity: 0.7
             }
         );
 
@@ -437,12 +490,14 @@ impl RenderPass {
         let pass_lighting = PassLighting::new(options);
         let pass_lighting_combine = PassLightingCombine::new(options);
         let pass_ao = PassLightingAo::new(options, 32);
+        let pass_ao_combine = PassLightingAoCombine::new(options);
         RenderPass {
             options,
             pass_raytrace,
             pass_lighting,
             pass_lighting_combine,
             pass_ao,
+            pass_ao_combine,
             lights
         }
     }
@@ -482,6 +537,13 @@ impl RenderPass {
             &normals,
             &tangents,
             1.0 / 60.0
+        );
+
+        let ao_scene = self.pass_ao.viewport.colour_attachment(0).colour;
+        self.pass_ao_combine.execute(
+            &ao_scene,
+            &lighting,
+            &albedo,
         );
     }
 }
