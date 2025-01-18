@@ -11,7 +11,7 @@ use crate::shader::uniform::Uniform;
 use crate::shader::error;
 use crate::texture::gpu::{ Access, Sampler, Image, TextureAttachment, ImageAttachment };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Program {
     program: gl::types::GLuint,
     shaders: Vec<Shader>

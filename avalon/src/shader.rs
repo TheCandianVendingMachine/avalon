@@ -8,10 +8,12 @@ pub use program::Program;
 
 mod utils {
     pub fn string_as_char_buf(source: String) -> Vec<i8> {
-        Vec::from(source.as_bytes())
+        let mut bytes: Vec<_> = Vec::from(source.as_bytes())
             .iter()
             .map(|i| (*i) as i8)
-            .collect()
+            .collect();
+        bytes.push(0);
+        bytes
     }
 }
 
@@ -90,15 +92,15 @@ pub trait Source: MetaShader {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Vertex {
     id: gl::types::GLuint
 }
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Fragment {
     id: gl::types::GLuint
 }
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Compute {
     id: gl::types::GLuint
 }
@@ -155,7 +157,7 @@ impl Source for Vertex {}
 impl Source for Fragment {}
 impl Source for Compute {}
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 enum Shader {
     Vertex(Vertex),
     Fragment(Fragment),
