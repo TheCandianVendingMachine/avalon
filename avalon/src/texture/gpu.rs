@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 
 pub trait UniqueTexture where Self: Sized {
     fn handle(&self) -> u32;
+    fn levels(&self) -> u32;
     fn as_managed(self) -> ManagedTexture<Self> where Self: Sized {
         Into::<ManagedTexture<Self>>::into(self)
     }
@@ -29,6 +30,9 @@ impl<T: UniqueTexture> Drop for ManagedTexture<T> {
 }
 
 impl<T: UniqueTexture> UniqueTexture for ManagedTexture<T> {
+    fn levels(&self) -> u32 {
+        self.0.levels()
+    }
     fn handle(&self) -> u32 {
         self.0.handle()
     }
@@ -155,12 +159,12 @@ pub use texture_3d::{
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, std::hash::Hash)]
 pub enum Access {
-    Read,
-    Write,
-    ReadWrite
+    Read(u32),
+    Write(u32),
+    ReadWrite(u32)
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Mipmap {
     None,
     Inbuilt{ count: u8 },

@@ -10,7 +10,7 @@ use avalon::viewport;
 use avalon::shader::{ self, Source, Program, };
 use avalon::texture::data;
 use avalon::texture::{ Component, GpuTexture3d, GpuTexture2d };
-use avalon::texture::gpu::{ self, Arguments2d, Access, Sampler, Image };
+use avalon::texture::gpu::{ self, Arguments2d, UniqueTexture, Access, Sampler, Image };
 
 #[derive(Debug, Copy, Clone)]
 enum Light {
@@ -108,7 +108,7 @@ impl PassRaytrace {
             viewport: viewport::Viewport::new(options.final_size)
                 .colour_attachment()
                     .tag("albedo")
-                    .format(gpu::SizedComponent::RGB8)
+                    .format(gpu::SizedComponent::RGBA8)
                 .colour_attachment()
                     .tag("normal")
                     .format(gpu::SizedComponent::NormalRGB8)
@@ -204,7 +204,7 @@ impl PassLighting {
         bind.sampler("grid", grid_texture).unwrap();
         bind.sampler("normalBuffer", normals).unwrap();
         bind.sampler("positionBuffer", positions).unwrap();
-        bind.image("lightingBuffer", &self.lighting_buffer, Access::ReadWrite).unwrap();
+        bind.image("lightingBuffer", &self.lighting_buffer, Access::ReadWrite(0)).unwrap();
 
         bind.uniform("halveCount").unwrap().set_i32(self.options.lighting_halves as i32);
 
@@ -265,10 +265,136 @@ impl PassLighting {
     }
 }
 
+struct PassLightingCombine {
+    shader: Program,
+    viewport: viewport::Viewport,
+    options: PassOptions,
+}
+
+impl PassLightingCombine {
+    fn new(options: PassOptions) -> PassLightingCombine {
+        PassLightingCombine {
+            shader: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/combine.frag").unwrap())
+                .build()
+                .unwrap(),
+            viewport: viewport::Viewport::new(options.final_size)
+                .colour_attachment()
+                    .format(gpu::SizedComponent::FloatRGBA32)
+                .build(),
+            options
+        }
+    }
+
+    fn execute(
+        &self,
+        albedo: &GpuTexture2d,
+        light: &GpuTexture2d,
+    ) {
+        let mut bind = self.shader.activate();
+
+        bind.sampler("albedo", albedo).unwrap();
+        bind.sampler("light", light).unwrap();
+
+        let viewport = self.viewport.bind();
+        bind.temp_render();
+    }
+}
+
+struct PassLightingAo {
+    shader_voxelize_light: Program,
+    shader_mipmap_light_voxels: Program,
+    shader_conetrace: Program,
+    viewport: viewport::Viewport,
+    light_voxels: GpuTexture3d,
+    options: PassOptions,
+}
+
+impl PassLightingAo {
+    fn new(options: PassOptions, side_length: usize) -> PassLightingAo {
+        PassLightingAo {
+            shader_voxelize_light: Program::new()
+                .compute(shader::Compute::load_from_path("assets/shaders/voxel/voxelize_light.comp").unwrap())
+                .build()
+                .unwrap(),
+            shader_mipmap_light_voxels: Program::new()
+                .compute(shader::Compute::load_from_path("assets/shaders/voxel/mipmap_light.comp").unwrap())
+                .build()
+                .unwrap(),
+            shader_conetrace: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/cone_indirect.frag").unwrap())
+                .build()
+                .unwrap(),
+            viewport: viewport::Viewport::new(options.ao_resolution())
+                .colour_attachment()
+                    .format(gpu::SizedComponent::FloatRGBA32)
+                .build(),
+            light_voxels: GpuTexture3d::generate_storage(gpu::Arguments3d {
+                dimensions: vec3(side_length as i32, side_length as i32, side_length as i32),
+                internal_components: Component::RGBA,
+                internal_size: gpu::SizedComponent::FloatRGBA32,
+                mipmap_type: gpu::Mipmap::None,
+                data: None,
+            }, 5),
+            options
+        }
+    }
+
+    fn execute<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32>(
+        &self,
+        lighted_scene: &GpuTexture2d,
+        grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>,
+        positions: &GpuTexture2d,
+        normals: &GpuTexture2d,
+        tangents: &GpuTexture2d,
+        delta_time: f32,
+    ) where
+    [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+        {
+            let mut bind = self.shader_voxelize_light.activate();
+            bind.sampler("lightedScene", lighted_scene).unwrap();
+            bind.sampler("positions", positions).unwrap();
+            bind.image("lightVoxel", &self.light_voxels, Access::ReadWrite(0)).unwrap();
+            bind.uniform("halvedCount").unwrap().set_i32(self.options.lighting_halves as i32);
+            bind.uniform("deltaTime").unwrap().set_f32(delta_time);
+
+            let (dispatch_x, dispatch_y, dispatch_z) = self.shader_voxelize_light.dispatch_counts(
+                self.options.lighting_resolution().x as usize,
+                self.options.lighting_resolution().y as usize,
+                1
+            );
+            bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
+            bind.barrier();
+        }
+
+        {
+            let mut bind = self.shader_mipmap_light_voxels.activate();
+            bind.sampler("lightVoxels", &self.light_voxels).unwrap();
+
+            for level in 1..self.light_voxels.levels() {
+                bind.image("mipmap", &self.light_voxels, Access::ReadWrite(level)).unwrap();
+                bind.uniform("level").unwrap().set_i32(level as i32);
+
+                let dimension = SIDE_LENGTH / 2_usize.pow(level);
+                let (dispatch_x, dispatch_y, dispatch_z) = self.shader_mipmap_light_voxels.dispatch_counts(
+                    dimension,
+                    dimension,
+                    dimension
+                );
+                bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
+            }
+        }
+    }
+}
+
 struct RenderPass {
     options: PassOptions,
     pass_raytrace: PassRaytrace,
     pass_lighting: PassLighting,
+    pass_lighting_combine: PassLightingCombine,
+    pass_ao: PassLightingAo,
     lights: Vec<Light>
 }
 
@@ -309,10 +435,14 @@ impl RenderPass {
 
         let pass_raytrace = PassRaytrace::new(options);
         let pass_lighting = PassLighting::new(options);
+        let pass_lighting_combine = PassLightingCombine::new(options);
+        let pass_ao = PassLightingAo::new(options, 32);
         RenderPass {
             options,
             pass_raytrace,
             pass_lighting,
+            pass_lighting_combine,
+            pass_ao,
             lights
         }
     }
@@ -321,7 +451,11 @@ impl RenderPass {
         &self, camera: &Camera, grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
-        self.pass_raytrace.execute(camera, grid);
+        self.pass_raytrace.execute(
+            camera,
+            grid
+        );
+
         let albedo = self.pass_raytrace.viewport.tagged_colour("albedo").unwrap().colour;
         let normals = self.pass_raytrace.viewport.tagged_colour("normal").unwrap().colour;
         let tangents = self.pass_raytrace.viewport.tagged_colour("tangent").unwrap().colour;
@@ -332,6 +466,22 @@ impl RenderPass {
             &normals,
             &positions,
             &self.lights
+        );
+
+        let lighting = self.pass_lighting.lighting_buffer;
+        self.pass_lighting_combine.execute(
+            &albedo,
+            &lighting
+        );
+
+        let lighted_scene = self.pass_lighting_combine.viewport.colour_attachment(0).colour;
+        self.pass_ao.execute(
+            &lighted_scene,
+            &grid,
+            &positions,
+            &normals,
+            &tangents,
+            1.0 / 60.0
         );
     }
 }

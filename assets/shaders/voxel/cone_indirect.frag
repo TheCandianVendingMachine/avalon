@@ -80,7 +80,7 @@ TraceResult coneTrace(in vec3 position, in Cone cone) {
         }
 
         vec3 lighting = texelFetch(lightGrid, iMapPos, level).rgb;
-        if (lighting != 0.0) {
+        if (lighting != vec3(0.0)) {
             float r = sqrt(pow(cone.t, 2) * inverseRadiusSqr);
             // multiplying by pow(2, -level) because we are traversing through light voxels
             // which are not solid _but_ they do contain light data. we don't want the

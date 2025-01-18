@@ -59,7 +59,7 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
 
             {
                 let mut bind = oven.activate();
-                bind.image("distanceBuffer", &distance_buffer, Access::ReadWrite);
+                bind.image("distanceBuffer", &distance_buffer, Access::ReadWrite(0));
 
                 let dispatch_n = ((SIDE_LENGTH as f64) / 8.0).ceil() as u32;
 
@@ -74,8 +74,8 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
                     } else {
                         bind.uniform("jump").unwrap().set_i32(2_i32.pow((step_count - jump) as u32));
                     }
-                    bind.image("newParentBuffer", &temp_parent_buffers[new_idx], Access::Write).unwrap();
-                    bind.image("oldParentBuffer", &temp_parent_buffers[old_idx], Access::Read).unwrap();
+                    bind.image("newParentBuffer", &temp_parent_buffers[new_idx], Access::Write(0)).unwrap();
+                    bind.image("oldParentBuffer", &temp_parent_buffers[old_idx], Access::Read(0)).unwrap();
                     bind.barrier();
                     bind.dispatch_compute(dispatch_n, dispatch_n, dispatch_n);
                 }

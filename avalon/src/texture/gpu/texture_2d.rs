@@ -77,6 +77,7 @@ pub struct Texture2d {
     internal_components: Component,
     internal_size: SizedComponent,
     dimensions: IVec2,
+    mip_levels: u32,
 }
 
 impl Texture2d {
@@ -90,7 +91,8 @@ impl Texture2d {
             handle,
             internal_components,
             internal_size,
-            dimensions
+            dimensions,
+            mip_levels: 0
         }
     }
 
@@ -144,7 +146,8 @@ impl Texture2d {
             handle: handles[idx],
             internal_components: arguments.internal_components,
             internal_size: arguments.internal_size,
-            dimensions: arguments.dimensions
+            dimensions: arguments.dimensions,
+            mip_levels: 0
         })
     }
 
@@ -159,6 +162,9 @@ impl Texture2d {
 }
 
 impl UniqueTexture for Texture2d {
+    fn levels(&self) -> u32 {
+        0
+    }
     fn handle(&self) -> u32 {
         self.handle
     }
@@ -180,17 +186,22 @@ impl Sampler for Texture2d {
 
 impl Image for Texture2d {
     fn image<'t>(&'t self, idx: gl::types::GLuint, access: Access) -> ImageAttachment<'t> {
+        let level = match access {
+            Access::Read(level) => level,
+            Access::Write(level) => level,
+            Access::ReadWrite(level) => level,
+        };
         unsafe {
             gl::BindImageTexture(
                 idx,
                 self.handle,
-                0,
+                level as i32,
                 gl::FALSE,
                 0,
                 match access {
-                    Access::Read => gl::READ_ONLY,
-                    Access::Write => gl::WRITE_ONLY,
-                    Access::ReadWrite => gl::READ_WRITE,
+                    Access::Read(_) => gl::READ_ONLY,
+                    Access::Write(_) => gl::WRITE_ONLY,
+                    Access::ReadWrite(_) => gl::READ_WRITE,
                 },
                 self.internal_size.as_api() as u32
             );
