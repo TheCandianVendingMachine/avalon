@@ -24,9 +24,9 @@ impl Drop for ViewportBind<'_> {
     }
 }
 
-struct DepthStencilTexture {
-    kind: DepthStencil,
-    texture: texture::gpu::Texture2d
+pub struct DepthStencilTexture {
+    pub kind: DepthStencil,
+    pub texture: texture::gpu::Texture2d
 }
 
 #[derive(Debug)]
@@ -35,8 +35,9 @@ pub enum DepthStencil {
     DepthStencil,
 }
 
-struct ColourAttachment {
-    colour: texture::gpu::Texture2d,
+pub struct ColourAttachment {
+    pub colour: texture::gpu::Texture2d,
+    tag: Option<String>,
     unit: gl::types::GLenum,
 }
 
@@ -55,6 +56,20 @@ impl Viewport {
             colour_attachments: Vec::new(),
             depth_stencil: None
         }
+    }
+
+    pub fn colour_attachment(&self, idx: usize) -> &ColourAttachment {
+        &self.colours[idx]
+    }
+
+    pub fn tagged_colour(&self, tag: impl AsRef<str>) -> Option<&ColourAttachment> {
+        let tag = tag.as_ref();
+        self.colours.iter()
+            .filter(|attachment| attachment.tag.is_some())
+            .find(|attachment| *attachment.tag.as_ref().unwrap() == *tag) }
+
+    pub fn depth_attachment(&self) -> Option<&DepthStencilTexture> {
+        self.depth_stencil.as_ref()
     }
 
     pub fn bind<'v>(&'v self) -> ViewportBind<'v> {

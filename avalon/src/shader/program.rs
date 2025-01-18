@@ -87,6 +87,27 @@ impl Program {
 
         Ok(self)
     }
+
+    pub fn work_group_size(&self) -> (usize, usize, usize) {
+        unsafe {
+            let mut group_size = [0; 3];
+            gl::GetProgramiv(self.program, gl::COMPUTE_WORK_GROUP_SIZE, group_size.as_mut_ptr());
+            (
+                group_size[0] as usize,
+                group_size[1] as usize,
+                group_size[2] as usize
+            )
+        }
+    }
+
+    pub fn dispatch_counts(&self, x: usize, y: usize, z: usize) -> (usize, usize, usize) {
+        let (size_x, size_y, size_z) = self.work_group_size();
+        (
+            (x as f64 / size_x as f64).ceil() as usize,
+            (y as f64 / size_y as f64).ceil() as usize,
+            (z as f64 / size_z as f64).ceil() as usize,
+        )
+    }
 }
 
 impl Drop for Program {
