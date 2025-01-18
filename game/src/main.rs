@@ -108,7 +108,7 @@ impl PassRaytrace {
             viewport: viewport::Viewport::new(options.final_size)
                 .colour_attachment()
                     .tag("albedo")
-                    .format(gpu::SizedComponent::RGBA8)
+                    .format(gpu::SizedComponent::SRGB8A8)
                 .colour_attachment()
                     .tag("normal")
                     .format(gpu::SizedComponent::NormalRGB8)
