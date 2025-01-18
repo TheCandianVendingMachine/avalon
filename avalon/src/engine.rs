@@ -19,13 +19,14 @@ impl Window {
 
         video.gl_attr().set_context_profile(sdl2::video::GLProfile::Core);
         video.gl_attr().set_context_version(4, 5);
+        video.gl_attr().set_framebuffer_srgb_compatible(true);
 
         let window = video.window("Avalon Engine", 1280, 720)
             .opengl()
             .build()
             .unwrap();
         let gl_context = window.gl_create_context().unwrap();
-        let gl = gl::load_with(|s| video.gl_get_proc_address(s) as *const std::ffi::c_void);
+        let _gl = gl::load_with(|s| video.gl_get_proc_address(s) as *const std::ffi::c_void);
 
         let event = event::Event::new(&sdl);
         Window {

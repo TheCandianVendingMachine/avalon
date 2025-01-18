@@ -1,3 +1,5 @@
+use gl;
+
 use crate::shader;
 
 pub struct Pass {
@@ -10,6 +12,9 @@ pub struct RenderEngine {
 
 impl RenderEngine {
     pub fn new() -> RenderEngine {
+        unsafe {
+            gl::Enable(gl::FRAMEBUFFER_SRGB);
+        }
         RenderEngine {
         }
     }

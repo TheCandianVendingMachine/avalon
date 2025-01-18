@@ -477,7 +477,7 @@ impl PassPostProcess {
             let viewport = self.viewport.bind();
             let mut bind = self.tone_mapping.activate();
             bind.sampler("texture", pre_processed_scene).unwrap();
-            bind.uniform("white").unwrap().set_vec3(vec3(2.0, 2.0, 2.0));
+            bind.uniform("white").unwrap().set_vec3(vec3(4.0, 4.0, 4.0));
 
             bind.temp_render();
         }
@@ -507,7 +507,15 @@ impl RenderPass {
             Light::Directional {
                 colour: vec3(1.0, 0.90, 0.95),
                 direction: vec3(1.0, -0.4, 0.2).normalize(),
-                intensity: 0.7
+                intensity: 0.0
+            }
+        );
+
+        lights.push(
+            Light::Directional {
+                colour: vec3(1.0, 1.0, 1.0),
+                direction: vec3(0.3, -0.9, 0.2).normalize(),
+                intensity: 1.0
             }
         );
 
@@ -515,7 +523,15 @@ impl RenderPass {
             Light::Point {
                 colour: vec3(0.6, 0.6, 0.6),
                 position: vec3(4.0, 9.0, 25.0),
-                intensity: 60.0
+                intensity: 160.0
+            }
+        );
+
+        lights.push(
+            Light::Point {
+                colour: vec3(0.6, 0.6, 0.6),
+                position: vec3(4.0, 2.5, -2.0),
+                intensity: 15.0
             }
         );
 
@@ -525,7 +541,7 @@ impl RenderPass {
                 position: vec3(30.5, 8.0, -5.0),
                 direction: vec3(-0.8, -0.3, 1.0).normalize(),
                 angle: 5.0_f32.to_radians(),
-                intensity: 70.0
+                intensity: 170.0
             }
         );
 

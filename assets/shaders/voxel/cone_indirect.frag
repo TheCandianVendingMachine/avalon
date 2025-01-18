@@ -45,8 +45,8 @@ TraceResult coneTrace(in vec3 position, in Cone cone) {
     float radiusForNextLevel = 1.0;
 
     const ivec3 mapBounds = ivec3(32, 32, 32);
-    const float LAMBDA = 0.5;
-    const float REFLECTANCE = 2.0;
+    const float LAMBDA = 0.05;
+    const float REFLECTANCE = 1.0;
 
     // Sample grid and get safe cell step count via x + y + z)
     // Step ray that many cells
