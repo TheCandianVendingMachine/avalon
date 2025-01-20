@@ -3,7 +3,7 @@ use avalon_asset::packed;
 use avalon_asset::bundle;
 use avalon_asset::{ shader, texture, text };
 use avalon_asset::asset::{ Type, Unit, Metadata };
-use anyhow::{ Result, anyhow };
+use anyhow::Result;
 
 trait Operation {
     fn name(&self) -> &str;
@@ -16,19 +16,34 @@ struct CreateBundle {
 
 impl CreateBundle {
     fn add_asset(&self) -> Result<Option<Metadata>> {
-        println!("Create Asset");
-        let path_str = inquire::Text::new("Asset filepath:")
+        println!("Bundle Asset");
+
+        let path_validator = |path: &str| {
+            let path = std::path::Path::new(&path);
+            if !path.exists() {
+                return Ok(inquire::validator::Validation::Invalid(
+                    format!("Provided filepath [{}] does not exist", path.as_os_str().to_string_lossy()).into()
+                ));
+            }
+            let path = std::fs::canonicalize(path).unwrap();
+            if !path.is_file() {
+                return Ok(inquire::validator::Validation::Invalid(
+                    format!("Provided path [{}] needs to be a file", path.as_os_str().to_string_lossy()).into()
+                ));
+            }
+
+            return Ok(inquire::validator::Validation::Valid);
+        };
+
+        let path = inquire::Text::new("Asset filepath:")
             .with_help_message("The filepath of the asset, relative to the current working directory")
+            .with_validator(path_validator)
             .prompt()
+            .map(|path_str| {
+                let path = std::path::Path::new(&path_str);
+                std::fs::canonicalize(path).unwrap()
+            })
             .unwrap();
-        let path = std::path::Path::new(&path_str);
-        if !path.exists() {
-            return Err(anyhow!("Provided filepath [{}] does not exist", path.as_os_str().to_string_lossy()));
-        }
-        let path = std::fs::canonicalize(path).unwrap();
-        if !path.is_file() {
-            return Err(anyhow!("Provided path [{}] needs to be a file", path.as_os_str().to_string_lossy()));
-        }
 
         let tag = inquire::Text::new("Tag:")
             .with_help_message("A human readable tag that is associated with the asset (not-unique)")
