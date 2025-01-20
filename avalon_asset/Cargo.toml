@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+filetime = "0.2.25"
+miniserde = "0.1.41"
+thiserror = "2.0.11"
+uuid = { version = "1.12.0", features = ["v4", "fast-rng"] }
+zip = "2.2.2"
