@@ -27,6 +27,10 @@ impl Uniform<'_> {
         unsafe { gl::Uniform1ui(self.location, value.into()); }
     }
 
+    pub fn set_bool(self, value: impl Into<bool>) {
+        unsafe { gl::Uniform1i(self.location, value.into() as i32); }
+    }
+
     pub fn set_vec2(self, value: impl Into<Vec2>) {
         unsafe { gl::Uniform2fv(self.location, 1, value.into().as_slice().as_ptr()); }
     }

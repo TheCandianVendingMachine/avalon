@@ -5,16 +5,16 @@
 layout(location=1) uniform sampler2D positionBuffer;
 layout(location=2) uniform sampler2D normalBuffer;
 layout(location=3) uniform sampler2D tangentBuffer;
-layout(location=5) uniform sampler3D lightGrid;
-layout(location=6) uniform sampler3D grid;
-layout(location=7) uniform int resolution;
-layout(location=8) uniform int halveCount;
+layout(location=4) uniform sampler3D lightGrid;
+layout(location=5) uniform sampler3D grid;
+layout(location=6) uniform int resolution;
+layout(location=7) uniform int halveCount;
 
 out vec4 fColor;
 
 struct Cone {
     vec3 direction;
-    float cosAngle;
+    float tanAngle;
     float t;
 };
 
@@ -23,16 +23,13 @@ struct TraceResult {
 };
 
 int getGridStep(in int level, in ivec3 position) {
-    ivec4 texel = ivec4(floor(texelFetch(grid, ivec3(vec3(position) / pow(2.0, level)), level) * 256.0));
-    int embedded = (texel.a << 24) | (texel.b << 16) | (texel.g << 8) | (texel.r << 0);
-    return (embedded & 0x000001FF) >> 0;
+    int texel = int(texelFetch(grid, position, 0).r);
+    return (texel & 0x0000FF80) >> 7;
 }
 
-bool isSolid(in int level, in ivec3 position) {
-    ivec4 texel = ivec4(floor(texelFetch(grid, ivec3(vec3(position) * pow(2.0, level)), 0) * 256.0));
-    int embedded = (texel.a << 24) | (texel.b << 16) | (texel.g << 8) | (texel.r << 0);
-    return 1 == ((embedded & 0x000FFE00) >> 9);
-;
+bool isOpaque(in int level, in ivec3 position) {
+    int texel = int(texelFetch(grid, position, 0).r);
+    return 1 == ((texel & 0x00000040) >> 6);
 }
 
 ivec2 rescalePosition(ivec2 uv) {
@@ -47,11 +44,9 @@ TraceResult coneTrace(in vec3 position, in Cone cone) {
     int level = 0;
     float radiusForNextLevel = 1.0;
 
-    const ivec3 mapBounds = ivec3(256, 256, 256);
-    const float LAMBDA = 1.0;
+    const ivec3 mapBounds = ivec3(32, 32, 32);
+    const float LAMBDA = 0.05;
     const float REFLECTANCE = 1.0;
-
-    const float inverseRadiusSqr = (1.0 / pow(cone.cosAngle, 2.0) - 1.0);
 
     // Sample grid and get safe cell step count via x + y + z)
     // Step ray that many cells
@@ -78,32 +73,31 @@ TraceResult coneTrace(in vec3 position, in Cone cone) {
         if (!inBounds) {
             return result;
         }
+        float r = cone.t * cone.tanAngle;
 
-        vec3 lighting = texelFetch(lightGrid, iMapPos, level).rgb;
-        if (lighting != 0.0) {
-            float r = sqrt(pow(cone.t, 2) * inverseRadiusSqr);
+        vec3 lighting = texelFetch(lightGrid, iMapPos / int(radiusForNextLevel), level).rgb;
+        if (lighting != vec3(0.0)) {
             // multiplying by pow(2, -level) because we are traversing through light voxels
             // which are not solid _but_ they do contain light data. we don't want the
             // "extra" light data, so we try to reduce the prominence
             result.colour += 1.0 / (1.0 + LAMBDA * r) * REFLECTANCE * lighting / radiusForNextLevel;
-            if (isSolid(level, iMapPos)) {
+            if (isOpaque(level, iMapPos)) {
                 return result;
             }
         }
 
-        int cellStep = getGridStep(level, iMapPos);
+        int cellStep = max(1, getGridStep(level, iMapPos));
 
         for (int i = 0; i < cellStep; i++) {
             bvec3 mask = lessThanEqual(tMax.xyz, min(tMax.yzx, tMax.zxy));
             tMax += vec3(mask) * deltaDist;
             mapPos += vec3(mask) * rayStep;
-            cone.t += dot(vec3(mask) * rayDir, vec3(1));
+            cone.t += length(vec3(mask) * rayDir);
         }
 
-        float r = sqrt(pow(cone.t, 2) * inverseRadiusSqr);
-        if (r >= radiusForNextLevel) {
+        if (r > radiusForNextLevel) {
             level += 1;
-            radiusForNextLevel = pow(2.0, level);
+            radiusForNextLevel = radiusForNextLevel * 2;
         }
     }
 
@@ -133,28 +127,29 @@ void main() {
     mat3 relativeMatrix = mat3(tangent, normal, perp);
 
     Cone cone;
-    cone.t = 0.1;
-    cone.cosAngle = cos(c_theta);
+    cone.t = 0.001;
+    cone.tanAngle = tan(c_theta);
     for (int t = 1; t < index; t++) {
         float theta = theta * t;
         float cost = cos(theta);
         float sint = sin(theta);
         for (int p = 0; p < 2 * index; p++) {
-            float phi = phi * p + (t % 2) * c_phi / 2.0;
+            float phi_tick = phi * p + (t % 2) * c_phi / 2.0;
 
-            cone.direction = vec3(cos(phi) * sint, cost, sin(phi) * sint);
+            cone.direction = vec3(cos(phi_tick) * sint, cost, sin(phi_tick) * sint);
             cone.direction = relativeMatrix * cone.direction;
 
             TraceResult result = coneTrace(position + cone.direction * cone.t, cone);
             averageColour += result.colour;
             count += 1;
         }
+        break;
     }
 
     cone.direction = normal;
 
     TraceResult result = coneTrace(position + cone.direction * cone.t, cone);
-    averageColour += result.colour;
+    averageColour += result.colour * 0.0001;
     count += 1;
 
     fColor = vec4(averageColour / count, 1.0);

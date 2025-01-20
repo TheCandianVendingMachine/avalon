@@ -6,21 +6,29 @@ use crate::texture::gpu::{ self, SizedComponent };
 pub struct ColourAttachmentBuilder {
     viewport_builder: ViewportBuilder,
     internal_format: SizedComponent,
+    tag: Option<String>
 }
 
 impl ColourAttachmentBuilder {
     pub fn format(mut self, size: SizedComponent) -> ViewportBuilder {
         self.internal_format = size;
         self.viewport_builder.colour_attachments.push(ColourAttachmentData {
-            internal_format: size
+            internal_format: size,
+            tag: self.tag
         });
         self.viewport_builder
+    }
+
+    pub fn tag(mut self, tag: impl Into<String>) -> ColourAttachmentBuilder {
+        self.tag = Some(tag.into());
+        self
     }
 }
 
 #[derive(Debug)]
 pub(super) struct ColourAttachmentData {
-    internal_format: SizedComponent
+    internal_format: SizedComponent,
+    tag: Option<String>
 }
 
 #[derive(Debug)]
@@ -39,7 +47,8 @@ impl ViewportBuilder {
     pub fn colour_attachment(self) -> ColourAttachmentBuilder {
         ColourAttachmentBuilder {
             viewport_builder: self,
-            internal_format: SizedComponent::RGBA8
+            internal_format: SizedComponent::RGBA8,
+            tag: None
         }
     }
 
@@ -109,7 +118,8 @@ impl ViewportBuilder {
                     colour.internal_format,
                     self.dimensions
                 ),
-                unit: gl::COLOR_ATTACHMENT0 + idx as u32
+                unit: gl::COLOR_ATTACHMENT0 + idx as u32,
+                tag: colour.tag.clone()
             });
         }
 

@@ -1,0 +1,10 @@
+[package]
+name = "asset_generator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.95"
+avalon_asset = { path = "../avalon_asset", features = ["write"] }
+clearscreen = "4.0.1"
+inquire = "0.7.5"

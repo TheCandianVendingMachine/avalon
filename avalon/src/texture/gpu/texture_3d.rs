@@ -80,6 +80,7 @@ pub struct Texture3d {
     internal_components: Component,
     internal_size: SizedComponent,
     dimensions: IVec3,
+    mip_levels: u32,
 }
 
 impl Texture3d {
@@ -134,7 +135,46 @@ impl Texture3d {
             handle: handles[idx],
             internal_components: arguments.internal_components,
             internal_size: arguments.internal_size,
-            dimensions: arguments.dimensions
+            dimensions: arguments.dimensions,
+            mip_levels: 0
+        })
+    }
+
+    pub fn generate_storage(arguments: Arguments, levels: u32) -> Texture3d {
+        Texture3d::generate_many_storage::<1>(arguments, levels)[0]
+    }
+
+    pub fn generate_many_storage<const COUNT: usize>(arguments: Arguments, levels: u32) -> [Texture3d; COUNT] {
+        arguments.internal_size.verify(arguments.internal_components);
+        let handles = unsafe {
+            let mut textures = [0; COUNT];
+            gl::GenTextures(COUNT as i32, textures.as_mut_ptr());
+            textures
+        };
+
+        for handle in handles.iter() {
+            unsafe {
+                gl::BindTexture(gl::TEXTURE_3D, *handle);
+                gl::TexStorage3D(
+                    gl::TEXTURE_3D,
+                    levels as i32,
+                    arguments.internal_size.as_api() as u32,
+                    arguments.dimensions.x,
+                    arguments.dimensions.y,
+                    arguments.dimensions.z,
+                );
+                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+                gl::TexParameteri(gl::TEXTURE_3D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                gl::BindTexture(gl::TEXTURE_3D, 0);
+            }
+        }
+
+        core::array::from_fn(|idx| Texture3d {
+            handle: handles[idx],
+            internal_components: arguments.internal_components,
+            internal_size: arguments.internal_size,
+            dimensions: arguments.dimensions,
+            mip_levels: levels
         })
     }
 
@@ -149,6 +189,9 @@ impl Texture3d {
 }
 
 impl UniqueTexture for Texture3d {
+    fn levels(&self) -> u32 {
+        self.mip_levels
+    }
     fn handle(&self) -> u32 {
         self.handle
     }
@@ -170,17 +213,22 @@ impl Sampler for Texture3d {
 
 impl Image for Texture3d {
     fn image<'t>(&'t self, idx: gl::types::GLuint, access: Access) -> ImageAttachment<'t> {
+        let level = match access {
+            Access::Read(level) => level,
+            Access::Write(level) => level,
+            Access::ReadWrite(level) => level,
+        };
         unsafe {
             gl::BindImageTexture(
                 idx,
                 self.handle,
-                0,
+                level as i32,
                 gl::TRUE,
                 0,
                 match access {
-                    Access::Read => gl::READ_ONLY,
-                    Access::Write => gl::WRITE_ONLY,
-                    Access::ReadWrite => gl::READ_WRITE,
+                    Access::Read(_) => gl::READ_ONLY,
+                    Access::Write(_) => gl::WRITE_ONLY,
+                    Access::ReadWrite(_) => gl::READ_WRITE,
                 },
                 self.internal_size.as_api() as u32
             );

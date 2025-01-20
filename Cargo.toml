@@ -1,5 +1,5 @@
 [workspace]
-members = [
-    "avalon",
+members = [ "asset_generator",
+    "avalon", "avalon_asset",
     "game"
 ]

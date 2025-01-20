@@ -20,11 +20,11 @@ layout(location=12) uniform bool firstPass;
 ivec2 pCoord = ivec2(gl_GlobalInvocationID.xy);
 #define STARTING_OFFSET (0.01)
 
-void getGridData(in ivec3 position, out int safeStep, out int cell) {
-    unsigned int texel = texelFetch(grid, position, 0).r;
+void getGridData(in ivec3 position, out bool empty, out bool opaque, out int safeStep, out int cell) {
+    int texel = int(texelFetch(grid, position, 0).r);
     int collisionFlag = (texel & 0x0000001F) >> 0;
-    bool empty = 1 == ((texel & 0x00000020) >> 5);
-    bool opaque = 1 == ((texel & 0x00000040) >> 6);
+    empty = 1 == ((texel & 0x00000020) >> 5);
+    opaque = 1 == ((texel & 0x00000040) >> 6);
     safeStep = (texel & 0x0000FF80) >> 7;
     cell = (texel & 0x0001FF80) >> 7;
 }
@@ -47,6 +47,8 @@ bool isDirectionClear(vec3 rayPos, vec3 rayDir) {
 
     int cellId;
     int cellStep;
+    bool cellEmpty;
+    bool cellOpaque;
 
     int iter;
     const int ITER_MAX = 64;
@@ -56,9 +58,9 @@ bool isDirectionClear(vec3 rayPos, vec3 rayDir) {
         if (!inBounds) {
             return true;
         }
-        getGridData(iMapPos, cellStep, cellId);
+        getGridData(iMapPos, cellEmpty, cellOpaque, cellStep, cellId);
 
-        if (cellId == 1) {
+        if (cellOpaque) {
             return false;
         }
 
