@@ -20,21 +20,22 @@ pub mod write {
         pub fn pack_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<(), error::PackError> {
             let path = path.as_ref();
             let mut file = std::fs::File::options()
-                .create_new(true)
                 .read(true)
-                .append(true)
-                .open(if path.extension().is_some() || path.is_file() {
+                .write(true)
+                .create_new(true)
+                .open(&if path.extension().is_some() || path.is_file() {
                     path.to_path_buf()
                 } else {
                     path.join(self.bundle.name.clone() + "." + Self::EXTENSION)
                 })?;
 
             let mut archive = zip::ZipWriter::new(&file);
+            let options = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Bzip2);
+
             archive.set_flush_on_finish_file(true);
             archive.set_comment(format!("Bundled asset generated on {}", chrono::Utc::now()));
 
-            let options = zip::write::SimpleFileOptions::default()
-                .compression_method(zip::CompressionMethod::Bzip2);
             for asset in self.bundle.group.iter() {
                 let uuid_path = asset.metadata.uuid.to_string();
                 let directory = std::path::Path::new(&uuid_path);
