@@ -1,20 +1,21 @@
-#[derive(Debug, Copy, Clone)]
+use miniserde::{ Serialize, Deserialize };
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ColourSpace {
     RGB,
     SRGB
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum Components {
-    Red,
-    RG,
-    RGB,
-    RGBA
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct Texture {
+    pub colour_space: ColourSpace,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Texture {
-    colour_space: ColourSpace,
-    components: Components,
-    dimensions: (u32, u32)
+impl std::fmt::Display for ColourSpace {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ColourSpace::RGB => "RGB".fmt(formatter),
+            ColourSpace::SRGB => "sRGB".fmt(formatter),
+        }
+    }
 }
