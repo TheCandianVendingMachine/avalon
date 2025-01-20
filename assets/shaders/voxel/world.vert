@@ -15,8 +15,7 @@ const float vertices[12] = float[](
 
 out flat ivec2 screenSize;
 
-void main()
-{
+void main() {
     screenSize = uScreenSize;
     vec2 position = vec2(
         vertices[gl_VertexID * 2 + 0],
@@ -24,4 +23,3 @@ void main()
     );
     gl_Position = vec4(position, 0.0, 1.0);
 }
-

@@ -63,8 +63,7 @@ void getGridData(in ivec3 position, out bool empty, out bool opaque, out int saf
     cell = (texel & 0x0001FF80) >> 7;
 }
 
-void main()
-{
+void main() {
     const ivec3 mapBounds = ivec3(32);
     vec2 uv = gl_FragCoord.xy / vec2(screenSize) * 2.0 - 1.0;
 
@@ -246,4 +245,3 @@ void main()
     const float i_far = 1.0 / 10000.0;
     gl_FragDepth = (i_dist - i_near) / (i_far - i_near);
 }
-

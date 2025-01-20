@@ -52,8 +52,8 @@ struct PassRaytrace {
 
 impl PassRaytrace {
     fn new(options: PassOptions) -> PassRaytrace {
-        let albedo_data = data::Data::from_file("assets/bins/wall_texture_full.png");
-        let normal_data = data::Data::from_file("assets/bins/wall_texture_full_normal.png");
+        let albedo_data = data::Data::from_file("assets/bins/textures/wall_texture_full.png");
+        let normal_data = data::Data::from_file("assets/bins/textures/wall_texture_full_normal.png");
         PassRaytrace {
             shader: Program::new()
                 .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
