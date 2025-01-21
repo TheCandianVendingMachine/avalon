@@ -1,4 +1,5 @@
-use image;
+use image::{ self, GenericImageView };
+use nalgebra_glm::IVec2;
 use aligned_vec::{ avec, AVec, ConstAlign };
 use crate::texture::Component;
 
@@ -208,8 +209,7 @@ impl Pixels {
 }
 
 impl Data {
-    pub fn from_file(path: impl AsRef<std::path::Path>) -> Data {
-        let image = image::ImageReader::open(path).unwrap().decode().unwrap();
+    fn from_image(image: image::DynamicImage) -> Data {
         let (components, buffer): (Component, Vec<Datum>) = match image {
             image::DynamicImage::ImageRgb8(img) => (
                 Component::RGB,
@@ -257,6 +257,17 @@ impl Data {
                 _ => panic!("unsupported components")
             }
         }
+    }
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> (Data, IVec2) {
+        let image = image::ImageReader::open(path).unwrap().decode().unwrap();
+        let dimension = image.dimensions();
+        (Data::from_image(image), IVec2::new(dimension.0 as i32, dimension.1 as i32))
+    }
+    pub fn from_buffer(buffer: Vec<u8>) -> (Data, IVec2) {
+        let cursor = std::io::Cursor::new(buffer);
+        let image = image::ImageReader::new(cursor).with_guessed_format().unwrap().decode().unwrap();
+        let dimension = image.dimensions();
+        (Data::from_image(image), IVec2::new(dimension.0 as i32, dimension.1 as i32))
     }
 
     pub fn len(&self) -> usize {

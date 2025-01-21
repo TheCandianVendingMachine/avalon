@@ -2,6 +2,7 @@ use gl;
 
 use crate::shader;
 use crate::texture::Component;
+use crate::asset_library::Asset;
 use std::marker::PhantomData;
 
 pub trait UniqueTexture where Self: Sized {
@@ -27,6 +28,8 @@ impl<T: Copy + UniqueTexture> ManagedTexture<T> {
         self.texture
     }
 }
+
+impl<T: UniqueTexture + Asset> Asset for ManagedTexture<T> {}
 
 impl<T: UniqueTexture> Drop for ManagedTexture<T> {
     fn drop(&mut self) {

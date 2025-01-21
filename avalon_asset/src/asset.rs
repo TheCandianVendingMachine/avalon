@@ -58,6 +58,10 @@ impl Asset {
     pub fn refer(&self) -> AssetReference {
         self.into()
     }
+
+    pub fn metadata(&self) -> Metadata {
+        self.metadata.clone()
+    }
 }
 
 impl Metadata {
@@ -87,11 +91,25 @@ impl std::hash::Hash for Metadata {
     }
 }
 
+impl PartialEq for Metadata {
+    fn eq(&self, rhs: &Metadata) -> bool {
+        self.uuid == rhs.uuid
+    }
+}
+impl Eq for Metadata {}
+
 impl std::hash::Hash for Asset {
     fn hash<H: std::hash::Hasher>(&self, hasher: &mut H) {
         self.metadata.hash(hasher);
     }
 }
+
+impl PartialEq for Asset {
+    fn eq(&self, rhs: &Asset) -> bool {
+        self.metadata == rhs.metadata
+    }
+}
+impl Eq for Asset {}
 
 impl<'old> Clone for AssetReference<'old> {
     fn clone(&self) -> AssetReference<'old> {

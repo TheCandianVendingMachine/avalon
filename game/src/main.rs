@@ -99,8 +99,8 @@ struct PassRaytrace {
 
 impl PassRaytrace {
     fn new(options: PassOptions) -> PassRaytrace {
-        let albedo_data = data::Data::from_file("assets/bins/textures/wall_texture_full.png");
-        let normal_data = data::Data::from_file("assets/bins/textures/wall_texture_full_normal.png");
+        let (albedo_data, _) = data::Data::from_file("assets/bins/textures/wall_texture_full.png");
+        let (normal_data, _) = data::Data::from_file("assets/bins/textures/wall_texture_full_normal.png");
         PassRaytrace {
             shader: Program::new()
                 .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
@@ -633,6 +633,9 @@ impl RenderPass {
 
 fn main() {
     let mut engine = avalon::engine();
+
+    let asset_library = avalon::asset_library::Library::new_with_scan("./assets/");
+    dbg!(&asset_library);
 
     let mut camera = Camera::new(vec2(1280, 720));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
