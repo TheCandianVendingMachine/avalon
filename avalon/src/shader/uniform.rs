@@ -3,6 +3,7 @@ use nalgebra_glm::{ IVec2, UVec2, Vec2, IVec3, UVec3, Vec3, IVec4, UVec4, Vec4, 
 
 use crate::shader::program::AttachedProgram;
 use crate::texture::gpu;
+use crate::gpu_buffer::storage;
 
 #[derive(Copy, Clone)]
 pub struct Uniform<'program> {

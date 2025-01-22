@@ -18,5 +18,5 @@ pub enum Program {
     #[error("Cannot find uniform `{name}` in shader")]
     UniformNotFound {
         name: String
-    }
+    },
 }

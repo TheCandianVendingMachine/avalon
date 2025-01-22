@@ -1,6 +1,6 @@
 #version 430
 
-layout(location=1) uniform sampler2D icon;
+layout(location=2) uniform sampler2D icon;
 
 in smooth vec2 texCoords;
 in flat vec4 lightColour;
@@ -10,6 +10,9 @@ void main() {
     vec4 colour = texture(icon, texCoords);
     if (colour.rgb == vec3(1.0)) {
         colour = lightColour;
+    }
+    if (colour.a == 0.0) {
+        discard;
     }
     fColor = vec4(colour);
 }

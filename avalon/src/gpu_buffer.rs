@@ -1,3 +1,5 @@
+pub mod storage;
+
 use crate::shader;
 
 #[derive(Debug)]

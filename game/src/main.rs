@@ -1,7 +1,7 @@
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features, unused)]
 
-use nalgebra_glm::{ Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
+use nalgebra_glm::{ ortho, Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 
 pub mod voxel;
 
@@ -49,6 +49,7 @@ impl Light {
 
 struct Camera {
     transform: avalon::transform::Transform,
+    perspective: Mat4,
     projection: Mat3,
 }
 
@@ -57,6 +58,14 @@ impl Camera {
         let dimensions: Vec2 = dimensions.cast();
         Camera {
             transform: avalon::transform::Transform::new(),
+            perspective: ortho(
+                -dimensions.x,
+                dimensions.x,
+                -dimensions.y,
+                dimensions.y,
+                0.01,
+                10000.0,
+            ),
             projection: Mat3::new(
                 1.0, 0.0, 0.0,
                 0.0, dimensions.y / dimensions.x, 0.0,
@@ -524,6 +533,14 @@ impl RenderPass {
         );
 
         lights.push(
+            Light::Point {
+                colour: vec3(0.6, 0.1, 0.3),
+                position: vec3(3.0, 3.0, 1.0),
+                intensity: 3.0
+            }
+        );
+
+        lights.push(
             Light::Spotlight {
                 colour: vec3(0.6, 0.6, 1.0),
                 position: vec3(30.5, 8.0, -5.0),
@@ -623,29 +640,41 @@ impl RenderPass {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+#[repr(align(16))]
+struct DebugLight {
+    colour: (f32, f32, f32, f32),
+    position: (f32, f32, f32),
+}
+
+unsafe impl avalon::Pod for DebugLight {}
+
 struct DebugPassLights {
     shader: Program,
+    light_buffer: gpu_buffer::storage::Storage,
 }
 
 impl DebugPassLights {
     fn new() -> DebugPassLights {
         DebugPassLights {
             shader: Program::new()
-                .vertex(shader::Vertex::load_from_path("assets/shaders/dev/quad.vert").unwrap())
+                .vertex(shader::Vertex::load_from_path("assets/shaders/dev/light.vert").unwrap())
                 .fragment(shader::Fragment::load_from_path("assets/shaders/dev/light.frag").unwrap())
                 .build()
                 .unwrap(),
+            light_buffer: gpu_buffer::storage::Storage::new()
         }
     }
 
     fn execute(
-        &self,
+        &mut self,
         icon_bundle: avalon::asset_library::BundleView,
         camera: &Camera,
         lights: &Vec<Light>
     ) {
         let icon_pointlight = icon_bundle.tag::<GpuTexture2d>("pointlight").unwrap();
-        let spotlight_on = icon_bundle.tag::<GpuTexture2d>("spotlight-on").unwrap();
+        let spotlight_on = icon_bundle.tag::<GpuTexture2d>("spotlight-off").unwrap();
         let spotlight_off = icon_bundle.tag::<GpuTexture2d>("spotlight-off").unwrap();
 
         let point_lights = lights.iter().filter(|light| light.is_point());
@@ -653,18 +682,42 @@ impl DebugPassLights {
 
         let mut light_shader = self.shader.activate();
         light_shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
+        //light_shader.uniform("projection").unwrap().set_mat4(camera.perspective);
+        //light_shader.uniform("projectionTick").unwrap().set_mat3(camera.projection);
 
+        let mut debug_lights = Vec::new();
         light_shader.sampler("icon", &*icon_pointlight).unwrap();
         for light in point_lights {
             let Light::Point { colour, position, .. } = light else { panic!() };
+            debug_lights.push(DebugLight {
+                colour: (colour.x, colour.y, colour.z, 1.0),
+                position: (position.x, position.y, position.z),
+            });
         }
-        gpu_buffer::State::degenerate().bind().draw(&light_shader);
 
+        let usage = gpu_buffer::storage::Usage::Dynamic(gpu_buffer::storage::Access::CpuWrite);
+        self.light_buffer.bind_mut().write_structs(
+            &debug_lights,
+            usage
+        );
+        let storage_bind = self.light_buffer.bind();
+        light_shader.storage(0, &storage_bind, usage);
+        light_shader.barrier();
+        gpu_buffer::State::degenerate().bind().draw_instanced(&light_shader, debug_lights.len());
+
+        debug_lights.clear();
         light_shader.sampler("icon", &*spotlight_on).unwrap();
         for light in spot_lights {
             let Light::Spotlight { colour, position, .. } = light else { panic!() };
+            debug_lights.push(DebugLight {
+                position: (position.x, position.y, position.z),
+                colour: (colour.x, colour.y, colour.z, 1.0),
+            });
         }
-        gpu_buffer::State::degenerate().bind().draw(&light_shader);
+        let storage_bind = self.light_buffer.bind();
+        light_shader.storage(0, &storage_bind, usage);
+        light_shader.barrier();
+        gpu_buffer::State::degenerate().bind().draw_instanced(&light_shader, debug_lights.len());
     }
 }
 
@@ -680,7 +733,7 @@ impl DebugRenderPass {
         }
     }
     fn execute(
-        &self,
+        &mut self,
         asset_library: &avalon::asset_library::Library,
         camera: &Camera,
         lights: &Vec<Light>
@@ -742,11 +795,16 @@ fn main() {
     grid.bake();
 
     let render_pass = RenderPass::new();
-    let debug_render_pass = DebugRenderPass::new();
+    let mut debug_render_pass = DebugRenderPass::new();
 
+    let start = std::time::Instant::now();
     while engine.is_open() {
         engine.start_frame();
         engine.poll_events();
+        let dt = start.elapsed().as_secs_f32();
+        camera.transform.set_position(
+            vec3(0.0, 5.0, -5.0) + vec3(5.0 * dt.cos(), 0.0, 0.0 * dt.cos() * dt.sin())
+        );
         engine.render();
         render_pass.execute(&asset_library, &camera, &grid);
         debug_render_pass.execute(&asset_library, &camera, &render_pass.lights);

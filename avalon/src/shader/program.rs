@@ -10,7 +10,7 @@ use crate::shader::{
 use crate::shader::uniform::Uniform;
 use crate::shader::error;
 use crate::texture::gpu::{ Access, Sampler, Image, TextureAttachment, ImageAttachment };
-use crate::gpu_buffer::State;
+use crate::gpu_buffer::storage;
 
 #[derive(Debug, Clone)]
 pub struct Program {
@@ -21,7 +21,8 @@ pub struct Program {
 pub struct AttachedProgram<'program> {
     program: &'program Program,
     texture_attachments: HashMap<gl::types::GLuint, TextureAttachment<'program>>,
-    image_attachments: HashMap<(gl::types::GLuint, Access), ImageAttachment<'program>>
+    image_attachments: HashMap<(gl::types::GLuint, Access), ImageAttachment<'program>>,
+    storage_attachments: HashMap<(gl::types::GLuint, storage::Usage), storage::StorageAttachment<'program>>
 }
 
 impl Program {
@@ -38,7 +39,8 @@ impl Program {
         AttachedProgram {
             program: self,
             texture_attachments: HashMap::new(),
-            image_attachments: HashMap::new()
+            image_attachments: HashMap::new(),
+            storage_attachments: HashMap::new()
         }
     }
 
@@ -205,6 +207,18 @@ impl<'p, 't: 'p> AttachedProgram<'p> {
         let attachment = self.image_attachments.get(&key).unwrap();
         self.location(location)?.set_image(attachment);
         Ok(())
+    }
+}
+
+impl<'b, 'p: 'b> AttachedProgram<'p> {
+    pub fn storage(
+        &mut self,
+        binding: gl::types::GLuint,
+        storage: &'b storage::StorageBufferBind<'p>,
+        usage: storage::Usage
+    ) {
+        let key = (binding, usage);
+        self.storage_attachments.insert(key, storage.attach(binding, usage));
     }
 }
 
