@@ -5,6 +5,7 @@ mod program;
 mod uniform;
 pub mod error;
 pub use program::Program;
+pub use program::AttachedProgram;
 
 mod utils {
     pub fn string_as_char_buf(source: String) -> Vec<i8> {

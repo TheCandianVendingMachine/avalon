@@ -1,24 +1,9 @@
-#[derive(Debug)]
-pub struct StateBind<'b> {
-    _buffer_state: &'b State
-}
-
-#[derive(Debug)]
-pub struct MutStateBind<'b> {
-    _buffer_state: &'b mut State
-}
-
-impl Drop for StateBind<'_> {
-    fn drop(&mut self) {
-        unsafe {
-            gl::BindVertexArray(0);
-        }
-    }
-}
+use crate::shader;
 
 #[derive(Debug)]
 pub struct State {
-    vao: gl::types::GLuint
+    vao: gl::types::GLuint,
+    vertex_count: usize,
 }
 
 impl State {
@@ -28,6 +13,7 @@ impl State {
         unsafe {
             if let None = DEGENERATE_STATE {
                 DEGENERATE_STATE = Some(State::new());
+                DEGENERATE_STATE.as_mut().unwrap().vertex_count = 6;
             }
             DEGENERATE_STATE.as_ref().unwrap_unchecked()
         }
@@ -40,7 +26,8 @@ impl State {
             vao
         };
         State {
-            vao
+            vao,
+            vertex_count: 0
         }
     }
 
@@ -49,7 +36,7 @@ impl State {
             gl::BindVertexArray(self.vao);
         }
         StateBind {
-            _buffer_state: self
+            buffer_state: self
         }
     }
 
@@ -58,7 +45,48 @@ impl State {
             gl::BindVertexArray(self.vao);
         }
         MutStateBind {
-            _buffer_state: self
+            buffer_state: self
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct StateBind<'b> {
+    buffer_state: &'b State
+}
+
+#[derive(Debug)]
+pub struct MutStateBind<'b> {
+    buffer_state: &'b mut State
+}
+
+impl StateBind<'_> {
+    pub fn draw(&self, _program: &shader::AttachedProgram<'_>) {
+        unsafe {
+            gl::DrawArrays(
+                gl::TRIANGLES,
+                0,
+                self.buffer_state.vertex_count as i32
+            );
+        }
+    }
+
+    pub fn draw_instanced(&self, _program: &shader::AttachedProgram<'_>, instance_count: usize) {
+        unsafe {
+            gl::DrawArraysInstanced(
+                gl::TRIANGLES,
+                0,
+                self.buffer_state.vertex_count as i32,
+                instance_count as i32
+            );
+        }
+    }
+}
+
+impl Drop for StateBind<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::BindVertexArray(0);
         }
     }
 }

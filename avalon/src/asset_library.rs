@@ -29,7 +29,7 @@ pub struct BundleView<'v> {
 }
 
 impl<'r, 'v: 'r> BundleView<'v> {
-    pub fn tag<T: Asset>(self, asset_tag: impl Into<String>) -> Option<AssetView<'r, T>> {
+    pub fn tag<T: Asset>(&self, asset_tag: impl Into<String>) -> Option<AssetView<'r, T>> {
         let asset_meta = self.bundle.asset(asset_tag)?;
         let (asset_reference, asset) = self.library.asset_library.get_key_value(&asset_meta.into())?;
         Some(AssetView {

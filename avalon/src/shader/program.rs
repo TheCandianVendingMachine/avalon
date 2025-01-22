@@ -159,13 +159,6 @@ impl AttachedProgram<'_> {
         }
     }
 
-    pub fn render(&self, state: &State) {
-        unsafe {
-            let _vao = state.bind();
-            gl::DrawArrays(gl::TRIANGLES, 0, 6);
-        }
-    }
-
     pub fn barrier(&self) {
         unsafe {
             gl::MemoryBarrier(gl::ALL_BARRIER_BITS);

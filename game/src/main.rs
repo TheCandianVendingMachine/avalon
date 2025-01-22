@@ -148,7 +148,7 @@ impl PassRaytrace {
 
         // draw command
         let viewport_bind = self.viewport.bind();
-        bind.render(gpu_buffer::State::degenerate());
+        gpu_buffer::State::degenerate().bind().draw(&bind);
     }
 }
 
@@ -285,7 +285,7 @@ impl PassLightingCombine {
         bind.sampler("light", light).unwrap();
 
         let viewport = self.viewport.bind();
-        bind.render(gpu_buffer::State::degenerate());
+        gpu_buffer::State::degenerate().bind().draw(&bind);
     }
 }
 
@@ -386,7 +386,7 @@ impl PassLightingAo {
         bind.uniform("resolution").unwrap().set_i32(1);
         bind.uniform("halveCount").unwrap().set_i32(self.options.ao_halves as i32);
 
-        bind.render(gpu_buffer::State::degenerate());
+        gpu_buffer::State::degenerate().bind().draw(&bind);
     }
 }
 
@@ -424,7 +424,7 @@ impl PassLightingAoCombine {
         bind.sampler("aoBuffer", scene_ao).unwrap();
         bind.sampler("albedoBuffer", albedo).unwrap();
 
-        bind.render(gpu_buffer::State::degenerate());
+        gpu_buffer::State::degenerate().bind().draw(&bind);
     }
 }
 
@@ -466,13 +466,13 @@ impl PassPostProcess {
             bind.sampler("texture", pre_processed_scene).unwrap();
             bind.uniform("white").unwrap().set_vec3(vec3(4.0, 4.0, 4.0));
 
-            bind.render(gpu_buffer::State::degenerate());
+            gpu_buffer::State::degenerate().bind().draw(&bind);
         }
 
         let mut bind = self.gamma_correction.activate();
         bind.sampler("texture", &self.viewport.colour_attachment(0).colour).unwrap();
 
-        bind.render(gpu_buffer::State::degenerate());
+        gpu_buffer::State::degenerate().bind().draw(&bind);
     }
 }
 
@@ -628,12 +628,43 @@ struct DebugPassLights {
 }
 
 impl DebugPassLights {
+    fn new() -> DebugPassLights {
+        DebugPassLights {
+            shader: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/dev/quad.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/dev/light.frag").unwrap())
+                .build()
+                .unwrap(),
+        }
+    }
+
     fn execute(
         &self,
         icon_bundle: avalon::asset_library::BundleView,
+        camera: &Camera,
         lights: &Vec<Light>
     ) {
+        let icon_pointlight = icon_bundle.tag::<GpuTexture2d>("pointlight").unwrap();
+        let spotlight_on = icon_bundle.tag::<GpuTexture2d>("spotlight-on").unwrap();
+        let spotlight_off = icon_bundle.tag::<GpuTexture2d>("spotlight-off").unwrap();
 
+        let point_lights = lights.iter().filter(|light| light.is_point());
+        let spot_lights = lights.iter().filter(|light| light.is_spotlight());
+
+        let mut light_shader = self.shader.activate();
+        light_shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
+
+        light_shader.sampler("icon", &*icon_pointlight).unwrap();
+        for light in point_lights {
+            let Light::Point { colour, position, .. } = light else { panic!() };
+        }
+        gpu_buffer::State::degenerate().bind().draw(&light_shader);
+
+        light_shader.sampler("icon", &*spotlight_on).unwrap();
+        for light in spot_lights {
+            let Light::Spotlight { colour, position, .. } = light else { panic!() };
+        }
+        gpu_buffer::State::degenerate().bind().draw(&light_shader);
     }
 }
 
@@ -642,12 +673,20 @@ struct DebugRenderPass {
 }
 
 impl DebugRenderPass {
+    fn new() -> DebugRenderPass {
+        let debug_lights = DebugPassLights::new();
+        DebugRenderPass {
+            debug_lights
+        }
+    }
     fn execute(
         &self,
         asset_library: &avalon::asset_library::Library,
+        camera: &Camera,
         lights: &Vec<Light>
     ) {
-
+        let dev_icons = asset_library.bundle("dev-icons").unwrap();
+        self.debug_lights.execute(dev_icons, camera, lights);
     }
 }
 
@@ -703,12 +742,14 @@ fn main() {
     grid.bake();
 
     let render_pass = RenderPass::new();
+    let debug_render_pass = DebugRenderPass::new();
 
     while engine.is_open() {
         engine.start_frame();
         engine.poll_events();
         engine.render();
         render_pass.execute(&asset_library, &camera, &grid);
+        debug_render_pass.execute(&asset_library, &camera, &render_pass.lights);
         engine.swap();
         engine.end_frame();
     }
