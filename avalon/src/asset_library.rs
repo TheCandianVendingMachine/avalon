@@ -17,6 +17,14 @@ impl Library {
     fn load_texture(&self, texture_info: assets::texture::Texture, data: &Vec<u8>) -> ManagedTexture<Texture2d> {
         let (image, dimensions) = data::Data::from_buffer(data.to_vec());
         let (components, size) = match texture_info.colour_space {
+            assets::texture::ColourSpace::RGBA => (
+                texture::Component::RGBA,
+                gpu::SizedComponent::RGBA8,
+            ),
+            assets::texture::ColourSpace::SRGBA => (
+                texture::Component::RGBA,
+                gpu::SizedComponent::SRGB8A8,
+            ),
             assets::texture::ColourSpace::RGB => (
                 texture::Component::RGB,
                 gpu::SizedComponent::RGB8,
