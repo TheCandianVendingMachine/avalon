@@ -1,9 +1,21 @@
 use crate::asset;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Eq)]
 pub struct Bundle {
     pub group: Vec<asset::Metadata>,
     pub name: String,
+}
+
+impl PartialEq for Bundle {
+    fn eq(&self, rhs: &Bundle) -> bool {
+        self.name.eq(&rhs.name)
+    }
+}
+
+impl std::hash::Hash for Bundle {
+    fn hash<H: std::hash::Hasher>(&self, hasher: &mut H) {
+        self.name.hash(hasher);
+    }
 }
 
 impl Bundle {

@@ -7,6 +7,49 @@ use glob;
 
 pub trait Asset: std::fmt::Debug {}
 
+#[derive(Debug, Clone)]
+pub struct AssetView<'v, T: Asset> {
+    asset: asset::AssetReference<'v>,
+    resource: &'v T
+}
+
+impl<'v, T: Asset> std::ops::Deref for AssetView<'v, T> {
+    type Target = T;
+    fn deref(&self) -> &'v T {
+        self.resource
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BundleView<'v> {
+    library: &'v Library,
+    bundle: &'v bundle::Bundle
+}
+
+impl<'r, 'v: 'r> BundleView<'v> {
+    pub fn tag<T: Asset>(self, asset_tag: impl Into<String>) -> Option<AssetView<'r, T>> {
+        let asset_meta = self.bundle.asset(asset_tag)?;
+        let (asset_reference, asset) = self.library.asset_library.get_key_value(&asset_meta.into())?;
+        Some(AssetView {
+            asset: asset_reference.refer(),
+            resource: {
+                let ref_asset = asset.as_ref();
+                let asset_ptr = &*ref_asset as *const dyn Asset;
+                let asset_cvoid = asset_ptr as *const std::ffi::c_void;
+                /* Proof this fuckery is safe:
+                 *  We assume the programmer is competent, and that the asset_tag refers
+                 *  to the type we are casting to. We have no guarantees that this will
+                 *  work, but it will crash at runtime
+                 */
+                unsafe {
+                    let ptr_asset: *const T = std::mem::transmute(asset_cvoid);
+                    &*ptr_asset
+                }
+            }
+        })
+    }
+}
+
 #[derive(Debug)]
 pub struct Library {
     asset_library: HashMap<asset::Asset, Box<dyn Asset>>,
@@ -14,6 +57,16 @@ pub struct Library {
 }
 
 impl Library {
+    pub fn bundle(&self, tag: impl Into<String>) -> Option<BundleView> {
+        Some(BundleView {
+            library: &self,
+            bundle: self.bundle_library.get(&bundle::Bundle {
+                name: tag.into(),
+                group: Vec::new()
+            })?
+        })
+    }
+
     fn load_texture(&self, texture_info: assets::texture::Texture, data: &Vec<u8>) -> ManagedTexture<Texture2d> {
         let (image, dimensions) = data::Data::from_buffer(data.to_vec());
         let (components, size) = match texture_info.colour_space {

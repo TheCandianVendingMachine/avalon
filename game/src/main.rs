@@ -634,8 +634,13 @@ impl RenderPass {
 fn main() {
     let mut engine = avalon::engine();
 
-    let asset_library = avalon::asset_library::Library::new_with_scan("./assets/");
+    let asset_library = avalon::asset_library::Library::new_with_scan("./assets/bins/");
     dbg!(&asset_library);
+    let bundle = asset_library.bundle("dev-icons").unwrap();
+    dbg!(&bundle);
+    let pointlight = bundle.tag::<gpu::ManagedTexture<GpuTexture2d>>("spotlight-off").unwrap();
+    dbg!(&pointlight);
+    return;
 
     let mut camera = Camera::new(vec2(1280, 720));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
