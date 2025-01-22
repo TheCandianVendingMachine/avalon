@@ -79,6 +79,8 @@ impl CreateBundle {
             },
             Type::Texture => {
                 let colour_space = inquire::Select::new("Colour Space:", vec![
+                    texture::ColourSpace::RGBA,
+                    texture::ColourSpace::SRGBA,
                     texture::ColourSpace::RGB,
                     texture::ColourSpace::SRGB,
                 ])

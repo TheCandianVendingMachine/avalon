@@ -3,7 +3,9 @@ use miniserde::{ Serialize, Deserialize };
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ColourSpace {
     RGB,
-    SRGB
+    SRGB,
+    RGBA,
+    SRGBA,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -16,6 +18,8 @@ impl std::fmt::Display for ColourSpace {
         match self {
             ColourSpace::RGB => "RGB".fmt(formatter),
             ColourSpace::SRGB => "sRGB".fmt(formatter),
+            ColourSpace::RGBA => "RGBA".fmt(formatter),
+            ColourSpace::SRGBA => "sRGBA".fmt(formatter),
         }
     }
 }
