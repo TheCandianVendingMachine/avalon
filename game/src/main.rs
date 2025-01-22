@@ -6,6 +6,7 @@ use nalgebra_glm::{ ortho, Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 pub mod voxel;
 
 use avalon;
+use avalon::debug::GpuAnnotation;
 use avalon::gpu_buffer;
 use avalon::viewport;
 use avalon::shader::{ self, Source, Program, };
@@ -140,6 +141,7 @@ impl PassRaytrace {
         normal: GpuTexture2d
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+        let _raytrace_annotation = GpuAnnotation::push("Raytrace Grid");
         let grid_texture: &GpuTexture3d = grid.try_into().unwrap();
         let mut bind = self.shader.activate();
         bind.uniform("uScreenSize").unwrap().set_ivec2(self.options.raytrace_size);
@@ -194,6 +196,7 @@ impl PassLighting {
         lights: &Vec<Light>
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+        let _lighting_annotation = GpuAnnotation::push("Deferred Lighting");
         let grid_texture: &GpuTexture3d = grid.try_into().unwrap();
         let mut bind = self.shader.activate();
 
@@ -214,49 +217,58 @@ impl PassLighting {
         let directional_lights = lights.iter().filter(|light| light.is_directional());
         let spot_lights = lights.iter().filter(|light| light.is_spotlight());
 
-        bind.uniform("firstPass").unwrap().set_bool(true);
-        bind.uniform("lightType").unwrap().set_i32(2);
-        for (idx, light) in point_lights.enumerate() {
-            if let Light::Point { colour, position, intensity } = *light {
-                bind.uniform("lightColour").unwrap().set_vec3(colour);
-                bind.uniform("lightPosition").unwrap().set_vec3(position);
-                bind.uniform("intensity").unwrap().set_f32(intensity);
+        {
+            let _point_annotation = GpuAnnotation::push("Point Lights");
+            bind.uniform("firstPass").unwrap().set_bool(true);
+            bind.uniform("lightType").unwrap().set_i32(2);
+            for (idx, light) in point_lights.enumerate() {
+                if let Light::Point { colour, position, intensity } = *light {
+                    bind.uniform("lightColour").unwrap().set_vec3(colour);
+                    bind.uniform("lightPosition").unwrap().set_vec3(position);
+                    bind.uniform("intensity").unwrap().set_f32(intensity);
+                }
+
+                bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
+                bind.barrier();
+
+                bind.uniform("firstPass").unwrap().set_bool(false);
             }
-
-            bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
-            bind.barrier();
-
-            bind.uniform("firstPass").unwrap().set_bool(false);
         }
 
-        bind.uniform("lightType").unwrap().set_i32(3);
-        for (idx, light) in spot_lights.enumerate() {
-            if let Light::Spotlight { colour, position, direction, angle, intensity } = *light {
-                bind.uniform("lightColour").unwrap().set_vec3(colour);
-                bind.uniform("lightPosition").unwrap().set_vec3(position);
-                bind.uniform("lightDirection").unwrap().set_vec3(direction);
-                bind.uniform("lightConeAngle").unwrap().set_f32(angle);
-                bind.uniform("intensity").unwrap().set_f32(intensity);
+        {
+            let _point_annotation = GpuAnnotation::push("Spot Lights");
+            bind.uniform("lightType").unwrap().set_i32(3);
+            for (idx, light) in spot_lights.enumerate() {
+                if let Light::Spotlight { colour, position, direction, angle, intensity } = *light {
+                    bind.uniform("lightColour").unwrap().set_vec3(colour);
+                    bind.uniform("lightPosition").unwrap().set_vec3(position);
+                    bind.uniform("lightDirection").unwrap().set_vec3(direction);
+                    bind.uniform("lightConeAngle").unwrap().set_f32(angle);
+                    bind.uniform("intensity").unwrap().set_f32(intensity);
+                }
+
+                bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
+                bind.barrier();
+
+                bind.uniform("firstPass").unwrap().set_bool(false);
             }
-
-            bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
-            bind.barrier();
-
-            bind.uniform("firstPass").unwrap().set_bool(false);
         }
 
-        bind.uniform("lightType").unwrap().set_i32(1);
-        for (idx, light) in directional_lights.enumerate() {
-            if let Light::Directional { colour, direction, intensity } = *light {
-                bind.uniform("lightColour").unwrap().set_vec3(colour);
-                bind.uniform("lightDirection").unwrap().set_vec3(direction);
-                bind.uniform("intensity").unwrap().set_f32(intensity);
+        {
+            let _directional_annotation = GpuAnnotation::push("Directional Lights");
+            bind.uniform("lightType").unwrap().set_i32(1);
+            for (idx, light) in directional_lights.enumerate() {
+                if let Light::Directional { colour, direction, intensity } = *light {
+                    bind.uniform("lightColour").unwrap().set_vec3(colour);
+                    bind.uniform("lightDirection").unwrap().set_vec3(direction);
+                    bind.uniform("intensity").unwrap().set_f32(intensity);
+                }
+
+                bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
+                bind.barrier();
+
+                bind.uniform("firstPass").unwrap().set_bool(false);
             }
-
-            bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
-            bind.barrier();
-
-            bind.uniform("firstPass").unwrap().set_bool(false);
         }
     }
 }
@@ -288,6 +300,7 @@ impl PassLightingCombine {
         albedo: &GpuTexture2d,
         light: &GpuTexture2d,
     ) {
+        let _annotation = GpuAnnotation::push("Combine Light and Texture");
         let mut bind = self.shader.activate();
 
         bind.sampler("albedo", albedo).unwrap();
@@ -348,7 +361,9 @@ impl PassLightingAo {
         delta_time: f32,
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+        let _annotation = GpuAnnotation::push("Cone Trace AO");
         {
+            let _voxelize_annotation = GpuAnnotation::push("Voxelize Light");
             let mut bind = self.shader_voxelize_light.activate();
             bind.sampler("lightedScene", lighted_scene).unwrap();
             bind.sampler("positions", positions).unwrap();
@@ -366,6 +381,7 @@ impl PassLightingAo {
         }
 
         {
+            let _voxelize_annotation = GpuAnnotation::push("Mipmap Light Voxels");
             let mut bind = self.shader_mipmap_light_voxels.activate();
             bind.sampler("lightVoxels", &self.light_voxels).unwrap();
 
@@ -427,6 +443,7 @@ impl PassLightingAoCombine {
         scene_lighting: &GpuTexture2d,
         albedo: &GpuTexture2d,
     ) {
+        let _annotation = GpuAnnotation::push("Combine With AO");
         let viewport = self.viewport.bind();
         let mut bind = self.shader.activate();
         bind.sampler("lightBuffer", scene_lighting).unwrap();
@@ -470,6 +487,7 @@ impl PassPostProcess {
         pre_processed_scene: &GpuTexture2d
     ) {
         {
+            let _annotation = GpuAnnotation::push("Tone Mapping");
             let viewport = self.viewport.bind();
             let mut bind = self.tone_mapping.activate();
             bind.sampler("texture", pre_processed_scene).unwrap();
@@ -478,6 +496,7 @@ impl PassPostProcess {
             gpu_buffer::State::degenerate().bind().draw(&bind);
         }
 
+        let _annotation = GpuAnnotation::push("Gamma Correction");
         let mut bind = self.gamma_correction.activate();
         bind.sampler("texture", &self.viewport.colour_attachment(0).colour).unwrap();
 
@@ -550,10 +569,11 @@ impl RenderPass {
             }
         );
 
+        let final_size = vec2(1920, 1080);
         let options = PassOptions {
-            final_size: vec2(1280, 720),
-            raytrace_size: vec2(896, 504),
-            lighting_halves: 0,
+            final_size,
+            raytrace_size: final_size,
+            lighting_halves: 2,
             ao_halves: 2
         };
 
@@ -583,6 +603,7 @@ impl RenderPass {
         grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+        let _annotation = GpuAnnotation::push("Game Render Pass");
         let albedo_raw = assets.bundle("voxel-textures").unwrap().tag("albedo").unwrap();
         let normal_raw = assets.bundle("voxel-textures").unwrap().tag("normal").unwrap();
         self.pass_raytrace.execute(
@@ -673,6 +694,7 @@ impl DebugPassLights {
         camera: &Camera,
         lights: &Vec<Light>
     ) {
+        let _annotation = GpuAnnotation::push("Light Icons");
         let icon_pointlight = icon_bundle.tag::<GpuTexture2d>("pointlight").unwrap();
         let spotlight_on = icon_bundle.tag::<GpuTexture2d>("spotlight-off").unwrap();
         let spotlight_off = icon_bundle.tag::<GpuTexture2d>("spotlight-off").unwrap();
@@ -738,6 +760,7 @@ impl DebugRenderPass {
         camera: &Camera,
         lights: &Vec<Light>
     ) {
+        let _annotation = GpuAnnotation::push("Debug Render Pass");
         let dev_icons = asset_library.bundle("dev-icons").unwrap();
         self.debug_lights.execute(dev_icons, camera, lights);
     }
@@ -748,7 +771,7 @@ fn main() {
 
     let asset_library = avalon::asset_library::Library::new_with_scan("./assets/bins/");
 
-    let mut camera = Camera::new(vec2(1280, 720));
+    let mut camera = Camera::new(vec2(1920, 1080));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
     camera.transform.set_euler_angles(avalon::transform::Euler {
         pitch: 0.0,

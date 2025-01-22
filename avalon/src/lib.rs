@@ -4,6 +4,7 @@ extern crate gl;
 mod engine;
 mod render_engine;
 pub mod asset_library;
+pub mod debug;
 pub mod event;
 pub mod gpu_buffer;
 pub mod shader;

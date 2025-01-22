@@ -1,4 +1,5 @@
 use nalgebra_glm::IVec2;
+use crate::debug::GpuAnnotation;
 use crate::shader::{ self, Source, Program };
 use crate::texture::GpuTexture2d;
 use crate::texture::gpu::{ self, ManagedTexture, UniqueTexture, Arguments2d, Mipmap };
@@ -23,6 +24,7 @@ impl Rescaler {
     }
 
     pub fn downsample_halving(&self, original: &GpuTexture2d, halve_count: u32) -> ManagedTexture<GpuTexture2d> {
+        let _annotation = GpuAnnotation::push("Halve-Downsample");
         let mut size = original.dimensions();
         let mut temp_downsampled = GpuTexture2d::generate_many::<2>(Arguments2d {
             dimensions: size,
@@ -75,6 +77,7 @@ impl Rescaler {
     }
 
     pub fn downsample(&self, original: &GpuTexture2d, desired_size: IVec2) -> ManagedTexture<GpuTexture2d> {
+        let _annotation = GpuAnnotation::push("Downsample To Specific");
         let downsampled = GpuTexture2d::generate(Arguments2d {
             dimensions: desired_size,
             internal_components: original.internal_components,
@@ -108,6 +111,7 @@ impl Rescaler {
     }
 
     pub fn upscale_doubling(&self, original: &GpuTexture2d, double_count: u32) -> ManagedTexture<GpuTexture2d> {
+        let _annotation = GpuAnnotation::push("Upscale Doubling");
         let mut size = original.dimensions();
         let mut temp_upscaled = GpuTexture2d::generate_many::<2>(Arguments2d {
             dimensions: size * 2_i32.pow(double_count),
@@ -164,6 +168,7 @@ impl Rescaler {
     }
 
     pub fn upscale(&self, original: &GpuTexture2d, desired_size: IVec2) -> ManagedTexture<GpuTexture2d> {
+        let _annotation = GpuAnnotation::push("Upscale To Specific");
         let upscaled = GpuTexture2d::generate(Arguments2d {
             dimensions: desired_size,
             internal_components: original.internal_components,
