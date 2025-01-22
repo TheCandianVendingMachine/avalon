@@ -6,6 +6,7 @@ use nalgebra_glm::{ Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 pub mod voxel;
 
 use avalon;
+use avalon::gpu_buffer;
 use avalon::viewport;
 use avalon::shader::{ self, Source, Program, };
 use avalon::texture::algorithms;
@@ -147,7 +148,7 @@ impl PassRaytrace {
 
         // draw command
         let viewport_bind = self.viewport.bind();
-        bind.temp_render();
+        bind.render(gpu_buffer::State::degenerate());
     }
 }
 
@@ -284,7 +285,7 @@ impl PassLightingCombine {
         bind.sampler("light", light).unwrap();
 
         let viewport = self.viewport.bind();
-        bind.temp_render();
+        bind.render(gpu_buffer::State::degenerate());
     }
 }
 
@@ -385,7 +386,7 @@ impl PassLightingAo {
         bind.uniform("resolution").unwrap().set_i32(1);
         bind.uniform("halveCount").unwrap().set_i32(self.options.ao_halves as i32);
 
-        bind.temp_render();
+        bind.render(gpu_buffer::State::degenerate());
     }
 }
 
@@ -423,7 +424,7 @@ impl PassLightingAoCombine {
         bind.sampler("aoBuffer", scene_ao).unwrap();
         bind.sampler("albedoBuffer", albedo).unwrap();
 
-        bind.temp_render();
+        bind.render(gpu_buffer::State::degenerate());
     }
 }
 
@@ -465,13 +466,13 @@ impl PassPostProcess {
             bind.sampler("texture", pre_processed_scene).unwrap();
             bind.uniform("white").unwrap().set_vec3(vec3(4.0, 4.0, 4.0));
 
-            bind.temp_render();
+            bind.render(gpu_buffer::State::degenerate());
         }
 
         let mut bind = self.gamma_correction.activate();
         bind.sampler("texture", &self.viewport.colour_attachment(0).colour).unwrap();
 
-        bind.temp_render();
+        bind.render(gpu_buffer::State::degenerate());
     }
 }
 
@@ -619,6 +620,34 @@ impl RenderPass {
         self.pass_post_process.execute(
             &finished_scene_upscaled
         );
+    }
+}
+
+struct DebugPassLights {
+    shader: Program,
+}
+
+impl DebugPassLights {
+    fn execute(
+        &self,
+        icon_bundle: avalon::asset_library::BundleView,
+        lights: &Vec<Light>
+    ) {
+
+    }
+}
+
+struct DebugRenderPass {
+    debug_lights: DebugPassLights
+}
+
+impl DebugRenderPass {
+    fn execute(
+        &self,
+        asset_library: &avalon::asset_library::Library,
+        lights: &Vec<Light>
+    ) {
+
     }
 }
 

@@ -4,6 +4,7 @@ mod engine;
 mod render_engine;
 pub mod asset_library;
 pub mod event;
+pub mod gpu_buffer;
 pub mod shader;
 pub mod input;
 pub mod texture;

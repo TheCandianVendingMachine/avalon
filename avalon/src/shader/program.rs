@@ -10,6 +10,7 @@ use crate::shader::{
 use crate::shader::uniform::Uniform;
 use crate::shader::error;
 use crate::texture::gpu::{ Access, Sampler, Image, TextureAttachment, ImageAttachment };
+use crate::gpu_buffer::State;
 
 #[derive(Debug, Clone)]
 pub struct Program {
@@ -158,14 +159,10 @@ impl AttachedProgram<'_> {
         }
     }
 
-    pub fn temp_render(&self) {
+    pub fn render(&self, state: &State) {
         unsafe {
-            let mut vao = 0;
-            gl::GenVertexArrays(1, &mut vao);
-            gl::BindVertexArray(vao);
+            let _vao = state.bind();
             gl::DrawArrays(gl::TRIANGLES, 0, 6);
-            gl::BindVertexArray(0);
-            gl::DeleteVertexArrays(1, &vao);
         }
     }
 
