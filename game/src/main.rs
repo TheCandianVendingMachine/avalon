@@ -92,15 +92,11 @@ impl PassOptions {
 struct PassRaytrace {
     shader: Program,
     viewport: viewport::Viewport,
-    albedo: GpuTexture2d,
-    normal: GpuTexture2d,
     options: PassOptions,
 }
 
 impl PassRaytrace {
     fn new(options: PassOptions) -> PassRaytrace {
-        let (albedo_data, _) = data::Data::from_file("assets/bins/textures/wall_texture_full.png");
-        let (normal_data, _) = data::Data::from_file("assets/bins/textures/wall_texture_full_normal.png");
         PassRaytrace {
             shader: Program::new()
                 .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
@@ -122,20 +118,6 @@ impl PassRaytrace {
                     .format(gpu::SizedComponent::FloatRGB32)
                 .depth_stencil(viewport::DepthStencil::Depth)
                 .build(),
-            albedo: GpuTexture2d::generate(Arguments2d {
-                data: Some(albedo_data),
-                dimensions: vec2(96, 224),
-                internal_components: Component::RGBA,
-                internal_size: gpu::SizedComponent::RGBA8,
-                mipmap_type: gpu::Mipmap::None,
-            }),
-            normal: GpuTexture2d::generate(Arguments2d {
-                data: Some(normal_data),
-                dimensions: vec2(96, 224),
-                internal_components: Component::RGBA,
-                internal_size: gpu::SizedComponent::RGBA8,
-                mipmap_type: gpu::Mipmap::None,
-            }),
             options
         }
     }
@@ -144,6 +126,8 @@ impl PassRaytrace {
         &self,
         camera: &Camera,
         grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>,
+        albedo: GpuTexture2d,
+        normal: GpuTexture2d
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
         let grid_texture: &GpuTexture3d = grid.try_into().unwrap();
@@ -151,8 +135,8 @@ impl PassRaytrace {
         bind.uniform("uScreenSize").unwrap().set_ivec2(self.options.raytrace_size);
 
         bind.sampler("grid", grid_texture).unwrap();
-        bind.sampler("albedo", &self.albedo).unwrap();
-        bind.sampler("tNormal", &self.normal).unwrap();
+        bind.sampler("albedo", &albedo).unwrap();
+        bind.sampler("tNormal", &normal).unwrap();
         //bind.sampler("bump", grid_texture).unwrap();
 
         bind.uniform("view").unwrap().set_mat4(camera.transform.matrix());
@@ -575,12 +559,19 @@ impl RenderPass {
     }
 
     fn execute<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32>(
-        &self, camera: &Camera, grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>
+        &self,
+        assets: &avalon::asset_library::Library,
+        camera: &Camera,
+        grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+        let albedo_raw = assets.bundle("voxel-textures").unwrap().tag("albedo").unwrap();
+        let normal_raw = assets.bundle("voxel-textures").unwrap().tag("normal").unwrap();
         self.pass_raytrace.execute(
             camera,
-            grid
+            grid,
+            *albedo_raw,
+            *normal_raw,
         );
 
         let albedo = self.pass_raytrace.viewport.tagged_colour("albedo").unwrap().colour;
@@ -635,12 +626,6 @@ fn main() {
     let mut engine = avalon::engine();
 
     let asset_library = avalon::asset_library::Library::new_with_scan("./assets/bins/");
-    dbg!(&asset_library);
-    let bundle = asset_library.bundle("dev-icons").unwrap();
-    dbg!(&bundle);
-    let pointlight = bundle.tag::<gpu::ManagedTexture<GpuTexture2d>>("spotlight-off").unwrap();
-    dbg!(&pointlight);
-    return;
 
     let mut camera = Camera::new(vec2(1280, 720));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
@@ -694,7 +679,7 @@ fn main() {
         engine.start_frame();
         engine.poll_events();
         engine.render();
-        render_pass.execute(&camera, &grid);
+        render_pass.execute(&asset_library, &camera, &grid);
         engine.swap();
         engine.end_frame();
     }

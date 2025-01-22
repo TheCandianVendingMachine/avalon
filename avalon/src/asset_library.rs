@@ -9,7 +9,9 @@ pub trait Asset: std::fmt::Debug {}
 
 #[derive(Debug, Clone)]
 pub struct AssetView<'v, T: Asset> {
-    asset: asset::AssetReference<'v>,
+    // we never refer to _asset, it just exists as a reference counter
+    // i guess we could use the metadata if needed, but generally nah
+    _asset: asset::AssetReference<'v>,
     resource: &'v T
 }
 
@@ -31,7 +33,7 @@ impl<'r, 'v: 'r> BundleView<'v> {
         let asset_meta = self.bundle.asset(asset_tag)?;
         let (asset_reference, asset) = self.library.asset_library.get_key_value(&asset_meta.into())?;
         Some(AssetView {
-            asset: asset_reference.refer(),
+            _asset: asset_reference.refer(),
             resource: {
                 let ref_asset = asset.as_ref();
                 let asset_ptr = &*ref_asset as *const dyn Asset;
