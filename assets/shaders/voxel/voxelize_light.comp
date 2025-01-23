@@ -4,15 +4,14 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 layout(location = 0) uniform sampler2D lightedScene;
 layout(location = 1) uniform sampler2D positions;
 layout(location = 2,rgba32f) restrict coherent uniform image3D lightVoxel;
-layout(location = 3) uniform int halvedCount;
 layout(location = 4) uniform float deltaTime;
 
 void main() {
-    const int OFFSET = int(pow(2, halvedCount));
+    //const int /*OFFSET*/ = int(pow(2, halvedCount));
     const ivec2 SAMPLE_RESOLUTION = textureSize(lightedScene, 0);
 
     ivec2 pCoord = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 bigCoord = OFFSET * pCoord;
+    ivec2 bigCoord = 1 /*OFFSET*/ * pCoord;
     ivec4 initialPos = ivec4(floor(texelFetch(positions, bigCoord, 0)));
     if (0.0 == texelFetch(lightedScene, pCoord, 0).a) {
         imageStore(lightVoxel, initialPos.xyz, vec4(0.0));
@@ -24,10 +23,10 @@ void main() {
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
             ivec2 sampleCoord = bigCoord + ivec2(x, y);
-            if (any(lessThan(sampleCoord, ivec2(0))) || any(greaterThanEqual(sampleCoord, OFFSET * SAMPLE_RESOLUTION))) {
+            if (any(lessThan(sampleCoord, ivec2(0))) || any(greaterThanEqual(sampleCoord, 1 /*OFFSET*/ * SAMPLE_RESOLUTION))) {
                 continue;
             }
-            ivec2 smallSampleCoord = sampleCoord / OFFSET;
+            ivec2 smallSampleCoord = sampleCoord / 1 /*OFFSET*/;
             vec4 voxelPosition = texelFetch(positions, smallSampleCoord, 0);
             ivec4 iPosition = ivec4(floor(voxelPosition));
             if (iPosition != initialPos) {

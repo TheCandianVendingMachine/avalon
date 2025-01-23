@@ -52,10 +52,12 @@ struct Camera {
     transform: avalon::transform::Transform,
     perspective: Mat4,
     projection: Mat3,
+    dimensions: IVec2,
 }
 
 impl Camera {
     fn new(dimensions: IVec2) -> Camera {
+        let int_dimensions = dimensions;
         let dimensions: Vec2 = dimensions.cast();
         Camera {
             transform: avalon::transform::Transform::new(),
@@ -72,6 +74,7 @@ impl Camera {
                 0.0, dimensions.y / dimensions.x, 0.0,
                 0.0, 0.0, 1.0
             ),
+            dimensions: int_dimensions
         }
     }
 }
@@ -368,7 +371,7 @@ impl PassLightingAo {
             bind.sampler("lightedScene", lighted_scene).unwrap();
             bind.sampler("positions", positions).unwrap();
             bind.image("lightVoxel", &self.light_voxels, Access::ReadWrite(0)).unwrap();
-            bind.uniform("halvedCount").unwrap().set_i32(self.options.lighting_halves as i32);
+            //bind.uniform("halvedCount").unwrap().set_i32(self.options.lighting_halves as i32);
             bind.uniform("deltaTime").unwrap().set_f32(delta_time);
 
             let (dispatch_x, dispatch_y, dispatch_z) = self.shader_voxelize_light.dispatch_counts(
@@ -573,7 +576,7 @@ impl RenderPass {
         let options = PassOptions {
             final_size,
             raytrace_size: final_size,
-            lighting_halves: 2,
+            lighting_halves: 1,
             ao_halves: 2
         };
 
@@ -703,6 +706,7 @@ impl DebugPassLights {
         let spot_lights = lights.iter().filter(|light| light.is_spotlight());
 
         let mut light_shader = self.shader.activate();
+        light_shader.uniform("screenSize").unwrap().set_ivec2(camera.dimensions);
         light_shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
         //light_shader.uniform("projection").unwrap().set_mat4(camera.perspective);
         //light_shader.uniform("projectionTick").unwrap().set_mat3(camera.projection);

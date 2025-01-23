@@ -67,10 +67,12 @@ void main() {
     const ivec3 mapBounds = ivec3(32);
     vec2 uv = gl_FragCoord.xy / vec2(screenSize) * 2.0 - 1.0;
 
+    float focal = 1.0;
+
     vec3 screenPos = vec3(uv, 0.0);
     vec3 rayPos = cameraPos;
     vec3 cameraDir = (vec4(0, 0, 1, 0) * view).xyz;
-    vec3 rayDir = vec3((projection * screenPos).xy, 1);
+    vec3 rayDir = vec3((projection * screenPos).xy, focal);
     rayDir = (view * vec4(rayDir, 0)).xyz;
     // Sample grid and get safe cell step count via x + y + z)
     // Step ray that many cells
