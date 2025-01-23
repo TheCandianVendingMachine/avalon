@@ -1,7 +1,7 @@
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features, unused)]
 
-use nalgebra_glm::{ ortho, Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
+use nalgebra_glm::{ Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 
 pub mod voxel;
 
@@ -50,31 +50,45 @@ impl Light {
 
 struct Camera {
     transform: avalon::transform::Transform,
-    perspective: Mat4,
-    projection: Mat3,
+    focal: f32,
+    near: f32,
+    far: f32,
+    projection: Mat4,
     dimensions: IVec2,
 }
 
 impl Camera {
     fn new(dimensions: IVec2) -> Camera {
+        let focal = 1.0;
         let int_dimensions = dimensions;
         let dimensions: Vec2 = dimensions.cast();
+        let aspect = dimensions.y / dimensions.x;
+        let near = 0.01;
+        let far = std::f32::INFINITY;
+
+        let projection = if far == std::f32::INFINITY {
+            Mat4::new(
+                focal,  0.0,            0.0,                        0.0,
+                0.0,   -focal / aspect, 0.0,                        0.0,
+                0.0,    0.0,           -1.0,                       -2.0 * near,
+                0.0,    0.0,           -1.0,                        0.0
+            )
+        } else {
+            Mat4::new(
+                focal,  0.0,            0.0,                        0.0,
+                0.0,   -focal / aspect, 0.0,                        0.0,
+                0.0,    0.0,          -(far + near) / (far - near),-2.0 * far * near / (far - near),
+                0.0,    0.0,           -1.0,                       0.0
+            )
+        };
+
         Camera {
             transform: avalon::transform::Transform::new(),
-            perspective: ortho(
-                -dimensions.x,
-                dimensions.x,
-                -dimensions.y,
-                dimensions.y,
-                0.01,
-                10000.0,
-            ),
-            projection: Mat3::new(
-                1.0, 0.0, 0.0,
-                0.0, dimensions.y / dimensions.x, 0.0,
-                0.0, 0.0, 1.0
-            ),
-            dimensions: int_dimensions
+            dimensions: int_dimensions,
+            projection,
+            focal,
+            near,
+            far
         }
     }
 }
@@ -156,8 +170,8 @@ impl PassRaytrace {
 
         bind.uniform("view").unwrap().set_mat4(camera.transform.matrix());
         bind.uniform("inverseView").unwrap().set_mat4(camera.transform.matrix().try_inverse().unwrap());
-        bind.uniform("projection").unwrap().set_mat3(camera.projection);
-        bind.uniform("inverseProjection").unwrap().set_mat3(camera.projection.try_inverse().unwrap());
+        bind.uniform("projection").unwrap().set_mat4(camera.projection);
+        bind.uniform("inverseProjection").unwrap().set_mat4(camera.projection.try_inverse().unwrap());
         bind.uniform("cameraPos").unwrap().set_vec3(camera.transform.position());
 
         // draw command
@@ -706,10 +720,8 @@ impl DebugPassLights {
         let spot_lights = lights.iter().filter(|light| light.is_spotlight());
 
         let mut light_shader = self.shader.activate();
-        light_shader.uniform("screenSize").unwrap().set_ivec2(camera.dimensions);
         light_shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
-        //light_shader.uniform("projection").unwrap().set_mat4(camera.perspective);
-        //light_shader.uniform("projectionTick").unwrap().set_mat3(camera.projection);
+        light_shader.uniform("projection").unwrap().set_mat4(camera.projection);
 
         let mut debug_lights = Vec::new();
         light_shader.sampler("icon", &*icon_pointlight).unwrap();

@@ -9,8 +9,8 @@ layout(location=3) uniform sampler2D tNormal;
 layout(location=4) uniform sampler2D bump;
 layout(location=5) uniform mat4 view;
 layout(location=6) uniform mat4 inverseView;
-layout(location=7) uniform mat3 projection;
-layout(location=8) uniform mat3 inverseProjection;
+layout(location=7) uniform mat4 projection;
+layout(location=8) uniform mat4 inverseProjection;
 layout(location=9) uniform vec3 cameraPos;
 
 in flat ivec2 screenSize;
@@ -21,7 +21,7 @@ out vec4 positionColour;
 
 void bendRay(in vec3 cameraDir, in float theta, in vec3 normal, in vec3 startRayPos, in vec3 rayPos, inout vec3 rayDir, out vec3 deltaDist, out ivec3 rayStep, out vec3 tMax) {
     vec3 mapPos = floor(rayPos);
-    rayDir = cameraDir + (view * vec4(inverseProjection * (rayDir - cameraDir), 0.0)).xyz;
+    rayDir = cameraDir + (view * inverseProjection * vec4(rayDir - cameraDir, 0.0)).xyz;
 
     float mod = 1.0 - ((dot(rayDir, normal) / cos(theta)) * 0.5 + 0.5);
     float adjustedTheta = mod * theta;
@@ -30,7 +30,7 @@ void bendRay(in vec3 cameraDir, in float theta, in vec3 normal, in vec3 startRay
     vec3 newDir = cos(adjustedTheta) * rayDir + sin(adjustedTheta) * dTick;
     rayDir = newDir;
 
-    rayDir = cameraDir + projection * (inverseView * vec4(rayDir - cameraDir, 0.0)).xyz;
+    rayDir = cameraDir + (projection * (inverseView * vec4(rayDir - cameraDir, 0.0))).xyz;
 
     deltaDist = abs(vec3(length(rayDir)) / rayDir);
     rayStep = ivec3(sign(rayDir));
@@ -67,12 +67,11 @@ void main() {
     const ivec3 mapBounds = ivec3(32);
     vec2 uv = gl_FragCoord.xy / vec2(screenSize) * 2.0 - 1.0;
 
-    float focal = 1.0;
-
     vec3 screenPos = vec3(uv, 0.0);
     vec3 rayPos = cameraPos;
     vec3 cameraDir = (vec4(0, 0, 1, 0) * view).xyz;
-    vec3 rayDir = vec3((projection * screenPos).xy, focal);
+    vec3 rayDir = vec3(projection[0][0] * screenPos.x, screenPos.y / projection[1][1], projection[0][0]);
+    rayDir.y *= -1.0;
     rayDir = (view * vec4(rayDir, 0)).xyz;
     // Sample grid and get safe cell step count via x + y + z)
     // Step ray that many cells
