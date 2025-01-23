@@ -78,7 +78,7 @@ impl Camera {
                 focal,  0.0,            0.0,                        0.0,
                 0.0,   -focal / aspect, 0.0,                        0.0,
                 0.0,    0.0,          -(far + near) / (far - near),-2.0 * far * near / (far - near),
-                0.0,    0.0,           -1.0,                       0.0
+                0.0,    0.0,           -1.0,                        0.0
             )
         };
 
@@ -555,7 +555,7 @@ impl RenderPass {
         lights.push(
             Light::Point {
                 colour: vec3(0.6, 0.6, 0.6),
-                position: vec3(4.0, 15.0, 25.0),
+                position: vec3(4.0, 7.0, 25.0),
                 intensity: 160.0
             }
         );
@@ -571,7 +571,7 @@ impl RenderPass {
         lights.push(
             Light::Point {
                 colour: vec3(0.6, 0.1, 0.3),
-                position: vec3(3.0, 3.0, 1.0),
+                position: vec3(3.0, 1.5, 1.0),
                 intensity: 3.0
             }
         );
@@ -842,7 +842,7 @@ fn main() {
         engine.poll_events();
         let dt = start.elapsed().as_secs_f32();
         camera.transform.set_position(
-            vec3(0.0, 5.0, -5.0) + vec3(5.0 * dt.cos(), 0.0, 0.0 * dt.cos() * dt.sin())
+            vec3(0.0, 5.0, -5.0) + vec3(5.0 * dt.cos(), 0.0, 3.0 * dt.cos() * dt.sin())
         );
         engine.render();
         render_pass.execute(&asset_library, &camera, &grid);

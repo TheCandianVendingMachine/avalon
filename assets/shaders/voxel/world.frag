@@ -70,8 +70,7 @@ void main() {
     vec3 screenPos = vec3(uv, 0.0);
     vec3 rayPos = cameraPos;
     vec3 cameraDir = (vec4(0, 0, 1, 0) * view).xyz;
-    vec3 rayDir = vec3(projection[0][0] * screenPos.x, screenPos.y / projection[1][1], projection[0][0]);
-    rayDir.y *= -1.0;
+    vec3 rayDir = vec3(projection[0][0] * screenPos.x, -screenPos.y / projection[1][1], projection[0][0]);
     rayDir = (view * vec4(rayDir, 0)).xyz;
     // Sample grid and get safe cell step count via x + y + z)
     // Step ray that many cells
@@ -238,11 +237,6 @@ void main() {
 
     albedoColour *= vec4(tint, 1.0);
 
-    const float near = 0.01;
-    const float m = 128.0;
-
-    const float i_dist = m / (t + m * near);
-    const float i_near = 1.0 / near;
-    const float i_far = 1.0 / 10000.0;
-    gl_FragDepth = (i_dist - i_near) / (i_far - i_near);
+    float zNdc = -projection[2][2] + projection[2][3] / t;
+    gl_FragDepth = 0.5 + 0.5 * zNdc;
 }

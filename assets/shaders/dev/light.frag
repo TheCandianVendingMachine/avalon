@@ -11,9 +11,6 @@ void main() {
     if (colour.rgb == vec3(1.0)) {
         colour = lightColour;
     }
-    if (colour.a == 0.0) {
-        discard;
-    }
     fColor = vec4(colour);
 }
 
