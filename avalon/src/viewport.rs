@@ -5,27 +5,31 @@ use crate::debug::GpuAnnotation;
 use crate::texture;
 use nalgebra_glm::{ IVec2, Vec3 };
 
+#[derive(Debug, Clone)]
 pub enum Attachment {
     ColourIdx(usize),
     ColourTag(String),
     DepthStencil
 }
 
+#[derive(Debug, Clone)]
 pub enum BlitTarget<'t> {
     Screen(Attachment),
     Viewport((&'t Viewport, Attachment))
 }
 
+#[derive(Debug, Clone)]
 pub struct ViewportBind<'v> {
     viewport: &'v Viewport
 }
 
+#[derive(Debug, Clone)]
 pub struct DepthStencilTexture {
     pub kind: DepthStencil,
     pub texture: texture::gpu::Texture2d
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum DepthStencil {
     Depth,
     DepthStencil,
@@ -40,12 +44,14 @@ impl DepthStencil {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ColourAttachment {
     pub colour: texture::gpu::Texture2d,
     tag: Option<String>,
     unit: gl::types::GLenum,
 }
 
+#[derive(Debug, Clone)]
 pub struct Viewport {
     colours: Vec<ColourAttachment>,
     depth_stencil: Option<DepthStencilTexture>,
@@ -107,7 +113,7 @@ impl Viewport {
     }
 
     pub fn blit_attachment(&self, source: Attachment, target: BlitTarget) -> Result<(), error::Viewport> {
-        let _annotation = GpuAnnotation::push("Blitting attachment onto target");
+        let _annotation = GpuAnnotation::push("Blit viewport");
         unsafe {
             gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.handle);
 
@@ -122,23 +128,25 @@ impl Viewport {
             }
         }
 
-        let (handle, target) = match target {
-            BlitTarget::Viewport(viewport) => match viewport {
-                (viewport, Attachment::ColourIdx(idx)) => (viewport.handle, Some(viewport.colour_attachment(idx)?.unit)),
-                (viewport, Attachment::ColourTag(tag)) => (viewport.handle, Some(viewport.tagged_colour(tag)?.unit)),
-                (viewport, Attachment::DepthStencil) => (viewport.handle, None),
-            },
-            BlitTarget::Screen(target) => match target {
-                Attachment::ColourIdx(idx) => (0, Some(gl::COLOR_ATTACHMENT0 + idx as u32)),
-                Attachment::DepthStencil =>   (0, None),
-                Attachment::ColourTag(_tag) => panic!("unknown operation"),
-            }
-        };
+        {
+            let (handle, target) = match target {
+                BlitTarget::Viewport(ref viewport) => match viewport {
+                    (viewport, Attachment::ColourIdx(idx)) => (viewport.handle, Some(viewport.colour_attachment(*idx)?.unit)),
+                    (viewport, Attachment::ColourTag(tag)) => (viewport.handle, Some(viewport.tagged_colour(tag)?.unit)),
+                    (viewport, Attachment::DepthStencil) => (viewport.handle, None),
+                },
+                BlitTarget::Screen(ref target) => match target {
+                    Attachment::ColourIdx(idx) => (0, Some(gl::COLOR_ATTACHMENT0 + *idx as u32)),
+                    Attachment::DepthStencil =>   (0, None),
+                    Attachment::ColourTag(_tag) => panic!("unknown operation"),
+                }
+            };
 
-        unsafe {
-            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, handle);
-            if let Some(target) = target {
-                gl::DrawBuffer(target);
+            unsafe {
+                gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, handle);
+                if let Some(target) = target {
+                    gl::DrawBuffer(target);
+                }
             }
         }
 
@@ -152,10 +160,15 @@ impl Viewport {
             }
         };
 
+        let dest_dimensions = match target {
+            BlitTarget::Viewport((viewport, _)) => viewport.dimensions,
+            BlitTarget::Screen(_) => nalgebra_glm::vec2(1920, 1080),
+        };
+
         unsafe {
             gl::BlitFramebuffer(
                 0, 0, self.dimensions.x, self.dimensions.y,
-                0, 0, self.dimensions.x, self.dimensions.y,
+                0, 0, dest_dimensions.x, dest_dimensions.y,
                 mask,
                 gl::NEAREST
             );
