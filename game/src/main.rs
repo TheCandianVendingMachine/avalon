@@ -515,7 +515,7 @@ impl PassPostProcess {
 
         let _annotation = GpuAnnotation::push("Gamma Correction");
         let mut bind = self.gamma_correction.activate();
-        bind.sampler("texture", &self.viewport.colour_attachment(0).colour).unwrap();
+        bind.sampler("texture", &self.viewport.colour_attachment(0).unwrap().colour).unwrap();
 
         gpu_buffer::State::degenerate().bind().draw(&bind);
     }
@@ -649,7 +649,7 @@ impl RenderPass {
             &lighting_upscaled
         );
 
-        let lighted_scene = self.pass_lighting_combine.viewport.colour_attachment(0).colour;
+        let lighted_scene = self.pass_lighting_combine.viewport.colour_attachment(0).unwrap().colour;
         self.pass_ao.execute(
             &lighted_scene,
             &grid,
@@ -659,7 +659,7 @@ impl RenderPass {
             1.0 / 60.0
         );
 
-        let ao_scene = self.pass_ao.viewport.colour_attachment(0).colour;
+        let ao_scene = self.pass_ao.viewport.colour_attachment(0).unwrap().colour;
         let ao_scene_upscaled = self.rescaler.upscale_doubling(&ao_scene, self.options.ao_halves);
         self.pass_ao_combine.execute(
             &ao_scene_upscaled,
@@ -667,13 +667,17 @@ impl RenderPass {
             &albedo,
         );
 
-        let finished_scene = self.pass_ao_combine.viewport.colour_attachment(0).colour;
+        let finished_scene = self.pass_ao_combine.viewport.colour_attachment(0).unwrap().colour;
         let finished_scene_upscaled = self.rescaler.upscale(
             &finished_scene,
             self.options.final_size
         );
         self.pass_post_process.execute(
             &finished_scene_upscaled
+        );
+        self.pass_raytrace.viewport.blit_attachment(
+            viewport::Attachment::DepthStencil,
+            viewport::BlitTarget::Screen(viewport::Attachment::DepthStencil)
         );
     }
 }
