@@ -32,7 +32,7 @@ impl Transform {
                 vec4(1.0, 0.0, 0.0, 0.0),
                 vec4(0.0, 1.0, 0.0, 0.0),
                 vec4(0.0, 0.0, 1.0, 0.0),
-                vec4(self.position.x, self.position.y, self.position.z, 1.0)
+                vec4(-self.position.x, self.position.y, self.position.z, 1.0)
             ])
         } else {
             self.transformation_matrix
