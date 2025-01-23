@@ -28,17 +28,6 @@ const float vertices[12] = float[](
 out smooth vec2 texCoords;
 out flat vec4 lightColour;
 
-float getPlaneIntersection(in vec3 normal, in vec3 center, in vec3 rayOrigin, in vec3 rayDir) {
-    float denom = dot(normal, rayDir);
-    if (abs(denom) > 0) {
-        float t = dot(center - rayOrigin, normal) / denom;
-        if (t >= 0) {
-            return t;
-        }
-    }
-    return INF;
-}
-
 void main() {
     lightData light = lights[gl_InstanceID];
     vec2 position = vec2(
@@ -50,14 +39,15 @@ void main() {
 
     float focal = 1.0;
 
-    vec3 cameraPos = view[3].xyz;
-    vec3 cameraDir = (vec4(0, 0, 1, 0) * view).xyz;
+    float n = 0.0;
+    float a = float(screenSize.y) / float(screenSize.x);
+    mat4 projection = mat4(
+        vec4(focal, 0.0, 0.0, 0.0),
+        vec4(0.0, -focal / a, 0.0, 0.0),
+        vec4(0.0, 0.0, -1.0, -1.0),
+        vec4(0.0, 0.0, -2.0 * n, 0.0)
+    );
 
-    vec3 lightCameraRelative = light.position + (view * vec4(vec3(position, 0.0), 1.0)).xyz;
-    vec3 directionToVertex = normalize(cameraPos - lightCameraRelative);
-
-    float t = getPlaneIntersection(cameraDir, cameraDir * focal, cameraPos, directionToVertex);
-    vec3 finalPosition = cameraDir * t;
-
-    gl_Position = vec4(finalPosition, 1.0);
+    vec4 vertexPosition = vec4(vec3(1.0, -1.0, -1.0) * light.position + vec3(vec2(0.5, 0.5) * position, 0.0), 1.0);
+    gl_Position = projection * view * vertexPosition;
 }

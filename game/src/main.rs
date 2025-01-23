@@ -541,7 +541,7 @@ impl RenderPass {
         lights.push(
             Light::Point {
                 colour: vec3(0.6, 0.6, 0.6),
-                position: vec3(4.0, 9.0, 25.0),
+                position: vec3(4.0, 15.0, 25.0),
                 intensity: 160.0
             }
         );
