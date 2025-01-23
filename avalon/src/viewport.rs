@@ -162,7 +162,11 @@ impl Viewport {
 
         let dest_dimensions = match target {
             BlitTarget::Viewport((viewport, _)) => viewport.dimensions,
-            BlitTarget::Screen(_) => nalgebra_glm::vec2(1920, 1080),
+            BlitTarget::Screen(_) => unsafe {
+                let mut data = [0; 4];
+                gl::GetIntegerv(gl::VIEWPORT, data.as_mut_ptr());
+                nalgebra_glm::vec2(data[2], data[3])
+            },
         };
 
         unsafe {
