@@ -9,3 +9,9 @@ pub enum Viewport {
     #[error("Viewport does not have depth-stencil attachment")]
     NoDepthStencilAttachment,
 }
+
+#[derive(Debug, Clone, Error)]
+pub enum DepthFunction {
+    #[error("Unknown function value")]
+    InvalidFunction,
+}

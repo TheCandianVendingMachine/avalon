@@ -17,6 +17,11 @@ impl RenderEngine {
         let mut bind = viewport.bind_mut();
         bind.enable_srgb(true);
         bind.set_clear_colour(nalgebra_glm::vec3(1.0, 0.6, 0.8));
+        bind.depth_test()
+            .clear_value(1.0)
+            .enable(true)
+            .function(viewport::depth_options::Function::Always)
+            .finish();
         RenderEngine {
             viewport: viewport::Viewport::screen_viewport()
         }

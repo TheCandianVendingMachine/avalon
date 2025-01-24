@@ -199,7 +199,8 @@ impl ViewportBuilder {
             depth_stencil,
             dimensions: self.dimensions,
             handle: Handle::RenderTarget(handle),
-            clear_colour: vec3(0.2, 0.3, 0.4)
+            clear_colour: vec3(0.2, 0.3, 0.4),
+            depth_options: crate::viewport::depth_options::DepthOptions::new()
         }
     }
 }

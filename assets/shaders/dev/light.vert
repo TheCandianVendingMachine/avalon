@@ -39,7 +39,7 @@ void main() {
     vec3 cameraUp = vec3(view[0][1], view[1][1], view[2][1]);
 
     vec3 lightPos = vec3(1.0, -1.0, -1.0) * light.position;
-    vec3 billboardSize = vec3(vec2(0.3, 0.3) * position, 0.0);
+    vec3 billboardSize = vec3(vec2(0.7, 0.7) * position, 0.0);
 
     vec4 vertexPosition = vec4(lightPos + cameraRight * billboardSize.x + cameraUp * billboardSize.y, 1.0);
     gl_Position = projection * view * vertexPosition;

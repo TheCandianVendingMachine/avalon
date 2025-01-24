@@ -237,6 +237,7 @@ void main() {
 
     albedoColour *= vec4(tint, 1.0);
 
-    float zNdc = -projection[2][2] + projection[2][3] / t;
-    gl_FragDepth = 0.5 + 0.5 * zNdc;
+    vec4 depthVec = projection * view * vec4(vec3(1.0, -1.0, -1.0) * intersect, 1.0);
+    float depth = depthVec.z / depthVec.w;
+    gl_FragDepth = (1.0 + depth) * 0.5;
 }

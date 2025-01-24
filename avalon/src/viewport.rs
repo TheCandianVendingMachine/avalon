@@ -1,4 +1,5 @@
 pub mod builder;
+pub mod depth_options;
 pub mod error;
 
 use crate::debug::GpuAnnotation;
@@ -68,7 +69,8 @@ pub struct Viewport {
     depth_stencil: Option<DepthStencilTexture>,
     dimensions: IVec2,
     handle: Handle,
-    clear_colour: Vec3
+    clear_colour: Vec3,
+    depth_options: depth_options::DepthOptions,
 }
 
 impl Viewport {
@@ -94,12 +96,19 @@ impl Viewport {
             vec2(data[2], data[3])
         };
 
+        let clear_colour = unsafe {
+            let mut colour_clear = [0.0; 4];
+            gl::GetFloatv(gl::COLOR_CLEAR_VALUE, colour_clear.as_mut_ptr());
+            vec3(colour_clear[0], colour_clear[1], colour_clear[2])
+        };
+
         Viewport {
             colours: Vec::new(),
             depth_stencil: None,
             dimensions,
             handle: Handle::Screen,
-            clear_colour: vec3(0.0, 0.0, 0.0)
+            clear_colour,
+            depth_options: depth_options::DepthOptions::existing()
         }
     }
 
@@ -124,30 +133,17 @@ impl Viewport {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle());
         }
 
-        let targets;
         match self.handle {
-            Handle::RenderTarget(_) => {
-                targets = self.colours.iter()
+            Handle::RenderTarget(_) => unsafe {
+                let targets: Vec<_> = self.colours.iter()
                     .map(|colour| colour.unit)
-                    .collect()
+                    .collect();
+                gl::DrawBuffers(
+                    targets.len() as i32,
+                    targets.as_ptr()
+                );
             },
-            Handle::Screen => {
-                targets = vec![gl::FRONT_LEFT];
-            }
-        }
-        unsafe {
-            gl::DrawBuffers(
-                targets.len() as i32,
-                targets.as_ptr()
-            );
-        }
-
-        if self.depth_stencil.is_some() {
-            unsafe {
-                gl::Enable(gl::DEPTH_TEST);
-                gl::DepthFunc(gl::ALWAYS);
-                gl::DepthMask(gl::TRUE);
-            }
+            Handle::Screen => {}
         }
 
         ViewportBind {
@@ -159,24 +155,6 @@ impl Viewport {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle());
         }
-        unsafe {
-            gl::DrawBuffers(
-                self.colours.len() as i32,
-                self.colours.iter()
-                    .map(|colour| colour.unit)
-                    .collect::<Vec<_>>()
-                    .as_ptr()
-            );
-        }
-
-        if self.depth_stencil.is_some() {
-            unsafe {
-                gl::Enable(gl::DEPTH_TEST);
-                gl::DepthFunc(gl::ALWAYS);
-                gl::DepthMask(gl::TRUE);
-            }
-        }
-
         MutViewportBind {
             viewport: self
         }
@@ -305,6 +283,16 @@ impl MutViewportBind<'_> {
                 self.viewport.clear_colour.z,
                 1.0
             );
+        }
+    }
+}
+
+impl<'d, 'b: 'd> MutViewportBind<'b> {
+    pub fn depth_test(self) -> depth_options::DepthOptionsBuilder<'d> {
+        let options = self.viewport.depth_options;
+        depth_options::DepthOptionsBuilder {
+            viewport: self,
+            options
         }
     }
 }

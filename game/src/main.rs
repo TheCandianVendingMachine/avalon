@@ -125,27 +125,35 @@ struct PassRaytrace {
 
 impl PassRaytrace {
     fn new(options: PassOptions) -> PassRaytrace {
+        let mut viewport = viewport::Viewport::new(options.raytrace_size)
+            .colour_attachment()
+                .tag("albedo")
+                .format(gpu::SizedComponent::SRGB8A8)
+            .colour_attachment()
+                .tag("normal")
+                .format(gpu::SizedComponent::NormalRGB8)
+            .colour_attachment()
+                .tag("tangent")
+                .format(gpu::SizedComponent::NormalRGB8)
+            .colour_attachment()
+                .tag("position")
+                .format(gpu::SizedComponent::FloatRGB32)
+            .depth_stencil(viewport::DepthStencil::Depth)
+            .build();
+        viewport.bind_mut()
+            .depth_test()
+            .enable(true)
+            .function(viewport::depth_options::Function::Always)
+            .clear_value(1.0)
+            .finish()
+        .set_clear_colour(vec3(0.0, 0.0, 0.0));
         PassRaytrace {
             shader: Program::new()
                 .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
                 .fragment(shader::Fragment::load_from_path("assets/shaders/voxel/world.frag").unwrap())
                 .build()
                 .unwrap(),
-            viewport: viewport::Viewport::new(options.raytrace_size)
-                .colour_attachment()
-                    .tag("albedo")
-                    .format(gpu::SizedComponent::SRGB8A8)
-                .colour_attachment()
-                    .tag("normal")
-                    .format(gpu::SizedComponent::NormalRGB8)
-                .colour_attachment()
-                    .tag("tangent")
-                    .format(gpu::SizedComponent::NormalRGB8)
-                .colour_attachment()
-                    .tag("position")
-                    .format(gpu::SizedComponent::FloatRGB32)
-                .depth_stencil(viewport::DepthStencil::Depth)
-                .build(),
+            viewport,
             options
         }
     }
@@ -176,6 +184,7 @@ impl PassRaytrace {
 
         // draw command
         let viewport_bind = self.viewport.bind();
+        viewport_bind.clear();
         gpu_buffer::State::degenerate().bind().draw(&bind);
     }
 }
@@ -586,10 +595,10 @@ impl RenderPass {
             }
         );
 
-        let final_size = vec2(1920, 1080);
+        let final_size = vec2(1280, 720);
         let options = PassOptions {
             final_size,
-            raytrace_size: final_size,
+            raytrace_size: final_size * 3 / 4,
             lighting_halves: 1,
             ao_halves: 2
         };
@@ -716,6 +725,13 @@ impl DebugPassLights {
         lights: &Vec<Light>
     ) {
         let _annotation = GpuAnnotation::push("Light Icons");
+        viewport::Viewport::screen_viewport()
+            .bind_mut()
+            .depth_test()
+            .enable(true)
+            .function(viewport::depth_options::Function::Less)
+            .finish();
+
         let icon_pointlight = icon_bundle.tag::<GpuTexture2d>("pointlight").unwrap();
         let spotlight_on = icon_bundle.tag::<GpuTexture2d>("spotlight-off").unwrap();
         let spotlight_off = icon_bundle.tag::<GpuTexture2d>("spotlight-off").unwrap();
@@ -791,7 +807,7 @@ fn main() {
 
     let asset_library = avalon::asset_library::Library::new_with_scan("./assets/bins/");
 
-    let mut camera = Camera::new(vec2(1920, 1080));
+    let mut camera = Camera::new(vec2(1280, 720));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
     camera.transform.set_euler_angles(avalon::transform::Euler {
         pitch: 0.0,
