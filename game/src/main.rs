@@ -739,12 +739,7 @@ impl DebugPassLights {
         let point_lights = lights.iter().filter(|light| light.is_point());
         let spot_lights = lights.iter().filter(|light| light.is_spotlight());
 
-        let mut light_shader = self.shader.activate();
-        light_shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
-        light_shader.uniform("projection").unwrap().set_mat4(camera.projection);
-
         let mut debug_lights = Vec::new();
-        light_shader.sampler("icon", &*icon_pointlight).unwrap();
         for light in point_lights {
             let Light::Point { colour, position, .. } = light else { panic!() };
             debug_lights.push(DebugLight {
@@ -754,17 +749,23 @@ impl DebugPassLights {
         }
 
         let usage = gpu_buffer::storage::Usage::Dynamic(gpu_buffer::storage::Access::CpuWrite);
-        self.light_buffer.bind_mut().write_structs(
-            &debug_lights,
-            usage
-        );
-        let storage_bind = self.light_buffer.bind();
-        light_shader.storage(0, &storage_bind, usage);
-        light_shader.barrier();
-        gpu_buffer::State::degenerate().bind().draw_instanced(&light_shader, debug_lights.len());
+        {
+            let mut light_shader = self.shader.activate();
+            light_shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
+            light_shader.uniform("projection").unwrap().set_mat4(camera.projection);
+            light_shader.sampler("icon", &*icon_pointlight).unwrap();
+
+            self.light_buffer.bind_mut().write_structs(
+                &debug_lights,
+                usage
+            );
+            let storage_bind = self.light_buffer.bind();
+            light_shader.storage(0, &storage_bind, usage);
+            light_shader.barrier();
+            gpu_buffer::State::degenerate().bind().draw_instanced(&light_shader, debug_lights.len());
+        }
 
         debug_lights.clear();
-        light_shader.sampler("icon", &*spotlight_on).unwrap();
         for light in spot_lights {
             let Light::Spotlight { colour, position, .. } = light else { panic!() };
             debug_lights.push(DebugLight {
@@ -772,10 +773,21 @@ impl DebugPassLights {
                 colour: (colour.x, colour.y, colour.z, 1.0),
             });
         }
-        let storage_bind = self.light_buffer.bind();
-        light_shader.storage(0, &storage_bind, usage);
-        light_shader.barrier();
-        gpu_buffer::State::degenerate().bind().draw_instanced(&light_shader, debug_lights.len());
+        {
+            let mut light_shader = self.shader.activate();
+            light_shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
+            light_shader.uniform("projection").unwrap().set_mat4(camera.projection);
+            light_shader.sampler("icon", &*spotlight_on).unwrap();
+
+            self.light_buffer.bind_mut().write_structs(
+                &debug_lights,
+                usage
+            );
+            let storage_bind = self.light_buffer.bind();
+            light_shader.storage(0, &storage_bind, usage);
+            light_shader.barrier();
+            gpu_buffer::State::degenerate().bind().draw_instanced(&light_shader, debug_lights.len());
+        }
     }
 }
 

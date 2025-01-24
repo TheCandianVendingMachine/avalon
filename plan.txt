@@ -14,7 +14,7 @@ I'm pissed but its my fucking fault.
 Renderer
 [x] Shaders
 [x] Textures
-[ ] SSBO struct
+[x] SSBO struct
 [x] Viewport
 [ ] Pre-bound primitives
 
