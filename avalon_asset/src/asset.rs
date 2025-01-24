@@ -4,7 +4,7 @@ pub use serialization::write;
 #[cfg(feature = "read")]
 pub use serialization::read;
 
-use crate::{ error, shader, texture, text };
+use crate::{ error, shader, model, texture, text };
 
 use uuid;
 use std::path::PathBuf;
@@ -23,7 +23,7 @@ pub enum Type {
 pub enum Unit {
     Shader(shader::Shader),
     Texture(texture::Texture),
-    Model,
+    Model(model::Model),
     Text(text::Text),
 }
 
@@ -75,7 +75,6 @@ impl Metadata {
     }
 }
 
-#[cfg(feature = "write")]
 impl From<Metadata> for Asset {
     fn from(metadata: Metadata) -> Asset {
         Asset {
@@ -188,6 +187,7 @@ impl Type {
         match extension.to_ascii_lowercase().to_str()? {
             "png" | "jpg" | "jpeg" => Some(Type::Texture),
             "comp" | "vert" | "frag" => Some(Type::Shader),
+            "obj" => Some(Type::Model),
             _ => None,
         }
     }
@@ -207,7 +207,7 @@ impl std::fmt::Display for Type {
 impl From<Unit> for Type {
     fn from(unit: Unit) -> Type {
         match unit {
-            Unit::Model => Type::Model,
+            Unit::Model(_) => Type::Model,
             Unit::Shader(_) => Type::Shader,
             Unit::Texture(_) => Type::Texture,
             Unit::Text(_) => Type::Text,

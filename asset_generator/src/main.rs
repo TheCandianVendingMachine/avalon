@@ -1,7 +1,7 @@
 use inquire;
 use avalon_asset::packed;
 use avalon_asset::bundle;
-use avalon_asset::{ shader, texture, text };
+use avalon_asset::{ shader, texture, text, model };
 use avalon_asset::asset::{ Type, Unit, Metadata };
 use anyhow::Result;
 
@@ -101,7 +101,7 @@ impl CreateBundle {
                 })
             },
             Type::Model => {
-                Unit::Model
+                Unit::Model(model::Model {})
             },
         };
 

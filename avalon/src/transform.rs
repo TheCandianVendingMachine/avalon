@@ -1,4 +1,4 @@
-use nalgebra_glm::{ quat, Quat, quat_to_mat4, vec3, Vec3, vec4, Mat4 };
+use nalgebra_glm::{ Quat, quat_to_mat4, vec3, Vec3, vec4, Mat4 };
 use nalgebra::Unit;
 
 #[derive(Debug, Copy, Clone)]

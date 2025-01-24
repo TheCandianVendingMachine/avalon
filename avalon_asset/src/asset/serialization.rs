@@ -27,7 +27,7 @@ pub mod write {
                     Some(match &self.metadata.unit {
                         Unit::Shader(shader) => (Cow::Borrowed("shader"), shader),
                         Unit::Texture(texture) => (Cow::Borrowed("texture"), texture),
-                        Unit::Model => (Cow::Borrowed("model"), &()),
+                        Unit::Model(model) => (Cow::Borrowed("model"), model),
                         Unit::Text(text) => (Cow::Borrowed("text"), text),
                     })
                 },
@@ -50,7 +50,7 @@ pub mod write {
 #[cfg(feature = "read")]
 pub mod read {
     use crate::asset::{ Metadata, Unit };
-    use crate::{ shader, texture, text };
+    use crate::{ shader, texture, text, model };
     use miniserde::{ make_place, de, Deserialize, Result };
     use std::str::FromStr;
 
@@ -59,7 +59,7 @@ pub mod read {
     struct MetadataUnit {
         shader: Option<shader::Shader>,
         texture: Option<texture::Texture>,
-        model: Option<()>,
+        model: Option<model::Model>,
         text: Option<text::Text>,
     }
 
@@ -71,8 +71,8 @@ pub mod read {
             if let Some(texture) = self.texture {
                 return Some(Unit::Texture(texture));
             }
-            if let Some(_) = self.model {
-                return Some(Unit::Model);
+            if let Some(model) = self.model {
+                return Some(Unit::Model(model));
             }
             if let Some(text) = self.text {
                 return Some(Unit::Text(text));

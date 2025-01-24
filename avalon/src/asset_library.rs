@@ -119,7 +119,7 @@ impl Library {
             for asset in bundle.group.iter() {
                 let data = packed.data_map.get(asset).unwrap();
                 match asset.unit {
-                    asset::Unit::Model => todo!(),
+                    asset::Unit::Model(model) => todo!(),
                     asset::Unit::Text(text) => todo!(),
                     asset::Unit::Shader(shader) => todo!(),
                     asset::Unit::Texture(texture) => {
