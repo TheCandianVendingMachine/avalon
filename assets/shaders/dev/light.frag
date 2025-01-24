@@ -8,6 +8,9 @@ out vec4 fColor;
 
 void main() {
     vec4 colour = texture(icon, texCoords);
+    if (colour.a == 0.0) {
+        discard;
+    }
     if (colour.rgb == vec3(1.0)) {
         colour = lightColour;
     }
