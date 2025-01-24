@@ -54,7 +54,8 @@ pub struct DepthOptionsBuilder<'o>{
 pub struct DepthOptions {
     pub(super) enable: bool,
     pub(super) function: Function,
-    pub(super) depth_clear: f64
+    pub(super) depth_clear: f64,
+    pub(super) draw_to_depth: bool
 }
 
 impl DepthOptions {
@@ -62,7 +63,8 @@ impl DepthOptions {
         DepthOptions {
             enable: false,
             function: Function::Always,
-            depth_clear: 1.0
+            depth_clear: 1.0,
+            draw_to_depth: true
         }
     }
 
@@ -70,20 +72,25 @@ impl DepthOptions {
         let enable: bool;
         let function: Function;
         let mut depth_clear: f64 = 0.0;
+        let draw_to_depth: bool;
         unsafe {
             let mut enabled_int = 0;
             let mut function_int = 0;
+            let mut draw_to_depth_int = 0;
             gl::GetBooleanv(gl::DEPTH_TEST, &mut enabled_int);
             gl::GetIntegerv(gl::DEPTH_FUNC, &mut function_int);
             gl::GetDoublev(gl::DEPTH_CLEAR_VALUE, &mut depth_clear);
+            gl::GetIntegerv(gl::DEPTH_WRITEMASK, &mut draw_to_depth_int);
 
             enable = enabled_int == 1;
             function = Function::try_from(function_int as u32).expect("opengl returned invalid func");
+            draw_to_depth = draw_to_depth_int == 1;
         };
         DepthOptions {
             enable,
             function,
-            depth_clear
+            depth_clear,
+            draw_to_depth
         }
     }
 }
@@ -104,6 +111,11 @@ impl<'b, 'o: 'b> DepthOptionsBuilder<'o> {
         self
     }
 
+    pub fn draw_to_depth(mut self, draw: bool) -> DepthOptionsBuilder<'o> {
+        self.options.draw_to_depth = draw;
+        self
+    }
+
     pub fn finish(self) -> viewport::MutViewportBind<'b> {
         unsafe {
             if self.options.enable {
@@ -114,6 +126,12 @@ impl<'b, 'o: 'b> DepthOptionsBuilder<'o> {
 
             gl::ClearDepth(self.options.depth_clear);
             gl::DepthFunc(self.options.function.into());
+
+            if self.options.draw_to_depth {
+                gl::DepthMask(gl::TRUE);
+            } else {
+                gl::DepthMask(gl::FALSE);
+            }
         }
         self.viewport.viewport.depth_options = self.options;
         self.viewport
