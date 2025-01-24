@@ -3,7 +3,7 @@ pub mod error;
 
 use crate::debug::GpuAnnotation;
 use crate::texture;
-use nalgebra_glm::{ IVec2, Vec3 };
+use nalgebra_glm::{ IVec2, Vec3, vec2, vec3 };
 
 #[derive(Debug, Clone)]
 pub enum Attachment {
@@ -21,6 +21,11 @@ pub enum BlitTarget<'t> {
 #[derive(Debug, Clone)]
 pub struct ViewportBind<'v> {
     viewport: &'v Viewport
+}
+
+#[derive(Debug)]
+pub struct MutViewportBind<'v> {
+    viewport: &'v mut Viewport
 }
 
 #[derive(Debug, Clone)]
@@ -51,21 +56,50 @@ pub struct ColourAttachment {
     unit: gl::types::GLenum,
 }
 
+#[derive(Debug, Copy, Clone)]
+enum Handle {
+    RenderTarget(gl::types::GLuint),
+    Screen
+}
+
 #[derive(Debug, Clone)]
 pub struct Viewport {
     colours: Vec<ColourAttachment>,
     depth_stencil: Option<DepthStencilTexture>,
     dimensions: IVec2,
-    handle: gl::types::GLuint,
+    handle: Handle,
     clear_colour: Vec3
 }
 
 impl Viewport {
+    fn handle(&self) -> gl::types::GLuint {
+        match self.handle {
+            Handle::Screen => 0,
+            Handle::RenderTarget(handle) => handle
+        }
+    }
+
     pub fn new(dimensions: IVec2) -> builder::ViewportBuilder {
         builder::ViewportBuilder {
             dimensions,
             colour_attachments: Vec::new(),
             depth_stencil: None
+        }
+    }
+
+    pub fn screen_viewport() -> Viewport {
+        let dimensions = unsafe {
+            let mut data = [0; 4];
+            gl::GetIntegerv(gl::VIEWPORT, data.as_mut_ptr());
+            vec2(data[2], data[3])
+        };
+
+        Viewport {
+            colours: Vec::new(),
+            depth_stencil: None,
+            dimensions,
+            handle: Handle::Screen,
+            clear_colour: vec3(0.0, 0.0, 0.0)
         }
     }
 
@@ -87,7 +121,43 @@ impl Viewport {
 
     pub fn bind<'v>(&'v self) -> ViewportBind<'v> {
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle());
+        }
+
+        let targets;
+        match self.handle {
+            Handle::RenderTarget(_) => {
+                targets = self.colours.iter()
+                    .map(|colour| colour.unit)
+                    .collect()
+            },
+            Handle::Screen => {
+                targets = vec![gl::FRONT_LEFT];
+            }
+        }
+        unsafe {
+            gl::DrawBuffers(
+                targets.len() as i32,
+                targets.as_ptr()
+            );
+        }
+
+        if self.depth_stencil.is_some() {
+            unsafe {
+                gl::Enable(gl::DEPTH_TEST);
+                gl::DepthFunc(gl::ALWAYS);
+                gl::DepthMask(gl::TRUE);
+            }
+        }
+
+        ViewportBind {
+            viewport: self
+        }
+    }
+
+    pub fn bind_mut<'v>(&'v mut self) -> MutViewportBind<'v> {
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle());
         }
         unsafe {
             gl::DrawBuffers(
@@ -107,7 +177,7 @@ impl Viewport {
             }
         }
 
-        ViewportBind {
+        MutViewportBind {
             viewport: self
         }
     }
@@ -115,7 +185,7 @@ impl Viewport {
     pub fn blit_attachment(&self, source: Attachment, target: BlitTarget) -> Result<(), error::Viewport> {
         let _annotation = GpuAnnotation::push("Blit viewport");
         unsafe {
-            gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.handle);
+            gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.handle());
 
             let target = match &source {
                 Attachment::ColourIdx(idx) => Some(self.colour_attachment(*idx)?.unit),
@@ -131,9 +201,9 @@ impl Viewport {
         {
             let (handle, target) = match target {
                 BlitTarget::Viewport(ref viewport) => match viewport {
-                    (viewport, Attachment::ColourIdx(idx)) => (viewport.handle, Some(viewport.colour_attachment(*idx)?.unit)),
-                    (viewport, Attachment::ColourTag(tag)) => (viewport.handle, Some(viewport.tagged_colour(tag)?.unit)),
-                    (viewport, Attachment::DepthStencil) => (viewport.handle, None),
+                    (viewport, Attachment::ColourIdx(idx)) => (viewport.handle(), Some(viewport.colour_attachment(*idx)?.unit)),
+                    (viewport, Attachment::ColourTag(tag)) => (viewport.handle(), Some(viewport.tagged_colour(tag)?.unit)),
+                    (viewport, Attachment::DepthStencil) => (viewport.handle(), None),
                 },
                 BlitTarget::Screen(ref target) => match target {
                     Attachment::ColourIdx(idx) => (0, Some(gl::COLOR_ATTACHMENT0 + *idx as u32)),
@@ -165,7 +235,7 @@ impl Viewport {
             BlitTarget::Screen(_) => unsafe {
                 let mut data = [0; 4];
                 gl::GetIntegerv(gl::VIEWPORT, data.as_mut_ptr());
-                nalgebra_glm::vec2(data[2], data[3])
+                vec2(data[2], data[3])
             },
         };
 
@@ -189,8 +259,10 @@ impl Viewport {
 
 impl Drop for Viewport {
     fn drop(&mut self) {
-        unsafe {
-            gl::DeleteFramebuffers(1, &self.handle);
+        if let Handle::RenderTarget(handle) = self.handle {
+            unsafe {
+                gl::DeleteFramebuffers(1, &handle);
+            }
         }
     }
 }
@@ -198,7 +270,6 @@ impl Drop for Viewport {
 impl ViewportBind<'_> {
     pub fn clear(&self) {
         unsafe {
-            gl::ClearColor(self.viewport.clear_colour.x, self.viewport.clear_colour.y, self.viewport.clear_colour.z, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
         }
     }
@@ -212,3 +283,36 @@ impl Drop for ViewportBind<'_> {
     }
 }
 
+impl MutViewportBind<'_> {
+    pub fn enable_srgb(&mut self, enable: bool) {
+        if enable {
+            unsafe {
+                gl::Enable(gl::FRAMEBUFFER_SRGB);
+            }
+        } else {
+            unsafe {
+                gl::Disable(gl::FRAMEBUFFER_SRGB);
+            }
+        }
+    }
+
+    pub fn set_clear_colour(&mut self, colour: Vec3) {
+        self.viewport.clear_colour = colour;
+        unsafe {
+            gl::ClearColor(
+                self.viewport.clear_colour.x,
+                self.viewport.clear_colour.y,
+                self.viewport.clear_colour.z,
+                1.0
+            );
+        }
+    }
+}
+
+impl Drop for MutViewportBind<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        }
+    }
+}

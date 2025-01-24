@@ -7,7 +7,7 @@ struct lightData {
 };
 
 layout(location=1) uniform mat4 view;
-layout(location=5) uniform mat4 projection;
+layout(location=3) uniform mat4 projection;
 layout(std430, binding=0) readonly buffer storage0 {
     lightData lights[];
 };
@@ -42,6 +42,5 @@ void main() {
     vec3 billboardSize = vec3(vec2(0.3, 0.3) * position, 0.0);
 
     vec4 vertexPosition = vec4(lightPos + cameraRight * billboardSize.x + cameraUp * billboardSize.y, 1.0);
-    vec4 viewTransform = view[3];
     gl_Position = projection * view * vertexPosition;
 }
