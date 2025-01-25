@@ -21,6 +21,8 @@ pub enum PackError {
     InvalidDirectory(#[from] std::io::Error),
     #[error("Error while modifying archive: {0}")]
     ZipError(#[from] zip::result::ZipError),
+    #[error("Cannot read model from .obj: {0}")]
+    ObjError(#[from] obj::ObjError)
 }
 
 #[derive(Debug, Error)]
@@ -35,3 +37,10 @@ pub enum UnpackError {
     UnexpectedFileStructure,
 }
 
+#[derive(Debug, Copy, Clone, Error)]
+pub enum NgonError {
+    #[error("Cannot triangulate given quad")]
+    CannotTriangulateQuad,
+    #[error("Cannot triangulate models with faces that have more than 4 vertices")]
+    NgonIsNotQuadOrTriangle
+}

@@ -1,3 +1,5 @@
+#![feature(slice_as_array)]
+
 pub mod asset;
 pub mod bundle;
 pub mod config;
