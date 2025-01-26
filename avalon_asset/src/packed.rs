@@ -14,7 +14,8 @@ impl Packed {
 #[cfg(feature = "write")]
 pub mod write {
     use super::Packed;
-    use crate::model::packed::{ PackedModel, PackedModelBuffer };
+    use crate::model::packed::PackedModel;
+    use crate::model::ngon;
     use crate::{ error, asset };
     use std::io::Write;
     use miniserde::json;
@@ -28,7 +29,7 @@ pub mod write {
 
     impl Packer {
         fn new<R: std::io::Read>(mut reader: R) -> Packer {
-            let mut original_data = vec![0xFF_u8; 10];
+            let mut original_data = vec![];
             reader.read_to_end(&mut original_data).expect("data stream needs to be readable");
             Packer {
                 original_data,
@@ -40,14 +41,98 @@ pub mod write {
             std::io::Cursor::new(self.write_data)
         }
 
-        fn pack_model_data(mut self) -> std::io::Cursor<Vec<u8>> {
+        fn pack_model_data(mut self) -> Result<std::io::Cursor<Vec<u8>>, error::ModelUnpackError> {
             let cursor = std::io::Cursor::new(&self.original_data);
-            let reader = std::io::BufReader::new(cursor);
-            let raw_model = obj::raw::parse_obj(reader).ok();
+            let raw_model = obj::raw::parse_obj(cursor).map_err(error::ModelUnpackError::ObjError)?;
+            let vertices: Vec<_> = raw_model.positions.iter()
+                .map(|v| [v.0, v.1, v.2])
+                .collect();
 
+            let mut triangles = Vec::new();
+            for polygon in raw_model.polygons {
+                let obj::raw::object::Polygon::PTN(polygon) = polygon else {
+                    return Err(error::ModelUnpackError::InvalidFormat);
+                };
+                if polygon.len() > 4 {
+                    return Err(error::ModelUnpackError::TooManyVertices);
+                } else if polygon.len() == 3 {
+                    let (index0, uv_idx0, normal_idx0) = polygon[0];
+                    let (index1, uv_idx1, normal_idx1) = polygon[1];
+                    let (index2, uv_idx2, normal_idx2) = polygon[2];
 
-            //self.write_data = buffers.to_buffer();
-            self.cursor()
+                    let normal_0 = raw_model.normals[normal_idx0];
+                    let normal_1 = raw_model.normals[normal_idx1];
+                    let normal_2 = raw_model.normals[normal_idx2];
+
+                    let uv_0 = raw_model.tex_coords[uv_idx0]; let uv_0 = (uv_0.0, uv_0.1);
+                    let uv_1 = raw_model.tex_coords[uv_idx1]; let uv_1 = (uv_1.0, uv_1.1);
+                    let uv_2 = raw_model.tex_coords[uv_idx2]; let uv_2 = (uv_2.0, uv_2.1);
+
+                    triangles.push(ngon::Triangle::new(
+                        &vertices,
+                        [
+                            (index0 as u32, normal_0.into(), uv_0.into()),
+                            (index1 as u32, normal_1.into(), uv_1.into()),
+                            (index2 as u32, normal_2.into(), uv_2.into()),
+                        ]
+                    ));
+                } else {
+                    let (index0, uv_idx0, normal_idx0) = polygon[0];
+                    let (index1, uv_idx1, normal_idx1) = polygon[1];
+                    let (index2, uv_idx2, normal_idx2) = polygon[2];
+                    let (index3, uv_idx3, normal_idx3) = polygon[3];
+
+                    let normal_0 = raw_model.normals[normal_idx0];
+                    let normal_1 = raw_model.normals[normal_idx1];
+                    let normal_2 = raw_model.normals[normal_idx2];
+                    let normal_3 = raw_model.normals[normal_idx3];
+
+                    let uv_0 = raw_model.tex_coords[uv_idx0]; let uv_0 = (uv_0.0, uv_0.1);
+                    let uv_1 = raw_model.tex_coords[uv_idx1]; let uv_1 = (uv_1.0, uv_1.1);
+                    let uv_2 = raw_model.tex_coords[uv_idx2]; let uv_2 = (uv_2.0, uv_2.1);
+                    let uv_3 = raw_model.tex_coords[uv_idx3]; let uv_3 = (uv_3.0, uv_3.1);
+
+                    let quad = ngon::Quad::new([
+                        (index0 as u32, normal_0.into(), uv_0.into()),
+                        (index1 as u32, normal_1.into(), uv_1.into()),
+                        (index2 as u32, normal_2.into(), uv_2.into()),
+                        (index3 as u32, normal_3.into(), uv_3.into()),
+                    ]);
+                    let (t0, t1) = quad.to_triangles(&vertices)?;
+                    triangles.push(t0);
+                    triangles.push(t1);
+                }
+            }
+
+            let (min_bounds, max_bounds) = {
+                let mut min_bounds = [f32::INFINITY, f32::INFINITY, f32::INFINITY];
+                let mut max_bounds = [f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY];
+
+                for v in vertices.iter() {
+                    min_bounds[0] = min_bounds[0].min(v[0]);
+                    min_bounds[1] = min_bounds[1].min(v[1]);
+                    min_bounds[2] = min_bounds[2].min(v[2]);
+
+                    max_bounds[0] = max_bounds[0].max(v[0]);
+                    max_bounds[1] = max_bounds[1].max(v[1]);
+                    max_bounds[2] = max_bounds[2].max(v[2]);
+                }
+
+                (min_bounds, max_bounds)
+            };
+
+            let packed = PackedModel {
+                index_count: 3 * triangles.len(),
+                min_bounds,
+                max_bounds,
+                triangles,
+                positions: raw_model.positions.iter()
+                    .map(|v| [v.0, v.1, v.2])
+                    .collect(),
+            };
+
+            self.write_data = packed.to_buffer();
+            Ok(self.cursor())
         }
 
         fn pack_texture_data(mut self) -> std::io::Cursor<Vec<u8>> {
@@ -114,7 +199,7 @@ pub mod write {
                 let mut cursor = match asset::Type::from(asset.unit) {
                     asset::Type::Shader => packer.pack_shader_data(),
                     asset::Type::Texture => packer.pack_texture_data(),
-                    asset::Type::Model => packer.pack_model_data(),
+                    asset::Type::Model => packer.pack_model_data()?,
                     asset::Type::Text => packer.pack_text_data(),
                 };
                 std::io::copy(&mut cursor, &mut archive)?;

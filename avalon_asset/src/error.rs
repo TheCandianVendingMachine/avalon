@@ -21,8 +21,20 @@ pub enum PackError {
     InvalidDirectory(#[from] std::io::Error),
     #[error("Error while modifying archive: {0}")]
     ZipError(#[from] zip::result::ZipError),
+    #[error("Error with model: {0}")]
+    ModelError(#[from] ModelUnpackError)
+}
+
+#[derive(Debug, Error)]
+pub enum ModelUnpackError {
     #[error("Cannot read model from .obj: {0}")]
-    ObjError(#[from] obj::ObjError)
+    ObjError(#[from] obj::ObjError),
+    #[error("Obj file needs to have Position/Texture/Normal data defined")]
+    InvalidFormat,
+    #[error("Exported model has a face with > 4 vertices")]
+    TooManyVertices,
+    #[error("Exported model could not be triangulated: {0}")]
+    TriangulationError(#[from] NgonError)
 }
 
 #[derive(Debug, Error)]
