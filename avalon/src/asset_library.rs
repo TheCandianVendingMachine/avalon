@@ -21,10 +21,18 @@ impl<'v, T: Asset> std::ops::Deref for AssetView<'v, T> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct BundleView<'v> {
     library: &'v Library,
     bundle: &'v bundle::Bundle
+}
+
+impl std::fmt::Debug for BundleView<'_> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fmt.debug_struct("Bundle View")
+            .field("bundle", self.bundle)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<'r, 'v: 'r> BundleView<'v> {

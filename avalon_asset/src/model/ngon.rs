@@ -58,9 +58,9 @@ impl Vertex {
     pub fn reduced_pack(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        bytes.extend_from_slice(self.normal.map(|n| n.to_be_bytes()).as_flattened());
-        bytes.extend_from_slice(self.tangent.map(|t| t.to_be_bytes()).as_flattened());
-        bytes.extend_from_slice(self.uv.map(|uv| uv.to_be_bytes()).as_flattened());
+        bytes.extend_from_slice(self.normal.map(|n| n.to_ne_bytes()).as_flattened());
+        bytes.extend_from_slice(self.tangent.map(|t| t.to_ne_bytes()).as_flattened());
+        bytes.extend_from_slice(self.uv.map(|uv| uv.to_ne_bytes()).as_flattened());
 
         bytes
     }

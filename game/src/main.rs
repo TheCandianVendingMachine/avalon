@@ -9,6 +9,7 @@ use avalon;
 use avalon::debug::GpuAnnotation;
 use avalon::gpu_buffer;
 use avalon::viewport;
+use avalon::model;
 use avalon::shader::{ self, Source, Program, };
 use avalon::texture::algorithms;
 use avalon::texture::data;
@@ -64,7 +65,7 @@ impl Camera {
         let dimensions: Vec2 = dimensions.cast();
         let aspect = dimensions.y / dimensions.x;
         let near = 0.01;
-        let far = std::f32::INFINITY;
+        let far = 100.0;
 
         let projection = if far == std::f32::INFINITY {
             Mat4::new(
@@ -159,7 +160,7 @@ impl PassRaytrace {
     }
 
     fn execute<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32>(
-        &self,
+        &mut self,
         camera: &Camera,
         grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>,
         albedo: GpuTexture2d,
@@ -182,10 +183,67 @@ impl PassRaytrace {
         bind.uniform("inverseProjection").unwrap().set_mat4(camera.projection.try_inverse().unwrap());
         bind.uniform("cameraPos").unwrap().set_vec3(camera.transform.position());
 
+        {
+            let bind = self.viewport.bind_mut();
+            bind.depth_test()
+                .function(viewport::depth_options::Function::Always)
+                .finish();
+        }
+
         // draw command
         let viewport_bind = self.viewport.bind();
         viewport_bind.clear();
         gpu_buffer::State::degenerate().bind().draw(&bind);
+    }
+}
+
+struct PassGeometry {
+    shader: Program,
+    options: PassOptions
+}
+
+impl PassGeometry {
+    fn new(options: PassOptions) -> PassGeometry {
+        PassGeometry {
+            shader: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/geo/star.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/geo/star.frag").unwrap())
+                .build()
+                .unwrap(),
+            options
+        }
+    }
+
+    fn execute(
+        &self,
+        assets: &avalon::asset_library::Library,
+        world_viewport: &mut viewport::Viewport,
+        camera: &Camera,
+    ) {
+        let _raytrace_annotation = GpuAnnotation::push("Draw Geometry");
+        let model = assets.bundle("ambient-visuals").unwrap().tag::<model::Model>("star-model").unwrap();
+        let mut transform = avalon::transform::Transform::new();
+        transform.set_position(vec3(16.0, 2.7, 12.0));
+        transform.set_euler_angles(avalon::transform::Euler {
+            pitch: 0.0_f32.to_radians(),
+            yaw: 0.0_f32.to_radians(),
+            roll: 0.0_f32.to_radians()
+        });
+
+        {
+            let bind = world_viewport.bind_mut();
+            bind.depth_test()
+                .function(viewport::depth_options::Function::Less)
+                .finish();
+        }
+
+        let shader = self.shader.activate();
+        shader.uniform("model").unwrap().set_mat4(transform.matrix());
+        shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
+        shader.uniform("projection").unwrap().set_mat4(camera.projection);
+
+        let bind = world_viewport.bind();
+        model.bind().draw(&shader);
     }
 }
 
@@ -533,6 +591,7 @@ impl PassPostProcess {
 struct RenderPass {
     options: PassOptions,
     pass_raytrace: PassRaytrace,
+    pass_geometry: PassGeometry,
     pass_lighting: PassLighting,
     pass_lighting_combine: PassLightingCombine,
     pass_ao: PassLightingAo,
@@ -598,12 +657,13 @@ impl RenderPass {
         let final_size = vec2(1280, 720);
         let options = PassOptions {
             final_size,
-            raytrace_size: final_size * 3 / 4,
+            raytrace_size: final_size,
             lighting_halves: 1,
             ao_halves: 2
         };
 
         let pass_raytrace = PassRaytrace::new(options);
+        let pass_geometry = PassGeometry::new(options);
         let pass_lighting = PassLighting::new(options);
         let pass_lighting_combine = PassLightingCombine::new(options);
         let pass_ao = PassLightingAo::new(options, 32);
@@ -612,6 +672,7 @@ impl RenderPass {
         RenderPass {
             options,
             pass_raytrace,
+            pass_geometry,
             pass_lighting,
             pass_lighting_combine,
             pass_ao,
@@ -623,7 +684,7 @@ impl RenderPass {
     }
 
     fn execute<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32>(
-        &self,
+        &mut self,
         assets: &avalon::asset_library::Library,
         camera: &Camera,
         grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>
@@ -637,6 +698,12 @@ impl RenderPass {
             grid,
             *albedo_raw,
             *normal_raw,
+        );
+
+        self.pass_geometry.execute(
+            assets,
+            &mut self.pass_raytrace.viewport,
+            camera,
         );
 
         let albedo = self.pass_raytrace.viewport.tagged_colour("albedo").unwrap().colour;
@@ -865,7 +932,7 @@ fn main() {
     }
     grid.bake();
 
-    let render_pass = RenderPass::new();
+    let mut render_pass = RenderPass::new();
     let mut debug_render_pass = DebugRenderPass::new();
 
     let start = std::time::Instant::now();
