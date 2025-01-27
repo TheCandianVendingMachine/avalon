@@ -10,6 +10,8 @@ use crate::render::{ Camera, PassOptions, Light };
 use nalgebra_glm::vec3;
 
 pub struct PassPostProcess {
+    combiner: Program,
+    combine_viewport: viewport::Viewport,
     tone_mapping: Program,
     gamma_correction: Program,
     pub viewport: viewport::Viewport,
@@ -19,6 +21,11 @@ pub struct PassPostProcess {
 impl PassPostProcess {
     pub fn new(options: PassOptions) -> PassPostProcess {
         PassPostProcess {
+            combiner: Program::new()
+                .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
+                .fragment(shader::Fragment::load_from_path("assets/shaders/pp_combiner.frag").unwrap())
+                .build()
+                .unwrap(),
             tone_mapping: Program::new()
                 .vertex(shader::Vertex::load_from_path("assets/shaders/voxel/world.vert").unwrap())
                 .fragment(shader::Fragment::load_from_path("assets/shaders/reinhard_tonemap.frag").unwrap())
@@ -29,6 +36,10 @@ impl PassPostProcess {
                 .fragment(shader::Fragment::load_from_path("assets/shaders/gamma_correction.frag").unwrap())
                 .build()
                 .unwrap(),
+            combine_viewport: viewport::Viewport::new(options.final_size)
+                .colour_attachment()
+                    .format(gpu::SizedComponent::FloatRGBA32)
+                .build(),
             viewport: viewport::Viewport::new(options.final_size)
                 .colour_attachment()
                     .format(gpu::SizedComponent::RGBA8)
@@ -39,13 +50,25 @@ impl PassPostProcess {
 
     pub fn execute(
         &self,
+        skydome: &GpuTexture2d,
         pre_processed_scene: &GpuTexture2d
     ) {
         {
-            let _annotation = GpuAnnotation::push("Tone Mapping");
+            let _annotation = GpuAnnotation::push("Combine Renders");
+            let viewport = self.combine_viewport.bind();
+            let mut bind = self.combiner.activate();
+            bind.uniform("uScreenSize").unwrap().set_ivec2(self.options.final_size);
+            bind.sampler("colour", skydome).unwrap();
+            gpu_buffer::State::degenerate().bind().draw(&bind);
+
+            bind.sampler("colour", pre_processed_scene).unwrap();
+            gpu_buffer::State::degenerate().bind().draw(&bind);
+        }
+        {
             let viewport = self.viewport.bind();
+            let _annotation = GpuAnnotation::push("Tone Mapping");
             let mut bind = self.tone_mapping.activate();
-            bind.sampler("texture", pre_processed_scene).unwrap();
+            bind.sampler("texture", &self.combine_viewport.colour_attachment(0).unwrap().colour).unwrap();
             bind.uniform("white").unwrap().set_vec3(vec3(4.0, 4.0, 4.0));
 
             gpu_buffer::State::degenerate().bind().draw(&bind);

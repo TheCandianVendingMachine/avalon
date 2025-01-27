@@ -4,6 +4,7 @@ pub mod pass_lighting;
 pub mod pass_lighting_combine;
 pub mod pass_lighting_ao;
 pub mod pass_lighting_ao_combine;
+pub mod pass_skybox;
 pub mod pass_post_process;
 pub mod debug_pass_lights;
 
@@ -79,7 +80,7 @@ impl Camera {
         let dimensions: Vec2 = dimensions.cast();
         let aspect = dimensions.y / dimensions.x;
         let near = 0.01;
-        let far = 100.0;
+        let far = std::f32::INFINITY;
 
         let projection = if far == std::f32::INFINITY {
             Mat4::new(
@@ -140,6 +141,7 @@ pub struct RenderPass {
     pass_lighting_combine: pass_lighting_combine::PassLightingCombine,
     pass_ao: pass_lighting_ao::PassLightingAo,
     pass_ao_combine: pass_lighting_ao_combine::PassLightingAoCombine,
+    pass_skybox: pass_skybox::PassSkybox,
     pass_post_process: pass_post_process::PassPostProcess,
     rescaler: algorithms::Rescaler,
     pub lights: Vec<Light>
@@ -198,11 +200,11 @@ impl RenderPass {
             }
         );
 
-        let final_size = vec2(1280, 720);
+        let final_size = vec2(1920, 1080);
         let options = PassOptions {
             final_size,
             raytrace_size: final_size,
-            lighting_halves: 1,
+            lighting_halves: 0,
             ao_halves: 2
         };
 
@@ -212,6 +214,7 @@ impl RenderPass {
         let pass_lighting_combine = pass_lighting_combine::PassLightingCombine::new(options);
         let pass_ao = pass_lighting_ao::PassLightingAo::new(options, 32);
         let pass_ao_combine = pass_lighting_ao_combine::PassLightingAoCombine::new(options);
+        let pass_skybox = pass_skybox::PassSkybox::new(options);
         let pass_post_process = pass_post_process::PassPostProcess::new(options);
         RenderPass {
             options,
@@ -221,6 +224,7 @@ impl RenderPass {
             pass_lighting_combine,
             pass_ao,
             pass_ao_combine,
+            pass_skybox,
             pass_post_process,
             rescaler: algorithms::Rescaler::new(),
             lights
@@ -244,11 +248,11 @@ impl RenderPass {
             *normal_raw,
         );
 
-        self.pass_geometry.execute(
+        /*self.pass_geometry.execute(
             assets,
             &mut self.pass_raytrace.viewport,
             camera,
-        );
+        );*/
 
         let albedo = self.pass_raytrace.viewport.tagged_colour("albedo").unwrap().colour;
         let normals = self.pass_raytrace.viewport.tagged_colour("normal").unwrap().colour;
@@ -292,7 +296,14 @@ impl RenderPass {
             &finished_scene,
             self.options.final_size
         );
+
+        self.pass_skybox.execute(
+            assets,
+            camera
+        );
+
         self.pass_post_process.execute(
+            &self.pass_skybox.viewport.tagged_colour("albedo").unwrap().colour,
             &finished_scene_upscaled
         );
         self.pass_raytrace.viewport.blit_attachment(

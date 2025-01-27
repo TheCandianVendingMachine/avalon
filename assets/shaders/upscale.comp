@@ -13,6 +13,6 @@ void main() {
 
     ivec2 originalCoord = ivec2(round(vec2(pCoord) * (baseSize / upscaleSize)));
 
-    vec3 lowerTexel = texelFetch(original, originalCoord, 0).rgb;
-    imageStore(upscaled, pCoord, vec4(lowerTexel, 1.0));
+    vec4 lowerTexel = texelFetch(original, originalCoord, 0);
+    imageStore(upscaled, pCoord, lowerTexel);
 }

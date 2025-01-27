@@ -56,7 +56,7 @@ impl PassGeometry {
         shader.uniform("projection").unwrap().set_mat4(camera.projection);
 
         let bind = world_viewport.bind();
-        model.bind().draw(&shader);
+        //model.bind().draw(&shader);
     }
 }
 

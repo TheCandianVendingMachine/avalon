@@ -14,9 +14,9 @@ void main() {
 
     ivec2 scale = originalSize / newSize;
     ivec2 originalCoord = pCoord * scale;
+    vec4 originalColour = texelFetch(original, originalCoord, 0);
     if (scale == ivec2(1)) {
-        vec4 colour = texelFetch(original, originalCoord, 0);
-        imageStore(downsampled, pCoord, colour);
+        imageStore(downsampled, pCoord, originalColour);
         return;
     }
 
@@ -34,5 +34,5 @@ void main() {
         }
     }
 
-    imageStore(downsampled, pCoord, vec4(average, 1.0));
+    imageStore(downsampled, pCoord, vec4(average, originalColour.a));
 }

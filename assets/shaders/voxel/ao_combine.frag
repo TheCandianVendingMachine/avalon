@@ -9,8 +9,8 @@ out vec4 fColor;
 void main() {
     vec3 light = texelFetch(lightBuffer, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 ao = texelFetch(aoBuffer, ivec2(gl_FragCoord.xy), 0).rgb;
-    vec3 albedo = texelFetch(albedoBuffer, ivec2(gl_FragCoord.xy), 0).rgb;
+    vec4 albedo = texelFetch(albedoBuffer, ivec2(gl_FragCoord.xy), 0).rgba;
 
-    fColor = vec4(albedo * (light + ao), 1.0);
+    fColor = vec4(albedo.rgb * (light + ao), albedo.a);
 }
 
