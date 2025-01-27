@@ -81,7 +81,7 @@ impl Library {
         let bundles = glob::glob(scan_directory.join("*.bundle").to_str().unwrap())
             .unwrap()
             .filter_map(|f| f.ok())
-            .filter_map(|path| packed::Packed::read_from_file(path).ok());
+            .map(|path| packed::Packed::read_from_file(path));
 
         let mut library = Library {
             asset_library: HashMap::new(),
@@ -90,6 +90,11 @@ impl Library {
 
         // todo! multithread this
         for packed in bundles {
+            let Ok(packed) = packed else {
+                println!("Error loading bundle: {}", packed.err().unwrap());
+                continue;
+            };
+
             let bundle = packed.bundle;
             for asset in bundle.group.iter() {
                 let data = packed.data_map.get(asset).unwrap();
@@ -101,7 +106,7 @@ impl Library {
                     asset::Unit::Text(text) => todo!(),
                     asset::Unit::Shader(shader) => todo!(),
                     asset::Unit::Texture(texture) => {
-                        let texture = library.load_texture(texture, data);
+                        let texture = library.load_texture(asset, texture, data);
                         library.asset_library.insert(asset::Asset::from(asset.clone()), Box::new(texture));
                     },
                 }

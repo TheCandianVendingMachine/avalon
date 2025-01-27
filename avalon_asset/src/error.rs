@@ -47,6 +47,8 @@ pub enum UnpackError {
     JsonError(#[from] miniserde::Error),
     #[error("File structure is not as expected")]
     UnexpectedFileStructure,
+    #[error("Stored data not correct size. Read: {0} | Expected: {1}")]
+    SizeMismatch(usize, usize),
 }
 
 #[derive(Debug, Copy, Clone, Error)]

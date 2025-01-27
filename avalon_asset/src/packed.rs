@@ -256,8 +256,10 @@ pub mod read {
                         },
                         ".stored" => {
                             if let Some((_, stored)) = data_map.iter_mut().find(|(metadata, _)| metadata.uuid.to_string() == directory) {
-                                stored.resize(file.size() as usize, 0xFF);
-                                file.read(stored)?;
+                                let read_bytes = file.read_to_end(stored)?;
+                                if file.size() as usize != read_bytes {
+                                    return Err(error::UnpackError::SizeMismatch(read_bytes, file.size() as usize));
+                                }
                             } else {
                                 todo!("zip file not reading in order; we need to store this data for later reads");
                             }

@@ -62,6 +62,18 @@ impl TextureBind2d<'_> {
             );
         }
     }
+
+    pub fn set_name(&self, name: impl Into<String>) {
+        let name = name.into();
+        unsafe {
+            gl::ObjectLabel(
+                gl::TEXTURE,
+                self.texture.handle,
+                name.len() as i32,
+                name.as_ptr() as *const i8
+            );
+        }
+    }
 }
 
 impl Drop for TextureBind2d<'_> {
