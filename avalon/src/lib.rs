@@ -9,6 +9,7 @@ pub mod event;
 pub mod gpu_buffer;
 pub mod shader;
 pub mod input;
+pub mod model;
 pub mod texture;
 pub mod transform;
 pub mod viewport;

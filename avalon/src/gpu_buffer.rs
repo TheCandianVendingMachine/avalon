@@ -2,10 +2,17 @@ pub mod storage;
 
 use crate::shader;
 
+#[derive(Debug, Copy, Clone)]
+pub enum Kind {
+    None,
+    Indexed { index_count: usize },
+    Counted { vertex_count: usize }
+}
+
 #[derive(Debug)]
 pub struct State {
     vao: gl::types::GLuint,
-    vertex_count: usize,
+    pub(crate) count: Kind
 }
 
 impl State {
@@ -15,7 +22,9 @@ impl State {
         unsafe {
             if let None = DEGENERATE_STATE {
                 DEGENERATE_STATE = Some(State::new());
-                DEGENERATE_STATE.as_mut().unwrap().vertex_count = 6;
+                DEGENERATE_STATE.as_mut().unwrap().count = Kind::Counted {
+                    vertex_count: 6
+                }
             }
             DEGENERATE_STATE.as_ref().unwrap_unchecked()
         }
@@ -29,7 +38,7 @@ impl State {
         };
         State {
             vao,
-            vertex_count: 0
+            count: Kind::None
         }
     }
 
@@ -64,23 +73,46 @@ pub struct MutStateBind<'b> {
 
 impl StateBind<'_> {
     pub fn draw(&self, _program: &shader::AttachedProgram<'_>) {
-        unsafe {
-            gl::DrawArrays(
-                gl::TRIANGLES,
-                0,
-                self.buffer_state.vertex_count as i32
-            );
+        match self.buffer_state.count {
+            Kind::None => {}
+            Kind::Counted { vertex_count } => unsafe {
+                gl::DrawArrays(
+                    gl::TRIANGLES,
+                    0,
+                    vertex_count as i32
+                );
+            },
+            Kind::Indexed { index_count } => unsafe {
+                gl::DrawElements(
+                    gl::TRIANGLES,
+                    index_count as i32,
+                    gl::UNSIGNED_INT,
+                    std::ptr::null(),
+                );
+            },
         }
     }
 
     pub fn draw_instanced(&self, _program: &shader::AttachedProgram<'_>, instance_count: usize) {
-        unsafe {
-            gl::DrawArraysInstanced(
-                gl::TRIANGLES,
-                0,
-                self.buffer_state.vertex_count as i32,
-                instance_count as i32
-            );
+        match self.buffer_state.count {
+            Kind::None => {}
+            Kind::Counted { vertex_count } => unsafe {
+                gl::DrawArraysInstanced(
+                    gl::TRIANGLES,
+                    0,
+                    vertex_count as i32,
+                    instance_count as i32
+                );
+            },
+            Kind::Indexed { index_count } => unsafe {
+                gl::DrawElementsInstanced(
+                    gl::TRIANGLES,
+                    index_count as i32,
+                    gl::UNSIGNED_INT,
+                    std::ptr::null(),
+                    instance_count as i32,
+                );
+            },
         }
     }
 }

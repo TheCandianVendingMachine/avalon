@@ -3,6 +3,7 @@ use crate::asset_library::Library;
 use crate::texture;
 use crate::texture::data;
 use crate::texture::gpu::{ self, UniqueTexture, Arguments2d, Texture2d, ManagedTexture };
+use crate::model;
 
 impl Library {
     pub fn load_texture(&self, texture_info: assets::texture::Texture, data: &Vec<u8>) -> ManagedTexture<Texture2d> {
@@ -37,4 +38,8 @@ impl Library {
         Texture2d::generate(arguments).as_managed()
     }
 
+    pub fn load_model(&self, _model_info: assets::model::Model, data: &Vec<u8>) -> model::Model {
+        let packed = assets::model::packed::PackedModel::from_buffer(data);
+        model::Model::from(packed)
+    }
 }
