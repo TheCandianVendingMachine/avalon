@@ -37,7 +37,7 @@ impl PassSkybox {
                     .format(gpu::SizedComponent::RGB8)
                 .colour_attachment()
                     .tag("bloom")
-                    .format(gpu::SizedComponent::RGBA8)
+                    .format(gpu::SizedComponent::FloatRGBA16)
                 .build(),
             clock: std::time::Instant::now(),
             options

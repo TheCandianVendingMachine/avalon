@@ -7,5 +7,5 @@ out vec4 bloom;
 
 void main() {
     albedo = fColour.rgb;
-    bloom = vec4(1.0);
+    bloom = vec4(2.0 * fColour.rgb, 1.0);
 }
