@@ -48,10 +48,9 @@ impl Transform {
 
     pub fn set_euler_angles(&mut self, euler: Euler) {
         self.dirty = true;
-        self.orientation_quaternion =
-            Quat::from_polar_decomposition(1.0, 0.5 * euler.roll, Unit::new_normalize(vec3(0.0, 0.0, 1.0))) *
-            Quat::from_polar_decomposition(1.0, 0.5 * euler.yaw, Unit::new_normalize(vec3(0.0, 1.0, 0.0))) *
-            Quat::from_polar_decomposition(1.0, 0.5 * euler.pitch, Unit::new_normalize(vec3(1.0, 0.0, 0.0)));
+        self.orientation_quaternion = Quat::from_polar_decomposition(1.0, 0.5 * euler.yaw, Unit::new_normalize(vec3(0.0, 1.0, 0.0)));
+        self.orientation_quaternion *= Quat::from_polar_decomposition(1.0, 0.5 * euler.pitch, Unit::new_normalize(vec3(1.0, 0.0, 0.0)));
+        self.orientation_quaternion *= Quat::from_polar_decomposition(1.0, 0.5 * euler.roll, Unit::new_normalize(vec3(0.0, 0.0, 1.0)));
     }
 
     pub fn euler_angles(&self) -> Euler {

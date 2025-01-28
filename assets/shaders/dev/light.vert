@@ -35,8 +35,8 @@ void main() {
     texCoords = position + 0.5;
     lightColour = light.colour;
 
-    vec3 cameraRight = vec3(view[0][0], view[1][0], view[2][0]);
-    vec3 cameraUp = vec3(view[0][1], view[1][1], view[2][1]);
+    vec3 cameraRight = (vec4(1, 0, 0, 0) * view).xyz;
+    vec3 cameraUp = (vec4(0, 1, 0, 0) * view).xyz;
 
     vec3 lightPos = vec3(1.0, -1.0, -1.0) * light.position;
     vec3 billboardSize = vec3(vec2(0.7, 0.7) * position, 0.0);
