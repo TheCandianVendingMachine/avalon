@@ -25,9 +25,9 @@ fn main() {
     let mut camera = render::Camera::new(vec2(1280, 720));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
     camera.transform.set_euler_angles(avalon::transform::Euler {
-        pitch: 0.0,
-        yaw: std::f32::consts::FRAC_PI_8,
-        roll: 0.0
+        pitch: 5.0_f32.to_radians(),
+        yaw: 45.0_f32.to_radians(),
+        roll: 0.0_f32.to_radians()
     });
 
     let mut grid: voxel::Grid<32, 1> = voxel::Grid::new();

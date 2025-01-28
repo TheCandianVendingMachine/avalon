@@ -19,7 +19,7 @@ void main() {
 
     vec2 samplePos = vec2(rayDir.z / (1.0 - rayDir.y), -rayDir.x / (1.0 - rayDir.y)) / (0.5 * PI);
 
-    fColor = 0.2 * texture(skydome, samplePos).rgb;
+    fColor = 1.0 * texture(skydome, samplePos).rgb;
     fBloom = vec4(0.0);
 }
 
