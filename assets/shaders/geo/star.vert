@@ -9,6 +9,7 @@ struct Random {
 
 layout(location=1) uniform mat4 view;
 layout(location=3) uniform mat4 projection;
+layout(location=5) uniform float time;
 
 out smooth vec4 fColour;
 
@@ -32,6 +33,7 @@ uint urandom(inout Random rng) {
 }
 float random(inout Random rng) { return unorm(urandom(rng)); }
 vec2 random2(inout Random rng) { return vec2(random(rng),random(rng)); }
+vec3 random3(inout Random rng) { return vec3(random2(rng),random(rng)); }
 float gaussian(inout Random rng, float mu, float sigma) {
     vec2 q = random2(rng);
     float g2rad = sqrt(-2.0 * (log(1.0 - q.y)));
@@ -62,7 +64,7 @@ void main() {
     state.s0 ^= state.s0 << 5;
     state.s1 = uhash(gl_InstanceID, state.s0);
 
-    vec3 position = randomPointSphere(state, 350.0);
+    vec3 position = randomPointSphere(state, 250.0);
 
     state.s1 = uhash(gl_VertexID, state.s1);
     vec3 jitter = randomPointSphere(state, 0.1);
@@ -75,7 +77,14 @@ void main() {
         vec4(0.0, 0.0, 0.0, 1.0)
     );
 
-    vec4 modelPosition = vec4(position + jitter + vPosition, 1.0);
+    vec3 offset = vec3(1.0) + 2.0 * random3(state);
+    vec3 twinkle = 0.2 * vec3(
+        cos(offset.x * time),
+        sin(offset.y * time),
+        cos(offset.z * time) * sin(offset.z * time)
+    );
+
+    vec4 modelPosition = vec4(position + twinkle + jitter + vPosition, 1.0);
     gl_Position = projection * viewRotation * modelPosition;
 
     fColour = vec4(1.0, 1.0, 1.0, 1.0);

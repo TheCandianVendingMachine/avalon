@@ -14,6 +14,7 @@ pub struct PassSkybox {
     skybox_shader: Program,
     star_shader: Program,
     pub viewport: viewport::Viewport,
+    clock: std::time::Instant,
     options: PassOptions
 }
 
@@ -38,6 +39,7 @@ impl PassSkybox {
                     .tag("bloom")
                     .format(gpu::SizedComponent::R8)
                 .build(),
+            clock: std::time::Instant::now(),
             options
         }
     }
@@ -68,8 +70,9 @@ impl PassSkybox {
             let mut shader = self.star_shader.activate();
             shader.uniform("view").unwrap().set_mat4(camera.transform.matrix());
             shader.uniform("projection").unwrap().set_mat4(camera.projection);
+            shader.uniform("time").unwrap().set_f32(self.clock.elapsed().as_secs_f32());
 
-            star.bind().draw_instanced(&shader, 20000);
+            star.bind().draw_instanced(&shader, 7000);
         }
     }
 }
