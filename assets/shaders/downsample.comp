@@ -21,8 +21,8 @@ void main() {
     }
 
     vec3 average = vec3(0.0);
-    for (int xOffset = -2; xOffset <= 2; xOffset++) {
-        for (int yOffset = -2; yOffset <= 2; yOffset++) {
+    for (int xOffset = -1; xOffset <= 1; xOffset++) {
+        for (int yOffset = -1; yOffset <= 1; yOffset++) {
             ivec2 samplePos = originalCoord + ivec2(xOffset, yOffset);
             if (any(lessThan(samplePos, ivec2(0))) || any(greaterThanEqual(samplePos, originalSize))) {
                 continue;
