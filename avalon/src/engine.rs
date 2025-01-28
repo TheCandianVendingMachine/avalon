@@ -22,7 +22,7 @@ impl Window {
         video.gl_attr().set_context_version(4, 5);
         video.gl_attr().set_framebuffer_srgb_compatible(true);
 
-        let window = video.window("Avalon Engine", 1920, 1080)
+        let window = video.window("Avalon Engine", 1280, 720)
             .opengl()
             .build()
             .unwrap();

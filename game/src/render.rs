@@ -200,7 +200,7 @@ impl RenderPass {
             }
         );
 
-        let final_size = vec2(1920, 1080);
+        let final_size = vec2(1280, 720);
         let options = PassOptions {
             final_size,
             raytrace_size: final_size,
@@ -302,7 +302,12 @@ impl RenderPass {
             camera
         );
 
+        let scene_bloom = self.pass_skybox.viewport.tagged_colour("bloom").unwrap().colour;
+        let bloom_downscaled = self.rescaler.downsample(&scene_bloom, scene_bloom.dimensions() / 4);
+        let bloom_upscaled = self.rescaler.upscale(&bloom_downscaled, scene_bloom.dimensions());
+
         self.pass_post_process.execute(
+            &bloom_upscaled,
             &self.pass_skybox.viewport.tagged_colour("albedo").unwrap().colour,
             &finished_scene_upscaled
         );

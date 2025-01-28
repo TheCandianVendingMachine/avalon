@@ -52,7 +52,11 @@ impl Rescaler {
                 bind.barrier();
             } else {
                 for halve in 1..=halve_count {
-                    let original = temp_downsampled[(halve % 2) as usize].as_ref().unwrap();
+                    let original = if halve == 1 {
+                        original
+                    } else {
+                        temp_downsampled[(halve % 2) as usize].as_ref().unwrap()
+                    };
                     let downsampled = temp_downsampled[((halve + 1) % 2) as usize].as_ref();
                     size /= 2;
                     bind.uniform("originalSize").unwrap().set_ivec2(size * 2);
@@ -74,40 +78,6 @@ impl Rescaler {
         let mut downsampled = temp_downsampled[((halve_count + 1) % 2) as usize].take();
         let owned = downsampled.take().unwrap();
         owned
-    }
-
-    pub fn downsample(&self, original: &GpuTexture2d, desired_size: IVec2) -> ManagedTexture<GpuTexture2d> {
-        let _annotation = GpuAnnotation::push("Downsample To Specific");
-        let downsampled = GpuTexture2d::generate(Arguments2d {
-            dimensions: desired_size,
-            internal_components: original.internal_components,
-            internal_size: original.internal_size,
-            mipmap_type: Mipmap::None,
-            data: None
-        });
-
-        let original_size = original.dimensions();
-        let halves_to_near =
-            (original_size.x / (original_size.x - desired_size.x)).ilog2().min(
-            (original_size.y / (original_size.y - desired_size.y)).ilog2()
-        );
-
-        let near_texture = self.downsample_halving(original, halves_to_near).as_managed();
-
-        let mut bind = self.downsample.activate();
-        bind.uniform("originalSize").unwrap().set_ivec2(near_texture.dimensions());
-        bind.uniform("newSize").unwrap().set_ivec2(desired_size);
-        bind.sampler("original", &near_texture).unwrap();
-        bind.sampler("downsampled", &downsampled).unwrap();
-
-        let (dispatch_x, dispatch_y, dispatch_z) = self.downsample.dispatch_counts(
-            desired_size.x as usize,
-            desired_size.y as usize,
-            1
-        );
-        bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
-
-        downsampled.into()
     }
 
     pub fn upscale_doubling(&self, original: &GpuTexture2d, double_count: u32) -> ManagedTexture<GpuTexture2d> {
@@ -167,6 +137,40 @@ impl Rescaler {
         owned
     }
 
+    pub fn downsample(&self, original: &GpuTexture2d, desired_size: IVec2) -> ManagedTexture<GpuTexture2d> {
+        let _annotation = GpuAnnotation::push("Downsample To Specific");
+        let downsampled = GpuTexture2d::generate(Arguments2d {
+            dimensions: desired_size,
+            internal_components: original.internal_components,
+            internal_size: original.internal_size,
+            mipmap_type: Mipmap::None,
+            data: None
+        });
+
+        let original_size = original.dimensions();
+        let halves_to_near =
+            (original_size.x / desired_size.x).ilog2().min(
+            (original_size.y / desired_size.y).ilog2()
+        );
+
+        let near_texture = self.downsample_halving(original, halves_to_near).as_managed();
+
+        let mut bind = self.downsample.activate();
+        bind.uniform("originalSize").unwrap().set_ivec2(original_size / 2_i32.pow(halves_to_near));
+        bind.uniform("newSize").unwrap().set_ivec2(desired_size);
+        bind.sampler("original", &near_texture).unwrap();
+        bind.image("downsampled", &downsampled, gpu::Access::Write(0)).unwrap();
+
+        let (dispatch_x, dispatch_y, dispatch_z) = self.downsample.dispatch_counts(
+            desired_size.x as usize,
+            desired_size.y as usize,
+            1
+        );
+        bind.dispatch_compute(dispatch_x as u32, dispatch_y as u32, dispatch_z as u32);
+
+        downsampled.into()
+    }
+
     pub fn upscale(&self, original: &GpuTexture2d, desired_size: IVec2) -> ManagedTexture<GpuTexture2d> {
         let _annotation = GpuAnnotation::push("Upscale To Specific");
         let upscaled = GpuTexture2d::generate(Arguments2d {
@@ -183,7 +187,7 @@ impl Rescaler {
             (desired_size.y / original_size.y).ilog2()
         );
 
-        let near_texture = self.upscale_doubling(original, doubles_to_near as u32).as_managed();
+        let near_texture = self.upscale_doubling(original, doubles_to_near).as_managed();
 
         let mut bind = self.upscale.activate();
         bind.uniform("originalSize").unwrap().set_ivec2(near_texture.dimensions());

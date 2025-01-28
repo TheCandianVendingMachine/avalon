@@ -12,7 +12,7 @@ void main() {
         return;
     }
 
-    ivec2 scale = originalSize / newSize;
+    ivec2 scale = ivec2(ceil(vec2(originalSize) / vec2(newSize)));
     ivec2 originalCoord = pCoord * scale;
     vec4 originalColour = texelFetch(original, originalCoord, 0);
     if (scale == ivec2(1)) {
@@ -21,16 +21,16 @@ void main() {
     }
 
     vec3 average = vec3(0.0);
-    for (int xOffset = -1; xOffset <= 1; xOffset++) {
-        for (int yOffset = -1; yOffset <= 1; yOffset++) {
+    for (int xOffset = -2; xOffset <= 2; xOffset++) {
+        for (int yOffset = -2; yOffset <= 2; yOffset++) {
             ivec2 samplePos = originalCoord + ivec2(xOffset, yOffset);
             if (any(lessThan(samplePos, ivec2(0))) || any(greaterThanEqual(samplePos, originalSize))) {
-                samplePos = originalCoord;
+                continue;
             }
             int weight = 1 + abs(xOffset) + abs(yOffset);
             float denom = 2.0 * pow(2.0, weight);
             vec3 texel = texelFetch(original, samplePos, 0).rgb;
-            average += texelFetch(original, samplePos, 0).rgb / denom;
+            average += texel / denom;
         }
     }
 

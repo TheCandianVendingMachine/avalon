@@ -22,7 +22,7 @@ fn main() {
 
     let asset_library = avalon::asset_library::Library::new_with_scan("./assets/bins/");
 
-    let mut camera = render::Camera::new(vec2(1920, 1080));
+    let mut camera = render::Camera::new(vec2(1280, 720));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
     camera.transform.set_euler_angles(avalon::transform::Euler {
         pitch: 0.0,

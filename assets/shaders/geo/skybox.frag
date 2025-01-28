@@ -8,7 +8,7 @@ layout(location=4) uniform mat4 projection;
 in flat ivec2 screenSize;
 
 out vec3 fColor;
-out float fBloom;
+out vec4 fBloom;
 
 void main() {
     vec2 uv = gl_FragCoord.xy / vec2(screenSize) * 2.0 - 1.0;
@@ -19,7 +19,7 @@ void main() {
 
     vec2 samplePos = vec2(rayDir.z / (1.0 - rayDir.y), -rayDir.x / (1.0 - rayDir.y)) / (0.5 * PI);
 
-    fColor = texture(skydome, samplePos).rgb;
-    fBloom = 0.0;
+    fColor = 0.2 * texture(skydome, samplePos).rgb;
+    fBloom = vec4(0.0);
 }
 
