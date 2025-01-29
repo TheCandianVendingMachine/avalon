@@ -14,12 +14,12 @@ void main() {
     vec2 uv = gl_FragCoord.xy / vec2(screenSize) * 2.0 - 1.0;
 
     vec3 cameraDir = (vec4(0, 0, 1, 0) * view).xyz;
-    vec3 rayDir = vec3(projection[0][0] * uv.x, -uv.y / projection[1][1], projection[0][0]);
+    vec3 rayDir = vec3(-projection[0][0] * uv.x, -uv.y / projection[1][1], projection[0][0]);
     rayDir = normalize((view * vec4(rayDir, 0)).xyz);
 
     vec2 samplePos = vec2(rayDir.z / (1.0 - rayDir.y), -rayDir.x / (1.0 - rayDir.y)) / (0.5 * PI);
 
-    fColor = 1.0 * texture(skydome, samplePos).rgb;
+    fColor = 0.2 * texture(skydome, samplePos).rgb;
     fBloom = vec4(0.0);
 }
 

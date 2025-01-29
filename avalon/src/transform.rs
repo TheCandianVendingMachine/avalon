@@ -1,4 +1,4 @@
-use nalgebra_glm::{ Quat, quat_to_mat4, vec3, Vec3, vec4, Mat4 };
+use nalgebra_glm::{ Quat, quat_to_mat4, quat_to_mat3, vec3, Vec3, vec4, Mat4 };
 use nalgebra::Unit;
 
 #[derive(Debug, Copy, Clone)]
@@ -11,6 +11,8 @@ pub struct Euler {
 #[derive(Debug, Copy, Clone)]
 pub struct Transform {
     position: Vec3,
+    right: Vec3,
+    up: Vec3,
     orientation_quaternion: Quat,
     transformation_matrix: Mat4,
     dirty: bool
@@ -20,20 +22,38 @@ impl Transform {
     pub fn new() -> Transform {
         Transform {
             position: Vec3::zeros(),
+            right: vec3(1.0, 0.0, 0.0),
+            up: vec3(0.0, 1.0, 0.0),
             orientation_quaternion: Quat::default(),
             transformation_matrix: Mat4::identity(),
             dirty: true
         }
     }
 
+    pub fn right(&self) -> Vec3 {
+        quat_to_mat3(&self.orientation_quaternion) * self.right
+    }
+
+    pub fn up(&self) -> Vec3 {
+        quat_to_mat3(&self.orientation_quaternion) * self.up
+    }
+
+    pub fn forward(&self) -> Vec3 {
+        let right = self.right();
+        let up = self.up();
+        right.cross(&up)
+    }
+
     pub fn matrix(&self) -> Mat4 {
         if self.dirty {
-            quat_to_mat4(&self.orientation_quaternion) * Mat4::from_columns(&[
+            let rotation_matrix = quat_to_mat4(&self.orientation_quaternion);
+            let translation_matrix = Mat4::from_columns(&[
                 vec4(1.0, 0.0, 0.0, 0.0),
                 vec4(0.0, 1.0, 0.0, 0.0),
                 vec4(0.0, 0.0, 1.0, 0.0),
                 vec4(-self.position.x, self.position.y, self.position.z, 1.0)
-            ])
+            ]);
+            translation_matrix * rotation_matrix
         } else {
             self.transformation_matrix
         }
@@ -48,8 +68,8 @@ impl Transform {
 
     pub fn set_euler_angles(&mut self, euler: Euler) {
         self.dirty = true;
-        self.orientation_quaternion = Quat::from_polar_decomposition(1.0, 0.5 * euler.yaw, Unit::new_normalize(vec3(0.0, 1.0, 0.0)));
-        self.orientation_quaternion *= Quat::from_polar_decomposition(1.0, 0.5 * euler.pitch, Unit::new_normalize(vec3(1.0, 0.0, 0.0)));
+        self.orientation_quaternion = Quat::from_polar_decomposition(1.0, -0.5 * euler.yaw, Unit::new_normalize(vec3(0.0, 1.0, 0.0)));
+        self.orientation_quaternion *= Quat::from_polar_decomposition(1.0, -0.5 * euler.pitch, Unit::new_normalize(vec3(1.0, 0.0, 0.0)));
         self.orientation_quaternion *= Quat::from_polar_decomposition(1.0, 0.5 * euler.roll, Unit::new_normalize(vec3(0.0, 0.0, 1.0)));
     }
 
@@ -82,6 +102,8 @@ impl std::ops::Mul for Transform {
     fn mul(self, rhs: Transform) -> Transform {
         let mut transform = Transform {
             position: self.position + rhs.position,
+            right: self.right,
+            up: self.up,
             orientation_quaternion: self.orientation_quaternion * rhs.orientation_quaternion,
             transformation_matrix: Mat4::identity(),
             dirty: true

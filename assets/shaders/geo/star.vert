@@ -69,7 +69,6 @@ void main() {
     state.s1 = uhash(gl_VertexID, state.s1);
     vec3 jitter = randomPointSphere(state, 0.1);
 
-    vec3 viewPosition = vec3(view[0][3], view[1][3], view[2][3]);
     mat4 viewRotation = mat4(
         view[0],
         view[1],
@@ -85,7 +84,7 @@ void main() {
     );
 
     vec4 modelPosition = vec4(position + twinkle + jitter + vPosition, 1.0);
-    gl_Position = projection * viewRotation * modelPosition;
+    gl_Position = projection * inverse(viewRotation) * modelPosition;
 
     fColour = vec4(0.65, 0.66, 1.0, 1.0);
 }

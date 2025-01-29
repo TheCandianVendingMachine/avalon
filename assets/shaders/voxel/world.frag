@@ -70,7 +70,7 @@ void main() {
     vec3 screenPos = vec3(uv, 0.0);
     vec3 rayPos = cameraPos;
     vec3 cameraDir = (vec4(0, 0, 1, 0) * view).xyz;
-    vec3 rayDir = vec3(projection[0][0] * screenPos.x, -screenPos.y / projection[1][1], projection[0][0]);
+    vec3 rayDir = vec3(-projection[0][0] * screenPos.x, -screenPos.y / projection[1][1], projection[0][0]);
     rayDir = (view * vec4(rayDir, 0)).xyz;
     // Sample grid and get safe cell step count via x + y + z)
     // Step ray that many cells

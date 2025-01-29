@@ -25,8 +25,8 @@ fn main() {
     let mut camera = render::Camera::new(vec2(1280, 720));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
     camera.transform.set_euler_angles(avalon::transform::Euler {
-        pitch: 5.0_f32.to_radians(),
-        yaw: 70.0_f32.to_radians(),
+        pitch: -5.0_f32.to_radians(),
+        yaw: -45.0_f32.to_radians(),
         roll: 0.0_f32.to_radians()
     });
 
@@ -79,6 +79,11 @@ fn main() {
         camera.transform.set_position(
             vec3(0.0, 5.0, -5.0) + vec3(5.0 * dt.cos(), 0.0, 3.0 * dt.cos() * dt.sin())
         );
+        camera.transform.set_euler_angles(avalon::transform::Euler {
+            pitch: dt.sin() * 0.2,
+            yaw: dt.cos(),
+            roll: 0.0_f32.to_radians()
+        });
         engine.render();
         render_pass.execute(&asset_library, &camera, &grid);
         debug_render_pass.execute(&asset_library, &camera, &render_pass.lights);
