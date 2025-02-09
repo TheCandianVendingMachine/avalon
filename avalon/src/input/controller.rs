@@ -148,7 +148,7 @@ impl From<sdl2::controller::Button> for Button {
 }
 
 impl Stick {
-    fn new() -> Stick {
+    pub(super) fn new() -> Stick {
         Stick {
             direction: Vec2::zeros(),
             amount: 0.0
@@ -157,7 +157,7 @@ impl Stick {
 }
 
 impl Trigger {
-    fn new() -> Trigger {
+    pub(super) fn new() -> Trigger {
         Trigger {
             amount: 0.0
         }

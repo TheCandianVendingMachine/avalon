@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{ HashSet, HashMap };
 
 use crate::engine;
 use crate::event as engine_event;
@@ -10,7 +10,6 @@ pub mod controller;
 pub mod event;
 pub mod keyboard;
 pub mod layer;
-pub mod map;
 pub mod mouse;
 
 pub type Id = u64;
@@ -32,6 +31,7 @@ impl Controller {
 
 pub struct Engine {
     event_channel: engine_event::Channel<sdl2::event::Event, ()>,
+    action_map: action::Map,
     events: Vec<event::Event>,
     controller_subsystem: sdl2::GameControllerSubsystem,
     controllers: HashMap<Id, Controller>,
@@ -43,7 +43,7 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new(engine: &mut engine::Engine, action_map: ()) -> Engine {
+    pub fn new(engine: &mut engine::Engine, action_map: action::Map) -> Engine {
         let controller_subsystem = engine.sdl.game_controller().unwrap();
         controller_subsystem.set_event_state(true);
 
@@ -58,6 +58,7 @@ impl Engine {
 
         Engine {
             event_channel: engine.event_listener(),
+            action_map,
             controller_subsystem,
             events: Vec::new(),
             controllers,
@@ -152,8 +153,19 @@ impl Engine {
             self.events.retain(|e| if let event::Event::Controller(_) = e { false } else { true });
         }
 
-        while let Some(event) = self.events.pop() {
-            dbg!(event);
+        let events: HashSet<event::Event> = HashSet::from_iter(self.events.iter().map(|e| *e));
+
+        let mut actions: Vec<action::Action> = Vec::new();
+        for action in self.action_map.mappings.iter() {
+            if !action.required_events.is_empty() && action.required_events.is_subset(&events) {
+                actions.push(action.into());
+            }
         }
+
+        if !actions.is_empty() {
+            dbg!(actions);
+        }
+
+        self.events.clear();
     }
 }

@@ -69,7 +69,9 @@ fn main() {
     }
     grid.bake();
 
-    let mut inputs = input::Engine::new(&mut engine, ());
+    let mut action_map = input::action::Map::new()
+        .build();
+    let mut inputs = input::Engine::new(&mut engine, action_map);
 
     let mut render_pass = render::RenderPass::new();
     let mut debug_render_pass = render::DebugRenderPass::new();
