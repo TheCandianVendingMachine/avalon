@@ -122,6 +122,7 @@ impl Engine {
                 sdl2::event::Event::ControllerAxisMotion { which, axis, value, .. } => {
                     let event = self.controller_from_id(which).controller.axis(axis, value);
                     self.events.push(event.into());
+                    self.last_controller_timestamp = self.timestamp;
                 },
                 sdl2::event::Event::ControllerDeviceAdded { which, .. } => {
                     if self.controller_subsystem.is_game_controller(which) {
