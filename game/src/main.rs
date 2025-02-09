@@ -7,6 +7,7 @@ pub mod voxel;
 pub mod render;
 
 use avalon;
+use avalon::input;
 use avalon::debug::GpuAnnotation;
 use avalon::gpu_buffer;
 use avalon::viewport;
@@ -22,7 +23,7 @@ fn main() {
 
     let asset_library = avalon::asset_library::Library::new_with_scan("./assets/bins/");
 
-    let mut camera = render::Camera::new(vec2(1280, 720));
+    let mut camera = render::Camera::new(vec2(1920, 1080));
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
     camera.transform.set_euler_angles(avalon::transform::Euler {
         pitch: -5.0_f32.to_radians(),
@@ -68,6 +69,8 @@ fn main() {
     }
     grid.bake();
 
+    let mut inputs = input::Engine::new(&mut engine, ());
+
     let mut render_pass = render::RenderPass::new();
     let mut debug_render_pass = render::DebugRenderPass::new();
 
@@ -75,6 +78,8 @@ fn main() {
     while engine.is_open() {
         engine.start_frame();
         engine.poll_events();
+        inputs.poll();
+        inputs.dispatch();
         let dt = start.elapsed().as_secs_f32();
         camera.transform.set_position(
             vec3(0.0, 5.0, -5.0) + vec3(5.0 * dt.cos(), 0.0, 3.0 * dt.cos() * dt.sin())

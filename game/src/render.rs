@@ -200,7 +200,7 @@ impl RenderPass {
             }
         );
 
-        let final_size = vec2(1280, 720);
+        let final_size = vec2(1920, 1080);
         let options = PassOptions {
             final_size,
             raytrace_size: final_size,

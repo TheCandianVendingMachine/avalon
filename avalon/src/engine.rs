@@ -22,7 +22,7 @@ impl Window {
         video.gl_attr().set_context_version(4, 5);
         video.gl_attr().set_framebuffer_srgb_compatible(true);
 
-        let window = video.window("Avalon Engine", 1280, 720)
+        let window = video.window("Avalon Engine", 1920, 1080)
             .opengl()
             .build()
             .unwrap();
@@ -109,7 +109,7 @@ impl Quantatives {
 }
 
 pub struct Engine {
-    sdl: sdl2::Sdl,
+    pub(crate) sdl: sdl2::Sdl,
     window_listener: Channel<sdl2::event::Event, ()>,
     window: Window,
     render: RenderEngine,
@@ -130,6 +130,10 @@ impl Engine {
             quantatives: Quantatives::new(),
             is_open: true
         }
+    }
+
+    pub(crate) fn event_listener(&mut self) -> Channel<sdl2::event::Event, ()> {
+        self.window.event.listener()
     }
 
     pub fn start_frame(&mut self) {
