@@ -1,4 +1,5 @@
 #![feature(trait_alias)]
+#![feature(slice_split_once)]
 extern crate gl;
 
 mod engine;

@@ -32,7 +32,7 @@ pub enum Controller {
     RightTrigger
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Action {
     pub name: ActionId,
 }

@@ -40,6 +40,7 @@ pub struct Engine {
     timestamp: Timestamp,
     last_controller_timestamp: Timestamp,
     last_kbm_timestamp: Timestamp,
+    layers: Vec<layer::Layer>
 }
 
 impl Engine {
@@ -66,7 +67,8 @@ impl Engine {
             keyboard: keyboard::Keyboard::new(),
             timestamp: 0,
             last_controller_timestamp: 0,
-            last_kbm_timestamp: 0
+            last_kbm_timestamp: 0,
+            layers: Vec::new()
         }
     }
 
@@ -163,8 +165,8 @@ impl Engine {
             }
         }
 
-        if !actions.is_empty() {
-            dbg!(actions);
+        if let Some(layer) = self.layers.last_mut() {
+            layer.process_actions(actions);
         }
 
         self.events.clear();
