@@ -14,7 +14,7 @@ pub enum Block {
 }
 
 pub struct Context {
-    name: Option<String>,
+    pub(super) name: Option<String>,
     allowed_actions: HashSet<action::ActionId>,
     dispatcher: Dispatcher<action::Action, &'static str>,
     channel: Channel<action::Action, &'static str>,

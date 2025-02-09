@@ -70,8 +70,16 @@ fn main() {
     grid.bake();
 
     let mut action_map = input::action::Map::new()
+        .map("test")
+            .mouse(input::action::Mouse::Move)
+            .finish()
         .build();
     let mut inputs = input::Engine::new(&mut engine, action_map);
+    inputs.push_layer("test_layer");
+    let mut context = inputs.active_layer_mut().unwrap().context_handler()
+        .name("test context")
+        .action("test")
+        .build();
 
     let mut render_pass = render::RenderPass::new();
     let mut debug_render_pass = render::DebugRenderPass::new();
@@ -82,6 +90,11 @@ fn main() {
         engine.poll_events();
         inputs.poll();
         inputs.dispatch();
+
+        while let Some(action) = context.pop() {
+            dbg!(action);
+        }
+
         let dt = start.elapsed().as_secs_f32();
         camera.transform.set_position(
             vec3(0.0, 5.0, -5.0) + vec3(5.0 * dt.cos(), 0.0, 3.0 * dt.cos() * dt.sin())

@@ -40,7 +40,8 @@ pub struct Engine {
     timestamp: Timestamp,
     last_controller_timestamp: Timestamp,
     last_kbm_timestamp: Timestamp,
-    layers: Vec<layer::Layer>
+    layers: Vec<layer::Layer>,
+    pop_layer: bool
 }
 
 impl Engine {
@@ -68,7 +69,8 @@ impl Engine {
             timestamp: 0,
             last_controller_timestamp: 0,
             last_kbm_timestamp: 0,
-            layers: Vec::new()
+            layers: Vec::new(),
+            pop_layer: false,
         }
     }
 
@@ -142,6 +144,11 @@ impl Engine {
     }
 
     pub fn dispatch(&mut self) {
+        if self.pop_layer {
+            self.layers.pop();
+            self.pop_layer = false;
+        }
+
         for (_, controller) in self.controllers.iter() {
             self.events.extend(controller.controller.held().iter().map(|e| *e).map(Into::<event::Event>::into));
         }
@@ -170,5 +177,24 @@ impl Engine {
         }
 
         self.events.clear();
+    }
+
+    pub fn active_layer(&self) -> Option<&layer::Layer> {
+        self.layers.last()
+    }
+
+    pub fn active_layer_mut(&mut self) -> Option<&mut layer::Layer> {
+        self.layers.last_mut()
+    }
+
+    pub fn push_layer(&mut self, name: impl Into<String>) {
+        self.layers.push(layer::Layer {
+            name: name.into(),
+            context_stack: Vec::new()
+        });
+    }
+
+    pub fn pop_layer(&mut self) {
+        self.pop_layer = true;
     }
 }
