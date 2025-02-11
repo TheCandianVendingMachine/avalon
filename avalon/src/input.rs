@@ -3,7 +3,6 @@ use std::collections::{ HashSet, HashMap };
 use crate::engine;
 use crate::event as engine_event;
 
-pub mod api;
 pub mod action;
 pub mod context;
 pub mod controller;
