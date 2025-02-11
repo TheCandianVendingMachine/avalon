@@ -167,7 +167,12 @@ impl Engine {
         let mut actions: Vec<(action::Action, Vec<&event::Event>)> = Vec::new();
         for action in self.action_map.mappings.iter() {
             if !action.required_events.is_empty() && action.required_events.is_subset(&events) {
-                let triggered_events: Vec<&event::Event> = events.intersection(&action.required_events).collect();
+                let mut triggered_events: Vec<&event::Event> = Vec::new();
+                for required in action.required_events.iter() {
+                    if events.contains(required) {
+                        triggered_events.push(events.get(&required).unwrap());
+                    }
+                }
                 actions.push((action.into(), triggered_events));
             }
         }

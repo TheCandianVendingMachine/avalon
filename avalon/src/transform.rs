@@ -14,6 +14,7 @@ pub struct Transform {
     right: Vec3,
     up: Vec3,
     orientation_quaternion: Quat,
+    euler_angles: Euler,
     transformation_matrix: Mat4,
     dirty: bool
 }
@@ -25,6 +26,7 @@ impl Transform {
             right: vec3(1.0, 0.0, 0.0),
             up: vec3(0.0, 1.0, 0.0),
             orientation_quaternion: Quat::default(),
+            euler_angles: Euler::default(),
             transformation_matrix: Mat4::identity(),
             dirty: true
         }
@@ -68,13 +70,14 @@ impl Transform {
 
     pub fn set_euler_angles(&mut self, euler: Euler) {
         self.dirty = true;
+        self.euler_angles = euler;
         self.orientation_quaternion = Quat::from_polar_decomposition(1.0, 0.5 * euler.yaw, Unit::new_normalize(vec3(0.0, 1.0, 0.0)));
         self.orientation_quaternion *= Quat::from_polar_decomposition(1.0, 0.5 * euler.pitch, Unit::new_normalize(vec3(1.0, 0.0, 0.0)));
         self.orientation_quaternion *= Quat::from_polar_decomposition(1.0, 0.5 * euler.roll, Unit::new_normalize(vec3(0.0, 0.0, 1.0)));
     }
 
     pub fn euler_angles(&self) -> Euler {
-        quat_to_mat4(&self.orientation_quaternion).into()
+        self.euler_angles
     }
 
     pub fn set_position(&mut self, position: Vec3) {
@@ -105,6 +108,7 @@ impl std::ops::Mul for Transform {
             right: self.right,
             up: self.up,
             orientation_quaternion: self.orientation_quaternion * rhs.orientation_quaternion,
+            euler_angles: self.euler_angles,
             transformation_matrix: Mat4::identity(),
             dirty: true
         };
