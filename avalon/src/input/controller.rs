@@ -29,13 +29,13 @@ pub enum Button {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Stick {
-    direction: Vec2,
-    amount: f32,
+    pub direction: Vec2,
+    pub amount: f32,
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct Trigger {
-    amount: f32,
+    pub amount: f32,
 }
 
 #[derive(Debug, Clone)]

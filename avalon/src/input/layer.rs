@@ -50,7 +50,7 @@ impl<'layer> ContextBuilder<'layer> {
 }
 
 impl Layer {
-    pub(super) fn process_actions(&mut self, actions: Vec<input::action::Action>) {
+    pub(super) fn process_actions(&mut self, actions: Vec<(input::action::Action, Vec<&input::event::Event>)>) {
         let mut only_critical = false;
         for context in self.context_stack.iter_mut()
             .rev()

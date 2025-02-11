@@ -164,10 +164,11 @@ impl Engine {
 
         let events: HashSet<event::Event> = HashSet::from_iter(self.events.iter().map(|e| *e));
 
-        let mut actions: Vec<action::Action> = Vec::new();
+        let mut actions: Vec<(action::Action, Vec<&event::Event>)> = Vec::new();
         for action in self.action_map.mappings.iter() {
             if !action.required_events.is_empty() && action.required_events.is_subset(&events) {
-                actions.push(action.into());
+                let triggered_events: Vec<&event::Event> = events.intersection(&action.required_events).collect();
+                actions.push((action.into(), triggered_events));
             }
         }
 
