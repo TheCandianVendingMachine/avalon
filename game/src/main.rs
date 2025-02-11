@@ -70,40 +70,74 @@ fn main() {
     grid.bake();
 
     let mut action_map = input::action::Map::new()
-        .map("test")
+        .map("move_forward")
+            .key(input::action::Keyboard::Hold(input::action::Key::Scancode(input::keyboard::Scancode::W)))
+            .finish()
+        .map("move_backward")
+            .key(input::action::Keyboard::Hold(input::action::Key::Scancode(input::keyboard::Scancode::S)))
+            .finish()
+        .map("strafe_left")
+            .key(input::action::Keyboard::Hold(input::action::Key::Scancode(input::keyboard::Scancode::A)))
+            .finish()
+        .map("strafe_right")
+            .key(input::action::Keyboard::Hold(input::action::Key::Scancode(input::keyboard::Scancode::D)))
+            .finish()
+        .map("look")
             .mouse(input::action::Mouse::Move)
             .finish()
         .build();
     let mut inputs = input::Engine::new(&mut engine, action_map);
     inputs.push_layer("test_layer");
     let mut context = inputs.active_layer_mut().unwrap().context_handler()
-        .name("test context")
-        .action("test")
+        .name("flycamera")
+        .action("move_forward")
+        .action("move_backward")
+        .action("strafe_left")
+        .action("strafe_right")
+        .action("look")
         .build();
 
     let mut render_pass = render::RenderPass::new();
     let mut debug_render_pass = render::DebugRenderPass::new();
 
+    let mut accumulator = std::time::Duration::ZERO;
+    let update_rate: std::time::Duration = std::time::Duration::from_secs_f64(1.0 / 60.0);
+
     let start = std::time::Instant::now();
+    let mut frame_start = std::time::Instant::now();
     while engine.is_open() {
         engine.start_frame();
         engine.poll_events();
         inputs.poll();
         inputs.dispatch();
 
+        accumulator += frame_start.elapsed();
+        frame_start = std::time::Instant::now();
+
+        let mut move_direction = vec3(0.0, 0.0, 0.0);
         while let Some(action) = context.pop() {
-            dbg!(action);
+            match action.id.name.as_str() {
+                "move_forward" => move_direction += camera.transform.forward(),
+                "move_backward" => move_direction -= camera.transform.forward(),
+                "strafe_left" => move_direction += camera.transform.left(),
+                "strafe_right" => move_direction -= camera.transform.left(),
+                "look" => {},
+                _ => {},
+            }
         }
 
-        let dt = start.elapsed().as_secs_f32();
-        camera.transform.set_position(
-            vec3(0.0, 5.0, -5.0) + vec3(5.0 * dt.cos(), 0.0, 3.0 * dt.cos() * dt.sin())
-        );
-        camera.transform.set_euler_angles(avalon::transform::Euler {
+        while accumulator > update_rate {
+            if move_direction.magnitude_squared() > 0.0 {
+                move_direction = move_direction.normalize();
+                camera.transform.translate(move_direction * 10.0 * update_rate.as_secs_f32());
+            }
+            accumulator -= update_rate;
+        }
+        /*camera.transform.set_euler_angles(avalon::transform::Euler {
             pitch: dt.sin() * 0.2,
             yaw: dt.cos(),
             roll: 0.0_f32.to_radians()
-        });
+        });*/
         engine.render();
         render_pass.execute(&asset_library, &camera, &grid);
         debug_render_pass.execute(&asset_library, &camera, &render_pass.lights);

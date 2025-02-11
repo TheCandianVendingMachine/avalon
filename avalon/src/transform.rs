@@ -30,7 +30,7 @@ impl Transform {
         }
     }
 
-    pub fn right(&self) -> Vec3 {
+    pub fn left(&self) -> Vec3 {
         quat_to_mat3(&self.orientation_quaternion) * self.right
     }
 
@@ -39,9 +39,9 @@ impl Transform {
     }
 
     pub fn forward(&self) -> Vec3 {
-        let right = self.right();
+        let left = self.left();
         let up = self.up();
-        right.cross(&up)
+        left.cross(&up)
     }
 
     pub fn matrix(&self) -> Mat4 {
