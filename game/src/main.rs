@@ -115,29 +115,34 @@ fn main() {
         frame_start = std::time::Instant::now();
 
         let mut move_direction = vec3(0.0, 0.0, 0.0);
+        let mut camera_euler = camera.transform.euler_angles();
         while let Some(action) = context.pop() {
             match action.id.name.as_str() {
                 "move_forward" => move_direction += camera.transform.forward(),
                 "move_backward" => move_direction -= camera.transform.forward(),
                 "strafe_left" => move_direction += camera.transform.left(),
                 "strafe_right" => move_direction -= camera.transform.left(),
-                "look" => {},
+                "look" => {
+                    let direction = vec2(
+                        action.data.retrieve::<f32>("axis_x").unwrap(),
+                        action.data.retrieve::<f32>("axis_y").unwrap()
+                    );
+                    camera_euler.pitch += direction.y * 0.05;
+                    camera_euler.yaw += -direction.x * 0.05;
+                },
                 _ => {},
             }
         }
+        camera_euler.pitch = camera_euler.pitch.clamp(-80.0_f32.to_radians(), 80.0_f32.to_radians());
+        camera.transform.set_euler_angles(camera_euler);
 
         while accumulator > update_rate {
             if move_direction.magnitude_squared() > 0.0 {
                 move_direction = move_direction.normalize();
-                camera.transform.translate(move_direction * 10.0 * update_rate.as_secs_f32());
+                camera.transform.translate(move_direction * 15.0 * update_rate.as_secs_f32());
             }
             accumulator -= update_rate;
         }
-        /*camera.transform.set_euler_angles(avalon::transform::Euler {
-            pitch: dt.sin() * 0.2,
-            yaw: dt.cos(),
-            roll: 0.0_f32.to_radians()
-        });*/
         engine.render();
         render_pass.execute(&asset_library, &camera, &grid);
         debug_render_pass.execute(&asset_library, &camera, &render_pass.lights);

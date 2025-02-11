@@ -50,8 +50,12 @@ impl Context {
                                     action.data.store("cursor_x", position.x).unwrap();
                                     action.data.store("cursor_y", position.y).unwrap();
 
-                                    let normal_direction: nalgebra_glm::Vec2 = direction.cast().normalize();
                                     let magnitude = direction.cast::<f32>().magnitude();
+                                    let normal_direction: nalgebra_glm::Vec2 = if magnitude == 0.0 {
+                                        nalgebra_glm::vec2(0.0, 0.0)
+                                    } else {
+                                        direction.cast() / magnitude
+                                    };
                                     action.data.store("axis_x", normal_direction.x).unwrap();
                                     action.data.store("axis_y", normal_direction.y).unwrap();
                                     action.data.store("axis_magnitude", magnitude).unwrap();
@@ -74,14 +78,26 @@ impl Context {
                             match controller_event {
                                 event::Controller::Button { .. } => {},
                                 event::Controller::LeftStick(stick) => {
-                                    action.data.store("axis_x", stick.direction.x).unwrap();
-                                    action.data.store("axis_y", stick.direction.y).unwrap();
-                                    action.data.store("axis_magnitude", stick.amount).unwrap();
+                                    let magnitude = stick.direction.cast::<f32>().magnitude();
+                                    let normal_direction: nalgebra_glm::Vec2 = if magnitude == 0.0 {
+                                        nalgebra_glm::vec2(0.0, 0.0)
+                                    } else {
+                                        stick.direction.cast() / magnitude
+                                    };
+                                    action.data.store("axis_x", normal_direction.x).unwrap();
+                                    action.data.store("axis_y", normal_direction.y).unwrap();
+                                    action.data.store("axis_magnitude", magnitude).unwrap();
                                 },
                                 event::Controller::RightStick(stick) => {
-                                    action.data.store("axis_x", stick.direction.x).unwrap();
-                                    action.data.store("axis_y", stick.direction.y).unwrap();
-                                    action.data.store("axis_magnitude", stick.amount).unwrap();
+                                    let magnitude = stick.direction.cast::<f32>().magnitude();
+                                    let normal_direction: nalgebra_glm::Vec2 = if magnitude == 0.0 {
+                                        nalgebra_glm::vec2(0.0, 0.0)
+                                    } else {
+                                        stick.direction.cast() / magnitude
+                                    };
+                                    action.data.store("axis_x", normal_direction.x).unwrap();
+                                    action.data.store("axis_y", normal_direction.y).unwrap();
+                                    action.data.store("axis_magnitude", magnitude).unwrap();
                                 },
                                 event::Controller::LeftTrigger(trigger) => {
                                     action.data.store("axis_pressure", trigger.amount).unwrap();
