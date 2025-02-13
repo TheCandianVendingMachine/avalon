@@ -1,5 +1,5 @@
 [x] 1) Rewrite main window system and game loop
-[ ] 2) Rewrite input system, supporting same gamepads and mouses. I can rewrite better now
+[X] 2) Rewrite input system, supporting same gamepads and mouses. I can rewrite better now
 that I understand it. I think I can make it support more as well, especially since I got a
 good use case
 [x] 3) Rewrite shader struct. I liked how it worked yknow
@@ -44,12 +44,12 @@ ECS
 [ ] Querying for components
 
 Input
-[ ] Modifiers
-[ ] Mouse input
-[ ] Keyboard Input
-[ ] Controller Input
-[ ] Querying for data on input
-[ ] Input Contexts
-[ ] Input Layers
-[ ] Input blocking
-[ ] Setting context priority (2 levels: Regular, Important)
+[X] Modifiers
+[X] Mouse input
+[X] Keyboard Input
+[X] Controller Input
+[X] Querying for data on input
+[X] Input Contexts
+[X] Input Layers
+[X] Input blocking
+[X] Setting context priority (2 levels: Regular, Important)
