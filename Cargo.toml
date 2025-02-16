@@ -1,5 +1,5 @@
 [workspace]
 members = [ "asset_generator",
-    "avalon", "avalon_asset",
+    "avalon", "avalon_asset", "avalon_math",
     "game"
 ]

@@ -16,6 +16,7 @@ layout(location=9) uniform vec3 lightPosition;
 layout(location=10) uniform float lightConeAngle;
 layout(location=11) uniform float intensity;
 layout(location=12) uniform bool firstPass;
+layout(location=13) uniform int gridSideLength;
 
 ivec2 pCoord = ivec2(gl_GlobalInvocationID.xy);
 #define STARTING_OFFSET (0.01)
@@ -30,7 +31,7 @@ void getGridData(in ivec3 position, out bool empty, out bool opaque, out int saf
 }
 
 bool isDirectionClear(vec3 rayPos, vec3 rayDir) {
-    const ivec3 mapBounds = ivec3(256, 256, 256);
+    const ivec3 mapBounds = ivec3(gridSideLength);
 
     // Sample grid and get safe cell step count via x + y + z)
     // Step ray that many cells

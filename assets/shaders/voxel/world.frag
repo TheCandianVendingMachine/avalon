@@ -12,6 +12,7 @@ layout(location=6) uniform mat4 inverseView;
 layout(location=7) uniform mat4 projection;
 layout(location=8) uniform mat4 inverseProjection;
 layout(location=9) uniform vec3 cameraPos;
+layout(location=10) uniform int gridSideLength;
 
 in flat ivec2 screenSize;
 out vec4 albedoColour;
@@ -64,7 +65,7 @@ void getGridData(in ivec3 position, out bool empty, out bool opaque, out int saf
 }
 
 void main() {
-    const ivec3 mapBounds = ivec3(32);
+    const ivec3 mapBounds = ivec3(gridSideLength);
     vec2 uv = gl_FragCoord.xy / vec2(screenSize) * 2.0 - 1.0;
 
     vec3 screenPos = vec3(uv, 0.0);

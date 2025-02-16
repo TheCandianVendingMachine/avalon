@@ -9,6 +9,7 @@ layout(location=4) uniform sampler3D lightGrid;
 layout(location=5) uniform sampler3D grid;
 layout(location=6) uniform int resolution;
 layout(location=7) uniform int halveCount;
+layout(location=8) uniform int gridSideLength;
 
 out vec4 fColor;
 
@@ -44,7 +45,7 @@ TraceResult coneTrace(in vec3 position, in Cone cone) {
     int level = 0;
     float radiusForNextLevel = 1.0;
 
-    const ivec3 mapBounds = ivec3(32, 32, 32);
+    const ivec3 mapBounds = ivec3(gridSideLength);
     const float LAMBDA = 0.05;
     const float REFLECTANCE = 1.0;
 

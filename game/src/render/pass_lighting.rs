@@ -52,6 +52,7 @@ impl PassLighting {
         bind.image("lightingBuffer", &self.lighting_buffer, Access::ReadWrite(0)).unwrap();
 
         bind.uniform("halveCount").unwrap().set_i32(self.options.lighting_halves as i32);
+        bind.uniform("gridSideLength").unwrap().set_i32(SIDE_LENGTH as i32);
 
         let (dispatch_x, dispatch_y, dispatch_z) = self.shader.dispatch_counts(
             self.options.lighting_resolution().x as usize,

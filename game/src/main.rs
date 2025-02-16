@@ -27,7 +27,7 @@ fn main() {
     camera.transform.set_position(vec3(0.0, 5.0, -5.0));
     camera.transform.set_euler_angles(avalon::transform::Euler {
         pitch: -5.0_f32.to_radians(),
-        yaw: -45.0_f32.to_radians(),
+        yaw: 45.0_f32.to_radians(),
         roll: 0.0_f32.to_radians()
     });
 

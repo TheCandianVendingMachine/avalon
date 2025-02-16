@@ -6,6 +6,7 @@ layout(location = 3) uniform ivec3 direction;
 layout(location = 4) uniform vec2 position;
 layout(location = 5) uniform float zoom;
 layout(location = 6) uniform ivec3 highlightedCell;
+layout(location = 7) uniform int gridSideLength;
 
 in vec2 screenSize;
 out vec4 fColor;
@@ -28,7 +29,7 @@ void main() {
     uv = fract(uv);
 
     // dont render outside the grid
-    if (any(lessThan(index, ivec2(0))) || any(greaterThanEqual(index, ivec2(256)))) {
+    if (any(lessThan(index, ivec2(0))) || any(greaterThanEqual(index, ivec2(gridSideLength)))) {
         fColor = vec4(1.0);
         return;
     }

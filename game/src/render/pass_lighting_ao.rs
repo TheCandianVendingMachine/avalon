@@ -108,6 +108,7 @@ impl PassLightingAo {
         bind.sampler("grid", grid_texture).unwrap();
         bind.uniform("resolution").unwrap().set_i32(1);
         bind.uniform("halveCount").unwrap().set_i32(self.options.ao_halves as i32);
+        bind.uniform("gridSideLength").unwrap().set_i32(SIDE_LENGTH as i32);
 
         gpu_buffer::State::degenerate().bind().draw(&bind);
     }
