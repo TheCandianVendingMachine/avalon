@@ -1,10 +1,34 @@
 pub mod simd {
+    use crate::{ Vector4 };
     #[allow(non_camel_case_types)]
     #[repr(C)]
     #[repr(align(16))]
     pub struct f32x4(pub f32, pub f32, pub f32, pub f32);
 
+    impl<T: SimdType> From<Vector4<T>> for f32x4 {
+        fn from(vec: Vector4<T>) -> f32x4 {
+            f32x4(
+                Type::convert_variable(vec.x),
+                Type::convert_variable(vec.y),
+                Type::convert_variable(vec.z),
+                Type::convert_variable(vec.w),
+            )
+        }
+    }
+
+    impl<T: Copy + SimdType> From<f32x4> for Vector4<T> {
+        fn from(pack: f32x4) -> Vector4<T> {
+            Vector4 {
+                x: Type::convert_variable(pack.0),
+                y: Type::convert_variable(pack.1),
+                z: Type::convert_variable(pack.2),
+                w: Type::convert_variable(pack.3),
+            }
+        }
+    }
+
     #[allow(non_camel_case_types)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub enum Type {
         u8,
         u16,
@@ -20,25 +44,14 @@ pub mod simd {
 
     impl Type {
         pub fn convert_variable<T: SimdType, U: SimdType + Copy>(var: T) -> U {
+            if T::to_type() != U::to_type() {
+                panic!("Attempting to convert a variable which does not have same type");
+            }
             let var_ptr = &var as *const T;
             let var_ptr = var_ptr as *const std::ffi::c_void;
-            match (T::to_type(), U::to_type()) {
-                (Type::f64, Type::f64) |
-                (Type::f32, Type::f32) |
-                (Type::i64, Type::i64) |
-                (Type::i32, Type::i32) |
-                (Type::i16, Type::i16) |
-                (Type::i8,  Type::i8)  |
-                (Type::u64, Type::u64) |
-                (Type::u32, Type::u32) |
-                (Type::u16, Type::u16) |
-                (Type::u8, Type::u8) => unsafe {
-                    let dst_ptr: *const U = std::mem::transmute(var_ptr);
-                    *dst_ptr
-                },
-                _ => {
-                    panic!("Attempting to convert a variable which does not have same type");
-                }
+            unsafe {
+                let dst_ptr: *const U = std::mem::transmute(var_ptr);
+                *dst_ptr
             }
         }
     }

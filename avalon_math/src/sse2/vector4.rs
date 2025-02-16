@@ -10,19 +10,8 @@ pub fn add<U, T>(lhs: Vector4<T>, rhs: Vector4<T>) -> Vector4<U> where
     U: SimdType + Copy {
     match T::to_type() {
         simd::Type::f32 => {
-            let lhs_pack = simd::f32x4(
-                simd::Type::convert_variable(lhs.x),
-                simd::Type::convert_variable(lhs.y),
-                simd::Type::convert_variable(lhs.z),
-                simd::Type::convert_variable(lhs.w)
-            );
-
-            let rhs_pack = simd::f32x4(
-                simd::Type::convert_variable(rhs.x),
-                simd::Type::convert_variable(rhs.y),
-                simd::Type::convert_variable(rhs.z),
-                simd::Type::convert_variable(rhs.w)
-            );
+            let lhs_pack = simd::f32x4::from(lhs);
+            let rhs_pack = simd::f32x4::from(rhs);
 
             unsafe {
                 let simd_lhs = simd_inst::_mm_load_ps(&lhs_pack.0);
@@ -32,12 +21,7 @@ pub fn add<U, T>(lhs: Vector4<T>, rhs: Vector4<T>) -> Vector4<U> where
                 let mut result = simd::f32x4(0.0, 0.0, 0.0, 0.0);
                 simd_inst::_mm_store_ps(&mut result.0, simd_result);
 
-                Vector4 {
-                    x: simd::Type::convert_variable(result.0),
-                    y: simd::Type::convert_variable(result.1),
-                    z: simd::Type::convert_variable(result.2),
-                    w: simd::Type::convert_variable(result.3),
-                }
+                result.into()
             }
         },
         _ => {
