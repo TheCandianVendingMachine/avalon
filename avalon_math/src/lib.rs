@@ -1,31 +1,9 @@
 pub mod simd {
-    use crate::{ Vector4 };
+    use crate::{ Vector4, Vector3, Vector2, Vector1 };
     #[allow(non_camel_case_types)]
     #[repr(C)]
     #[repr(align(16))]
     pub struct f32x4(pub f32, pub f32, pub f32, pub f32);
-
-    impl<T: SimdType> From<Vector4<T>> for f32x4 {
-        fn from(vec: Vector4<T>) -> f32x4 {
-            f32x4(
-                Type::convert_variable(vec.x),
-                Type::convert_variable(vec.y),
-                Type::convert_variable(vec.z),
-                Type::convert_variable(vec.w),
-            )
-        }
-    }
-
-    impl<T: Copy + SimdType> From<f32x4> for Vector4<T> {
-        fn from(pack: f32x4) -> Vector4<T> {
-            Vector4 {
-                x: Type::convert_variable(pack.0),
-                y: Type::convert_variable(pack.1),
-                z: Type::convert_variable(pack.2),
-                w: Type::convert_variable(pack.3),
-            }
-        }
-    }
 
     #[allow(non_camel_case_types)]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -70,6 +48,88 @@ pub mod simd {
     impl SimdType for u64 { fn to_type() -> Type { Type::u64 } }
     impl SimdType for f32 { fn to_type() -> Type { Type::f32 } }
     impl SimdType for f64 { fn to_type() -> Type { Type::f64 } }
+
+    impl<T: SimdType> From<Vector4<T>> for f32x4 {
+        fn from(vec: Vector4<T>) -> f32x4 {
+            f32x4(
+                Type::convert_variable(vec.w),
+                Type::convert_variable(vec.z),
+                Type::convert_variable(vec.y),
+                Type::convert_variable(vec.x),
+            )
+        }
+    }
+
+    impl<T: Copy + SimdType> From<f32x4> for Vector4<T> {
+        fn from(pack: f32x4) -> Vector4<T> {
+            Vector4 {
+                x: Type::convert_variable(pack.3),
+                y: Type::convert_variable(pack.2),
+                z: Type::convert_variable(pack.1),
+                w: Type::convert_variable(pack.0),
+            }
+        }
+    }
+
+    impl<T: SimdType> From<Vector3<T>> for f32x4 {
+        fn from(vec: Vector3<T>) -> f32x4 {
+            f32x4(
+                0.0,
+                Type::convert_variable(vec.z),
+                Type::convert_variable(vec.y),
+                Type::convert_variable(vec.x),
+            )
+        }
+    }
+
+    impl<T: Copy + SimdType> From<f32x4> for Vector3<T> {
+        fn from(pack: f32x4) -> Vector3<T> {
+            Vector3 {
+                x: Type::convert_variable(pack.3),
+                y: Type::convert_variable(pack.2),
+                z: Type::convert_variable(pack.1),
+            }
+        }
+    }
+
+    impl<T: SimdType> From<Vector2<T>> for f32x4 {
+        fn from(vec: Vector2<T>) -> f32x4 {
+            f32x4(
+                0.0,
+                0.0,
+                Type::convert_variable(vec.y),
+                Type::convert_variable(vec.x),
+            )
+        }
+    }
+
+    impl<T: Copy + SimdType> From<f32x4> for Vector2<T> {
+        fn from(pack: f32x4) -> Vector2<T> {
+            Vector2 {
+                x: Type::convert_variable(pack.3),
+                y: Type::convert_variable(pack.2),
+            }
+        }
+    }
+
+    impl<T: SimdType> From<Vector1<T>> for f32x4 {
+        fn from(vec: Vector1<T>) -> f32x4 {
+            f32x4(
+                0.0,
+                0.0,
+                0.0,
+                Type::convert_variable(vec.x),
+            )
+        }
+    }
+
+    impl<T: Copy + SimdType> From<f32x4> for Vector1<T> {
+        fn from(pack: f32x4) -> Vector1<T> {
+            Vector1 {
+                x: Type::convert_variable(pack.3),
+            }
+        }
+    }
 }
 
 pub mod scalar;
