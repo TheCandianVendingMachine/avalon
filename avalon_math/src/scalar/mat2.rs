@@ -10,7 +10,7 @@ pub fn identity<T: Identity>() -> Matrix2<T> {
 }
 
 pub fn determinate<T>(matrix: Matrix2<T>) -> T where
-    T: Copy + Inverse + Mul<Output = T> + Sub<Output = T>,
+    T: Copy + Mul<Output = T> + Sub<Output = T>,
     {
     matrix.m11 * matrix.m22 - matrix.m21 * matrix.m12
 }

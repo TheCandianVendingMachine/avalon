@@ -1,6 +1,10 @@
 
 pub mod scalar;
 pub mod sse2;
+pub mod matrix1;
+pub mod matrix2;
+pub mod matrix3;
+pub mod matrix4;
 pub mod vector1;
 pub mod vector2;
 pub mod vector3;

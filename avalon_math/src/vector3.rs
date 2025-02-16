@@ -4,18 +4,60 @@ use crate::{ scalar, Vector3 };
 impl<T> Vector3<T> where
     T: Copy + Add<Output = T> + Mul<Output = T> {
     pub fn dot(self, rhs: Vector3<T>) -> T {
-        scalar::vector3::dot(self, rhs)
+        if is_x86_feature_detected!("avx2") {
+            // FMA maybe available
+            scalar::vector3::dot(self, rhs)
+        } else if is_x86_feature_detected!("avx") {
+            // FMA maybe available
+            scalar::vector3::dot(self, rhs)
+        } else if is_x86_feature_detected!("sse4.1") {
+            scalar::vector3::dot(self, rhs)
+        } else if is_x86_feature_detected!("sse3") {
+            scalar::vector3::dot(self, rhs)
+        } else if is_x86_feature_detected!("sse2") {
+            scalar::vector3::dot(self, rhs)
+        } else {
+            scalar::vector3::dot(self, rhs)
+        }
     }
 
     pub fn magnitude_sqr(self) -> T {
-        scalar::vector3::magnitude_sqr(self)
+        if is_x86_feature_detected!("avx2") {
+            // FMA maybe available
+            scalar::vector3::magnitude_sqr(self)
+        } else if is_x86_feature_detected!("avx") {
+            // FMA maybe available
+            scalar::vector3::magnitude_sqr(self)
+        } else if is_x86_feature_detected!("sse4.1") {
+            scalar::vector3::magnitude_sqr(self)
+        } else if is_x86_feature_detected!("sse3") {
+            scalar::vector3::magnitude_sqr(self)
+        } else if is_x86_feature_detected!("sse2") {
+            scalar::vector3::magnitude_sqr(self)
+        } else {
+            scalar::vector3::magnitude_sqr(self)
+        }
     }
 }
 
 impl<T> Vector3<T> where
     T: Copy + scalar::HasSqrt + Add<Output = T> + Mul<Output = T> {
     pub fn magnitude(self) -> T {
-        scalar::vector3::magnitude(self)
+        if is_x86_feature_detected!("avx2") {
+            // FMA maybe available
+            scalar::vector3::magnitude(self)
+        } else if is_x86_feature_detected!("avx") {
+            // FMA maybe available
+            scalar::vector3::magnitude(self)
+        } else if is_x86_feature_detected!("sse4.1") {
+            scalar::vector3::magnitude(self)
+        } else if is_x86_feature_detected!("sse3") {
+            scalar::vector3::magnitude(self)
+        } else if is_x86_feature_detected!("sse2") {
+            scalar::vector3::magnitude(self)
+        } else {
+            scalar::vector3::magnitude(self)
+        }
     }
 }
 
