@@ -1,4 +1,4 @@
-use std::ops::{ Add, Sub, Mul, Div };
+use std::ops::{ Add, Sub, Mul, Div, Neg };
 use crate::Vector3;
 use crate::scalar::HasSqrt;
 
@@ -38,6 +38,15 @@ pub fn div_with_denominator<U, T>(lhs: Vector3<T>, rhs: T) -> Vector3<U> where
     }
 }
 
+pub fn mul<U, T>(lhs: Vector3<T>, rhs: T) -> Vector3<U> where
+    T : Copy + Mul<Output = U> {
+    Vector3 {
+        x: lhs.x.mul(rhs),
+        y: lhs.y.mul(rhs),
+        z: lhs.z.mul(rhs),
+    }
+}
+
 pub fn component_mul<U, T>(lhs: Vector3<T>, rhs: Vector3<T>) -> Vector3<U> where
     T : Copy + Mul<Output = U> {
     Vector3 {
@@ -63,6 +72,15 @@ pub fn magnitude_sqr<U, T>(vec: Vector3<T>) -> U where
     T : Copy + Mul<Output = U>,
     U: Add<Output = U> {
     dot(vec, vec)
+}
+
+pub fn negate<U, T>(vec: Vector3<T>) -> Vector3<U> where
+    T: Neg<Output = U> {
+    Vector3 {
+        x: -vec.x,
+        y: -vec.y,
+        z: -vec.z,
+    }
 }
 
 #[cfg(test)]
@@ -105,6 +123,20 @@ mod test {
         assert_abs_diff_eq!(c.x, -2.0);
         assert_abs_diff_eq!(c.y, -3.0);
         assert_abs_diff_eq!(c.z, 4.3);
+    }
+
+    #[test]
+    fn mul() {
+        let a = Vector3 {
+            x: 5.0,
+            y: 12.0,
+            z: 0.8
+        };
+        let b = 3.0;
+        let c = vector3::mul(a, b);
+        assert_abs_diff_eq!(c.x, 15.0);
+        assert_abs_diff_eq!(c.y, 36.0);
+        assert_abs_diff_eq!(c.z, 2.4000000000000004);
     }
 
     #[test]
@@ -187,5 +219,18 @@ mod test {
         };
         let c = vector3::magnitude_sqr(a);
         assert_abs_diff_eq!(c, 181.25);
+    }
+
+    #[test]
+    fn neg() {
+        let a = Vector3 {
+            x: 5.0,
+            y: 12.0,
+            z: -3.5,
+        };
+        let c = vector3::negate(a);
+        assert_abs_diff_eq!(c.x, -5.0);
+        assert_abs_diff_eq!(c.y, -12.0);
+        assert_abs_diff_eq!(c.z, 3.5);
     }
 }

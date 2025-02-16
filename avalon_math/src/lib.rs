@@ -1,6 +1,10 @@
-pub mod simd;
+
 pub mod scalar;
 pub mod sse2;
+pub mod vector1;
+pub mod vector2;
+pub mod vector3;
+pub mod vector4;
 
 #[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
@@ -81,3 +85,4 @@ pub struct Matrix4<TElem> {
     pub m43: TElem,
     pub m44: TElem,
 }
+

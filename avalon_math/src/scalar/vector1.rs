@@ -1,4 +1,4 @@
-use std::ops::{ Add, Sub, Mul, Div };
+use std::ops::{ Add, Sub, Mul, Div, Neg };
 use crate::Vector1;
 
 pub fn add<U, T>(lhs: Vector1<T>, rhs: Vector1<T>) -> Vector1<U> where
@@ -21,6 +21,11 @@ pub fn div_with_denominator<U, T>(lhs: Vector1<T>, rhs: T) -> Vector1<U> where
     Vector1 { x: lhs.x.div(rhs) }
 }
 
+pub fn mul<U, T>(lhs: Vector1<T>, rhs: T) -> Vector1<U> where
+    T : Copy + Mul<Output = U> {
+    Vector1 { x: lhs.x.mul(rhs) }
+}
+
 pub fn component_mul<U, T>(lhs: Vector1<T>, rhs: Vector1<T>) -> Vector1<U> where
     T : Copy + Mul<Output = U> {
     Vector1 { x: lhs.x.mul(rhs.x) }
@@ -40,6 +45,13 @@ pub fn magnitude_sqr<U, T>(vec: Vector1<T>) -> U where
     T : Copy + Mul<Output = U>,
     U: Add<Output = U> {
     dot(vec, vec)
+}
+
+pub fn negate<U, T>(vec: Vector1<T>) -> Vector1<U> where
+    T: Neg<Output = U> {
+    Vector1 {
+        x: -vec.x
+    }
 }
 
 #[cfg(test)]
@@ -70,6 +82,16 @@ mod test {
         };
         let c = vector1::sub(b, a);
         assert_abs_diff_eq!(c.x, -2.0);
+    }
+
+    #[test]
+    fn mul() {
+        let a = Vector1 {
+            x: 5.0
+        };
+        let b = 3.0;
+        let c = vector1::mul(a, b);
+        assert_abs_diff_eq!(c.x, 15.0);
     }
 
     #[test]
@@ -130,5 +152,14 @@ mod test {
         };
         let c = vector1::magnitude_sqr(a);
         assert_abs_diff_eq!(c, 25.0);
+    }
+
+    #[test]
+    fn neg() {
+        let a = Vector1 {
+            x: 5.0,
+        };
+        let c = vector1::negate(a);
+        assert_abs_diff_eq!(c.x, -5.0);
     }
 }
