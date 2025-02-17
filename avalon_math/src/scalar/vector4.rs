@@ -90,6 +90,11 @@ pub fn negate<U, T>(vec: Vector4<T>) -> Vector4<U> where
     }
 }
 
+pub fn normalize<T>(vec: Vector4<T>) -> Vector4<T> where
+    T: Copy + HasSqrt + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
+    div_with_denominator(vec, magnitude(vec))
+}
+
 #[cfg(test)]
 mod test {
     use approx::assert_abs_diff_eq;
@@ -260,5 +265,21 @@ mod test {
         assert_abs_diff_eq!(c.y, -12.0);
         assert_abs_diff_eq!(c.z, 3.5);
         assert_abs_diff_eq!(c.w, -2.0);
+    }
+
+    #[test]
+    fn normalize() {
+        let a = Vector4 {
+            x: 5.0,
+            y: 12.0,
+            z: -3.5,
+            w: 2.0
+        };
+        let c = vector4::normalize(a);
+        assert_abs_diff_eq!(vector4::magnitude_sqr(c), 1.0);
+        assert_abs_diff_eq!(c.x, 0.3673591791853225);
+        assert_abs_diff_eq!(c.y, 0.8816620300447741);
+        assert_abs_diff_eq!(c.z, -0.25715142542972574);
+        assert_abs_diff_eq!(c.w, 0.146943671674129);
     }
 }

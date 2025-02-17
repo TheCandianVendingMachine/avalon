@@ -1,5 +1,6 @@
 use std::ops::{ Add, Sub, Mul, Div, Neg };
 use crate::Vector1;
+use crate::scalar::HasSqrt;
 
 pub fn add<U, T>(lhs: Vector1<T>, rhs: Vector1<T>) -> Vector1<U> where
     T : Copy + Add<Output = U> {
@@ -52,6 +53,11 @@ pub fn negate<U, T>(vec: Vector1<T>) -> Vector1<U> where
     Vector1 {
         x: -vec.x
     }
+}
+
+pub fn normalize<T>(vec: Vector1<T>) -> Vector1<T> where
+    T: Copy + HasSqrt + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
+    div_with_denominator(vec, magnitude(vec))
 }
 
 #[cfg(test)]
@@ -161,5 +167,15 @@ mod test {
         };
         let c = vector1::negate(a);
         assert_abs_diff_eq!(c.x, -5.0);
+    }
+
+    #[test]
+    fn normalize() {
+        let a = Vector1 {
+            x: 5.0,
+        };
+        let c = vector1::normalize(a);
+        assert_abs_diff_eq!(vector1::magnitude_sqr(c), 1.0);
+        assert_abs_diff_eq!(c.x, 1.0);
     }
 }
