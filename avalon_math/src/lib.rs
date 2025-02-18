@@ -2,10 +2,7 @@ mod boilerplate;
 
 pub mod simd;
 pub mod scalar;
-#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
 pub mod sse2;
-#[cfg(all(target_arch = "x86_64", any(target_feature = "sse3")))]
-pub mod sse3;
 
 pub mod matrix2;
 pub mod matrix3;
