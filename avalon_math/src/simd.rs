@@ -1,4 +1,4 @@
-use crate::{ Vector4, Vector3, Vector2, Vector1 };
+use crate::{ Vector4, Vector3, Vector2 };
 
 #[derive(Debug, Copy, Clone)]
 #[allow(non_camel_case_types)]
@@ -119,25 +119,6 @@ impl<T: Copy + SimdType> From<i32x4> for Vector2<T> {
     }
 }
 
-impl<T: SimdType> From<Vector1<T>> for i32x4 {
-    fn from(vec: Vector1<T>) -> i32x4 {
-        i32x4(
-            0,
-            0,
-            0,
-            Type::convert_variable(vec.x),
-        )
-    }
-}
-
-impl<T: Copy + SimdType> From<i32x4> for Vector1<T> {
-    fn from(pack: i32x4) -> Vector1<T> {
-        Vector1 {
-            x: Type::convert_variable(pack.3),
-        }
-    }
-}
-
 impl<T: SimdType> From<Vector4<T>> for f32x4 {
     fn from(vec: Vector4<T>) -> f32x4 {
         f32x4(
@@ -201,21 +182,3 @@ impl<T: Copy + SimdType> From<f32x4> for Vector2<T> {
     }
 }
 
-impl<T: SimdType> From<Vector1<T>> for f32x4 {
-    fn from(vec: Vector1<T>) -> f32x4 {
-        f32x4(
-            0.0,
-            0.0,
-            0.0,
-            Type::convert_variable(vec.x),
-        )
-    }
-}
-
-impl<T: Copy + SimdType> From<f32x4> for Vector1<T> {
-    fn from(pack: f32x4) -> Vector1<T> {
-        Vector1 {
-            x: Type::convert_variable(pack.3),
-        }
-    }
-}

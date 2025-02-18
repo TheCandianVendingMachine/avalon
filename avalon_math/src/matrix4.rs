@@ -17,7 +17,7 @@ impl<T> Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::determinate(self)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::determinate(self)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::determinate(self)
@@ -38,7 +38,7 @@ impl<T> Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::trace(self)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::trace(self)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::trace(self)
@@ -59,7 +59,7 @@ impl<T> Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::pow(self, power)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::pow(self, power)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::pow(self, power)
@@ -79,7 +79,7 @@ impl<T> Matrix4<T> {
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::transpose(self)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::transpose(self)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::transpose(self)
@@ -100,7 +100,7 @@ impl<T> Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::inverse(self)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::inverse(self)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::inverse(self)
@@ -123,7 +123,7 @@ impl<T> Add for Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::add(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::add(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::add(self, rhs)
@@ -146,7 +146,7 @@ impl<T> Sub for Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::sub(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::sub(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::sub(self, rhs)
@@ -169,7 +169,7 @@ impl<T> Mul for Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::multiply(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::multiply(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::multiply(self, rhs)
@@ -192,7 +192,7 @@ impl<T> Mul<T> for Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::multiply_scalar(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::multiply_scalar(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::multiply_scalar(self, rhs)
@@ -215,7 +215,7 @@ impl<T> Mul<Vector4<T>> for Matrix4<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::mat4::multiply_vec(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::mat4::multiply_vec(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::mat4::multiply_vec(self, rhs)

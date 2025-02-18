@@ -10,7 +10,7 @@ impl<T> Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::dot(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::dot(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::dot(self, rhs)
@@ -28,7 +28,7 @@ impl<T> Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::magnitude_sqr(self)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::magnitude_sqr(self)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::magnitude_sqr(self)
@@ -49,7 +49,7 @@ impl<T> Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::magnitude(self)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::magnitude(self)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::magnitude(self)
@@ -71,7 +71,7 @@ impl<T> Add for Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::add(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::add(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::add(self, rhs)
@@ -93,7 +93,7 @@ impl<T> Sub for Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::sub(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::sub(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::sub(self, rhs)
@@ -115,7 +115,7 @@ impl<T> Mul for Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::component_mul(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::component_mul(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::component_mul(self, rhs)
@@ -137,7 +137,7 @@ impl<T> Mul<T> for Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::mul(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::mul(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::mul(self, rhs)
@@ -159,7 +159,7 @@ impl<T> Div<T> for Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::div_with_denominator(self, rhs)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::div_with_denominator(self, rhs)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::div_with_denominator(self, rhs)
@@ -181,7 +181,7 @@ impl<T> Neg for Vector2<T> where
         } else if is_x86_feature_detected!("avx") {
             // FMA maybe available
             scalar::vector2::negate(self)
-        } else if is_x86_feature_detected!("sse4.1") {
+        } else if is_x86_feature_detected!("sse4.2") {
             scalar::vector2::negate(self)
         } else if is_x86_feature_detected!("sse3") {
             scalar::vector2::negate(self)

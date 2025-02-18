@@ -4,10 +4,9 @@ pub mod simd;
 pub mod scalar;
 #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
 pub mod sse2;
-#[cfg(all(target_arch = "x86_64", target_feature = "sse3"))]
+#[cfg(all(target_arch = "x86_64", any(target_feature = "sse3")))]
 pub mod sse3;
 
-pub mod matrix1;
 pub mod matrix2;
 pub mod matrix3;
 pub mod matrix4;
@@ -17,11 +16,6 @@ pub mod vector4;
 
 #[macro_export]
 macro_rules! Vector {
-    ( $x:expr ) => {
-        Vector1 {
-            x: $x,
-        }
-    };
     ( $x:expr, $y: expr ) => {
         Vector2 {
             x: $x,
@@ -67,12 +61,6 @@ pub struct Vector4<TElem> {
     pub y: TElem,
     pub z: TElem,
     pub w: TElem,
-}
-
-#[repr(align(16))]
-#[derive(Debug, Copy, Clone)]
-pub struct Matrix1<TElem> {
-    pub m11: TElem
 }
 
 #[repr(align(16))]

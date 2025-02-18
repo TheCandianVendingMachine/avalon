@@ -1,8 +1,6 @@
-pub mod mat1;
 pub mod mat2;
 pub mod mat3;
 pub mod mat4;
-pub mod vector1;
 pub mod vector2;
 pub mod vector3;
 pub mod vector4;
