@@ -10,7 +10,7 @@ pub struct f32x4(pub f32, pub f32, pub f32, pub f32);
 #[allow(non_camel_case_types)]
 #[repr(C)]
 #[repr(align(16))]
-pub struct i32x4(pub i32, pub i32, pub i32, pub i32);
+pub struct f32x8(pub f32, pub f32, pub f32, pub f32, pub f32, pub f32, pub f32, pub f32);
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -56,66 +56,72 @@ impl SimdType for u64 { fn to_type() -> Type { Type::u64 } }
 impl SimdType for f32 { fn to_type() -> Type { Type::f32 } }
 impl SimdType for f64 { fn to_type() -> Type { Type::f64 } }
 
-impl<T: SimdType> From<Vector4<T>> for i32x4 {
-    fn from(vec: Vector4<T>) -> i32x4 {
-        i32x4(
+impl f32x8 {
+    pub fn braid<T: SimdType>(lhs: Vector4<T>, rhs: Vector4<T>) -> f32x8 {
+        f32x8(
+            Type::convert_variable(lhs.w),
+            Type::convert_variable(rhs.w),
+
+            Type::convert_variable(lhs.z),
+            Type::convert_variable(rhs.z),
+
+            Type::convert_variable(lhs.y),
+            Type::convert_variable(rhs.y),
+
+            Type::convert_variable(lhs.x),
+            Type::convert_variable(rhs.x),
+        )
+    }
+}
+
+impl<T: SimdType> From<(Vector4<T>, Vector4<T>)> for f32x8 {
+    fn from(pair: (Vector4<T>, Vector4<T>)) -> f32x8 {
+        let (a, b) = pair;
+        f32x8(
+            Type::convert_variable(b.w),
+            Type::convert_variable(b.z),
+            Type::convert_variable(b.y),
+            Type::convert_variable(b.x),
+            //
+            Type::convert_variable(a.w),
+            Type::convert_variable(a.z),
+            Type::convert_variable(a.y),
+            Type::convert_variable(a.x),
+        )
+    }
+}
+
+impl<T: Copy + SimdType> From<f32x8> for (Vector4<T>, Vector4<T>) {
+    fn from(pack: f32x8) -> (Vector4<T>, Vector4<T>) {
+        let a = Vector4 {
+            x: Type::convert_variable(pack.3),
+            y: Type::convert_variable(pack.2),
+            z: Type::convert_variable(pack.1),
+            w: Type::convert_variable(pack.0),
+        };
+        let b = Vector4 {
+            x: Type::convert_variable(pack.7),
+            y: Type::convert_variable(pack.6),
+            z: Type::convert_variable(pack.5),
+            w: Type::convert_variable(pack.4),
+        };
+        (a, b)
+    }
+}
+
+impl<T: SimdType> From<Vector4<T>> for f32x8 {
+    fn from(vec: Vector4<T>) -> f32x8 {
+        f32x8(
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            //
             Type::convert_variable(vec.w),
             Type::convert_variable(vec.z),
             Type::convert_variable(vec.y),
             Type::convert_variable(vec.x),
         )
-    }
-}
-
-impl<T: Copy + SimdType> From<i32x4> for Vector4<T> {
-    fn from(pack: i32x4) -> Vector4<T> {
-        Vector4 {
-            x: Type::convert_variable(pack.3),
-            y: Type::convert_variable(pack.2),
-            z: Type::convert_variable(pack.1),
-            w: Type::convert_variable(pack.0),
-        }
-    }
-}
-
-impl<T: SimdType> From<Vector3<T>> for i32x4 {
-    fn from(vec: Vector3<T>) -> i32x4 {
-        i32x4(
-            0,
-            Type::convert_variable(vec.z),
-            Type::convert_variable(vec.y),
-            Type::convert_variable(vec.x),
-        )
-    }
-}
-
-impl<T: Copy + SimdType> From<i32x4> for Vector3<T> {
-    fn from(pack: i32x4) -> Vector3<T> {
-        Vector3 {
-            x: Type::convert_variable(pack.3),
-            y: Type::convert_variable(pack.2),
-            z: Type::convert_variable(pack.1),
-        }
-    }
-}
-
-impl<T: SimdType> From<Vector2<T>> for i32x4 {
-    fn from(vec: Vector2<T>) -> i32x4 {
-        i32x4(
-            0,
-            0,
-            Type::convert_variable(vec.y),
-            Type::convert_variable(vec.x),
-        )
-    }
-}
-
-impl<T: Copy + SimdType> From<i32x4> for Vector2<T> {
-    fn from(pack: i32x4) -> Vector2<T> {
-        Vector2 {
-            x: Type::convert_variable(pack.3),
-            y: Type::convert_variable(pack.2),
-        }
     }
 }
 

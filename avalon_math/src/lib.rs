@@ -3,6 +3,8 @@ mod boilerplate;
 pub mod simd;
 pub mod scalar;
 pub mod sse2;
+pub mod sse42;
+pub mod avx;
 
 pub mod matrix2;
 pub mod matrix3;

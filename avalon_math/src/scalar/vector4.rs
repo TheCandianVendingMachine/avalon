@@ -97,9 +97,9 @@ pub fn normalize<T>(vec: Vector4<T>) -> Vector4<T> where
 
 pub fn project<T>(lhs: Vector4<T>, rhs: Vector4<T>) -> Vector4<T> where
     T: Copy + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
-    let numerator = dot(lhs, rhs);
+    let numerator = mul(rhs, dot(lhs, rhs));
     let denominator = dot(rhs, rhs);
-    mul(rhs, numerator / denominator)
+    numerator / denominator
 }
 
 #[cfg(test)]

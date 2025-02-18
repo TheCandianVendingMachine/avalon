@@ -54,7 +54,7 @@ macro_rules! operate {
                 b.iter_batched(
                     pick_vector!($rng, $vectors, v0),
                     |v0| {
-                        black_box($group::$operator(v0));
+                        black_box(unsafe { $group::$operator(v0) });
                     },
                     BatchSize::SmallInput
                 )
@@ -68,7 +68,7 @@ macro_rules! operate {
                 b.iter_batched(
                     pick_vector!($rng, $vectors, v0, v1),
                     |(v0, v1)| {
-                        black_box($group::$operator(v0, v1));
+                        black_box(unsafe { $group::$operator(v0, v1) });
                     },
                     BatchSize::SmallInput
                 )
@@ -82,7 +82,7 @@ macro_rules! operate {
                 b.iter_batched(
                     pick_vector!($rng, $vectors, v0, s),
                     |(v0, s)| {
-                        black_box($group::$operator(v0, s));
+                        black_box(unsafe { $group::$operator(v0, s) });
                     },
                     BatchSize::SmallInput
                 )
@@ -96,7 +96,7 @@ macro_rules! operate {
                 b.iter_batched(
                     pick_vector!($rng, $vectors, v0, s),
                     |(v0, s)| {
-                        black_box($group::$operator(s, v0));
+                        black_box(unsafe { $group::$operator(s, v0) });
                     },
                     BatchSize::SmallInput
                 )
