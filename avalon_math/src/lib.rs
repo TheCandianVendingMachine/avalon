@@ -4,12 +4,13 @@ pub mod simd;
 pub mod scalar;
 #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
 pub mod sse2;
+#[cfg(all(target_arch = "x86_64", target_feature = "sse3"))]
+pub mod sse3;
 
 pub mod matrix1;
 pub mod matrix2;
 pub mod matrix3;
 pub mod matrix4;
-pub mod vector1;
 pub mod vector2;
 pub mod vector3;
 pub mod vector4;
@@ -42,12 +43,6 @@ macro_rules! Vector {
             w: $w
         }
     };
-}
-
-#[repr(align(16))]
-#[derive(Debug, Copy, Clone)]
-pub struct Vector1<TElem> {
-    pub x: TElem
 }
 
 #[repr(align(16))]

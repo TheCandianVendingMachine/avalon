@@ -300,8 +300,40 @@ pub fn normalize<T>(vec: Vector4<T>) -> Vector4<T> where
 }
 
 pub fn project<T>(lhs: Vector4<T>, rhs: Vector4<T>) -> Vector4<T> where
-    T: SimdType + Copy + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
+    T: std::fmt::Debug + SimdType + Copy + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
     match T::to_type() {
+        simd::Type::f32 => {
+            let lhs_pack = simd::f32x4::from(lhs);
+            let rhs_pack = simd::f32x4::from(rhs);
+            unsafe {
+                let dot_num_lhs = simd_inst::_mm_load_ps(&lhs_pack.0);
+                let dot_num_rhs = simd_inst::_mm_load_ps(&rhs_pack.0);
+                let dot_denom_v = simd_inst::_mm_load_ps(&rhs_pack.0);
+                let num_result = simd_inst::_mm_mul_ps(dot_num_lhs, dot_num_rhs);
+                let denom_result = simd_inst::_mm_mul_ps(dot_denom_v, dot_denom_v);
+
+                let num_shift = simd_inst::_mm_shuffle_ps(num_result, num_result, 0b10_11_00_01);
+                let num_sum = simd_inst::_mm_add_ps(num_result, num_shift);
+
+                let denom_shift = simd_inst::_mm_shuffle_ps(denom_result, denom_result, 0b10_11_00_01);
+                let denom_sum = simd_inst::_mm_add_ps(denom_result, denom_shift);
+
+                let packed_sum_top = simd_inst::_mm_shuffle_ps(num_sum, denom_sum, 0b11_00_11_00);
+                let packed_sum_bottom = simd_inst::_mm_shuffle_ps(num_sum, denom_sum, 0b00_11_00_11);
+                let dot_results = simd_inst::_mm_add_ps(packed_sum_bottom, packed_sum_top);
+
+                let dot_results_denom = simd_inst::_mm_shuffle_ps(dot_results, dot_results, 0b00_00_00_11);
+                let dot_div = simd_inst::_mm_div_ss(dot_results, dot_results_denom);
+                let dot_div = simd_inst::_mm_shuffle_ps(dot_div, dot_div, 0);
+
+                let simd_result = simd_inst::_mm_mul_ps(dot_num_rhs, dot_div);
+
+                let mut result = simd::f32x4(0.0, 0.0, 0.0, 0.0);
+                simd_inst::_mm_store_ps(&mut result.0, simd_result);
+
+                result.into()
+            }
+        },
         _ => {
             scalar::project(lhs, rhs)
         }

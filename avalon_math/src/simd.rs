@@ -1,9 +1,12 @@
 use crate::{ Vector4, Vector3, Vector2, Vector1 };
+
+#[derive(Debug, Copy, Clone)]
 #[allow(non_camel_case_types)]
 #[repr(C)]
 #[repr(align(16))]
 pub struct f32x4(pub f32, pub f32, pub f32, pub f32);
 
+#[derive(Debug, Copy, Clone)]
 #[allow(non_camel_case_types)]
 #[repr(C)]
 #[repr(align(16))]

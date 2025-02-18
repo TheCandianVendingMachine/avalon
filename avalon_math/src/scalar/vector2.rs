@@ -81,6 +81,13 @@ pub fn normalize<T>(vec: Vector2<T>) -> Vector2<T> where
     div_with_denominator(vec, magnitude(vec))
 }
 
+pub fn project<T>(lhs: Vector2<T>, rhs: Vector2<T>) -> Vector2<T> where
+    T: Copy + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
+    let numerator = dot(lhs, rhs);
+    let denominator = dot(rhs, rhs);
+    mul(rhs, numerator / denominator)
+}
+
 #[cfg(test)]
 mod test {
     use approx::assert_abs_diff_eq;

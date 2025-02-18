@@ -1,5 +1,5 @@
 use std::ops::{ Add, Sub, Mul, Div, Neg };
-use crate::{ scalar, Vector4 };
+use crate::{ sse2, scalar, Vector4 };
 
 impl<T> Vector4<T> where
     T: Copy + Add<Output = T> + Mul<Output = T> {

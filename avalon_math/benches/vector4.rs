@@ -19,488 +19,159 @@ fn vector_samples<T>(rng: &mut impl rand::Rng) -> Vec<Vector4<T>> where
     vectors
 }
 
-pub fn benchmark_addition(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Addition");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(scalar::add(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
+macro_rules! pick_vector {
+    ( $rng:expr, $vector_batch:expr, v0 ) => {
+        || {
+            let i = $rng.random_range(0..$vector_batch.len());
+            let v0 = $vector_batch[i];
+            v0
         }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(sse2::add(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
+    };
+    ( $rng:expr, $vector_batch:expr, v0, s ) => {
+        || {
+            let i = $rng.random_range(0..$vector_batch.len());
+            let v0 = $vector_batch[i];
+            let s: f32 = $rng.random();
+            (v0, s)
         }
-    );
+    };
+    ( $rng:expr, $vector_batch:expr, v0, v1 ) => {
+        || {
+            let i = $rng.random_range(0..$vector_batch.len());
+            let j = $rng.random_range(0..$vector_batch.len());
+            let v0 = $vector_batch[i];
+            let v1 = $vector_batch[j];
+            (v0, v1)
+        }
+    };
 }
 
-pub fn benchmark_component_multiplcation(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Multiplication (Component-Wise)");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(scalar::component_mul(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(sse2::component_mul(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
+macro_rules! operate {
+    ( $name:ident, $group:tt, $bench_group:tt, $rng:expr, $vectors:expr, $operator:ident, v0 ) => {
+        $bench_group.bench_function(
+            stringify!($name),
+            |b| {
+                b.iter_batched(
+                    pick_vector!($rng, $vectors, v0),
+                    |v0| {
+                        black_box($group::$operator(v0));
+                    },
+                    BatchSize::SmallInput
+                )
+            }
+        );
+    };
+    ( $name:ident, $group:tt, $bench_group:tt, $rng:expr, $vectors:expr, $operator:tt, v0, v1 ) => {
+        $bench_group.bench_function(
+            stringify!($name),
+            |b| {
+                b.iter_batched(
+                    pick_vector!($rng, $vectors, v0, v1),
+                    |(v0, v1)| {
+                        black_box($group::$operator(v0, v1));
+                    },
+                    BatchSize::SmallInput
+                )
+            }
+        );
+    };
+    ( $name:ident, $group:tt, $bench_group:tt, $rng:expr, $vectors:expr, $operator:tt, v0, s ) => {
+        $bench_group.bench_function(
+            stringify!($name),
+            |b| {
+                b.iter_batched(
+                    pick_vector!($rng, $vectors, v0, s),
+                    |(v0, s)| {
+                        black_box($group::$operator(v0, s));
+                    },
+                    BatchSize::SmallInput
+                )
+            }
+        );
+    };
+    ( $name:ident, $group:tt, $bench_group:tt, $rng:expr, $vectors:expr, $operator:tt, s, v0 ) => {
+        $bench_group.bench_function(
+            stringify!($name),
+            |b| {
+                b.iter_batched(
+                    pick_vector!($rng, $vectors, v0, s),
+                    |(v0, s)| {
+                        black_box($group::$operator(s, v0));
+                    },
+                    BatchSize::SmallInput
+                )
+            }
+        );
+    };
 }
 
-pub fn benchmark_scalar_multiplcation(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
+macro_rules! benchmark {
+    ( $function:tt, $operator:tt, v0 ) => {
+        fn $function(c: &mut Criterion) {
+            let mut rng = rand::rng();
+            let vectors = vector_samples::<f32>(&mut rng);
 
-    let mut group = c.benchmark_group("Vector4 Multiplication (Scalar)");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    let s: f32 = rng.random();
-
-                    (v0, s)
-                },
-                |(v0, s)| {
-                    black_box(scalar::mul(v0, s));
-                },
-                BatchSize::SmallInput
-            )
+            let mut group = c.benchmark_group(format!("Vector4 ({})", stringify!($operator)));
+            operate!(Scalar, scalar, group, rng, vectors, $operator, v0);
+            operate!(SSE2, sse2, group, rng, vectors, $operator, v0);
         }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    let s: f32 = rng.random();
+    };
+    ( $function:tt, $operator:tt, s, v0 ) => {
+        fn $function(c: &mut Criterion) {
+            let mut rng = rand::rng();
+            let vectors = vector_samples::<f32>(&mut rng);
 
-                    (v0, s)
-                },
-                |(v0, s)| {
-                    black_box(sse2::mul(v0, s));
-                },
-                BatchSize::SmallInput
-            )
+            let mut group = c.benchmark_group(format!("Vector4 ({})", stringify!($operator)));
+            operate!(Scalar, scalar, group, rng, vectors, $operator, s, v0);
+            operate!(SSE2, sse2, group, rng, vectors, $operator, s, v0);
         }
-    );
+    };
+    ( $function:tt, $operator:tt, v0, s ) => {
+        fn $function(c: &mut Criterion) {
+            let mut rng = rand::rng();
+            let vectors = vector_samples::<f32>(&mut rng);
+
+            let mut group = c.benchmark_group(format!("Vector4 ({})", stringify!($operator)));
+            operate!(Scalar, scalar, group, rng, vectors, $operator, v0, s);
+            operate!(SSE2, sse2, group, rng, vectors, $operator, v0, s);
+        }
+    };
+    ( $function:tt, $operator:tt, v0, v1 ) => {
+        fn $function(c: &mut Criterion) {
+            let mut rng = rand::rng();
+            let vectors = vector_samples::<f32>(&mut rng);
+
+            let mut group = c.benchmark_group(format!("Vector4 ({})", stringify!($operator)));
+            operate!(Scalar, scalar, group, rng, vectors, $operator, v0, v1);
+            operate!(SSE2, sse2, group, rng, vectors, $operator, v0, v1);
+        }
+    };
 }
 
-pub fn benchmark_division_numerator(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Division (V/scalar)");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    let s: f32 = rng.random();
-
-                    (v0, s)
-                },
-                |(v0, s)| {
-                    black_box(scalar::div_with_denominator(v0, s));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    let s: f32 = rng.random();
-
-                    (v0, s)
-                },
-                |(v0, s)| {
-                    black_box(sse2::div_with_denominator(v0, s));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
-
-pub fn benchmark_division_denominator(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Division (scalar/V)");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    let s: f32 = rng.random();
-
-                    (v0, s)
-                },
-                |(v0, s)| {
-                    black_box(scalar::div_with_numerator(s, v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    let s: f32 = rng.random();
-
-                    (v0, s)
-                },
-                |(v0, s)| {
-                    black_box(sse2::div_with_denominator(v0, s));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
-
-pub fn benchmark_dot(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Dot Product");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(scalar::dot(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(sse2::dot(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
-
-pub fn benchmark_magnitude(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Magnitude");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(scalar::magnitude(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(sse2::magnitude(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
-
-pub fn benchmark_magnitude_sqr(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Magnitude (Squared)");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(scalar::magnitude_sqr(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(sse2::magnitude_sqr(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
-
-pub fn benchmark_negate(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Negate");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(scalar::negate(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(sse2::negate(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
-
-pub fn benchmark_normalize(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Normalize");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(scalar::normalize(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let v0 = vectors[i];
-                    v0
-                },
-                |v0| {
-                    black_box(sse2::normalize(v0));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
-
-pub fn benchmark_project(c: &mut Criterion) {
-    let mut rng = rand::rng();
-    let vectors = vector_samples::<f32>(&mut rng);
-
-    let mut group = c.benchmark_group("Vector4 Project");
-    group.bench_function(
-        "Scalar",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(scalar::project(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-    group.bench_function(
-        "SSE2",
-        |b| {
-            b.iter_batched(
-                || {
-                    let i = rng.random_range(0..vectors.len());
-                    let j = rng.random_range(0..vectors.len());
-
-                    let v0 = vectors[i];
-                    let v1 = vectors[j];
-
-                    (v0, v1)
-                },
-                |(v0, v1)| {
-                    black_box(sse2::project(v0, v1));
-                },
-                BatchSize::SmallInput
-            )
-        }
-    );
-}
+benchmark!(benchmark_addition, add, v0, v1);
+benchmark!(benchmark_component_multiplcation, component_mul, v0, v1);
+benchmark!(benchmark_scalar_multiplcation, mul, v0, s);
+benchmark!(benchmark_division_numerator, div_with_numerator, s, v0);
+benchmark!(benchmark_division_denominator, div_with_denominator, v0, s);
+benchmark!(benchmark_dot, dot, v0, v1);
+benchmark!(benchmark_magnitude, magnitude, v0);
+benchmark!(benchmark_magnitude_sqr, magnitude_sqr, v0);
+benchmark!(benchmark_negate, negate, v0);
+benchmark!(benchmark_normalize, normalize, v0);
+benchmark!(benchmark_project, project, v0, v1);
 
 criterion_group!(
     benches,
-        benchmark_addition,
-        benchmark_component_multiplcation,
-        benchmark_scalar_multiplcation,
-        benchmark_dot,
-        benchmark_magnitude,
-        benchmark_magnitude_sqr,
+        benchmark_project,
+        benchmark_normalize,
         benchmark_negate,
-        benchmark_normalize
+        benchmark_magnitude_sqr,
+        benchmark_magnitude,
+        benchmark_dot,
+        benchmark_division_denominator,
+        benchmark_division_numerator,
+        benchmark_scalar_multiplcation,
+        benchmark_component_multiplcation,
+        benchmark_addition,
 );
 criterion_main!(benches);
