@@ -90,173 +90,57 @@ pub fn normalize<T>(vec: Vector3<T>) -> Vector3<T> where
 
 pub fn project<T>(lhs: Vector3<T>, rhs: Vector3<T>) -> Vector3<T> where
     T: Copy + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
-    let numerator = dot(lhs, rhs);
+    let numerator = mul(rhs, dot(lhs, rhs));
     let denominator = dot(rhs, rhs);
-    mul(rhs, numerator / denominator)
+    numerator / denominator
 }
 
 #[cfg(test)]
-mod test {
-    use approx::assert_abs_diff_eq;
-    use crate::Vector3;
-    use crate::scalar::vector3;
+mod test_u8 {
+    crate::vector3_uint_tests!(scalar, u8);
+}
 
-    #[test]
-    fn addition() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let b = Vector3 {
-            x: 3.0,
-            y: 9.0,
-            z: 0.8
-        };
-        let c = vector3::add(a, b);
-        assert_abs_diff_eq!(c.x, 8.0);
-        assert_abs_diff_eq!(c.y, 21.0);
-        assert_abs_diff_eq!(c.z, -2.7);
-    }
+#[cfg(test)]
+mod test_u16 {
+    crate::vector3_uint_tests!(scalar, u16);
+}
 
-    #[test]
-    fn sub() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let b = Vector3 {
-            x: 3.0,
-            y: 9.0,
-            z: 0.8
-        };
-        let c = vector3::sub(b, a);
-        assert_abs_diff_eq!(c.x, -2.0);
-        assert_abs_diff_eq!(c.y, -3.0);
-        assert_abs_diff_eq!(c.z, 4.3);
-    }
+#[cfg(test)]
+mod test_u32 {
+    crate::vector3_uint_tests!(scalar, u32);
+}
 
-    #[test]
-    fn mul() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: 0.8
-        };
-        let b = 3.0;
-        let c = vector3::mul(a, b);
-        assert_abs_diff_eq!(c.x, 15.0);
-        assert_abs_diff_eq!(c.y, 36.0);
-        assert_abs_diff_eq!(c.z, 2.4000000000000004);
-    }
+#[cfg(test)]
+mod test_u64 {
+    crate::vector3_uint_tests!(scalar, u64);
+}
 
-    #[test]
-    fn div_with_numerator() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let c = vector3::div_with_numerator(10.0, a);
-        assert_abs_diff_eq!(c.x, 2.0);
-        assert_abs_diff_eq!(c.y, 0.8333333333333334);
-        assert_abs_diff_eq!(c.z, -2.857142857142857);
-    }
+#[cfg(test)]
+mod test_i8 {
+    crate::vector3_sint_tests!(scalar, i8);
+}
 
-    #[test]
-    fn div_with_denominator() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let c = vector3::div_with_denominator(a, 10.0);
-        assert_abs_diff_eq!(c.x, 0.5);
-        assert_abs_diff_eq!(c.y, 1.2);
-        assert_abs_diff_eq!(c.z, -0.35);
-    }
+#[cfg(test)]
+mod test_i16 {
+    crate::vector3_sint_tests!(scalar, i16);
+}
 
-    #[test]
-    fn component_mul() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let b = Vector3 {
-            x: 6.7,
-            y: 8.7,
-            z: 5.0
-        };
-        let c = vector3::component_mul(a, b);
-        assert_abs_diff_eq!(c.x, 33.5);
-        assert_abs_diff_eq!(c.y, 104.39999999999999);
-        assert_abs_diff_eq!(c.z, -17.5);
-    }
+#[cfg(test)]
+mod test_i32 {
+    crate::vector3_sint_tests!(scalar, i32);
+}
 
-    #[test]
-    fn dot() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let b = Vector3 {
-            x: 6.7,
-            y: 8.7,
-            z: 5.0
-        };
-        let c = vector3::dot(a, b);
-        assert_abs_diff_eq!(c, 120.39999999999998);
-    }
+#[cfg(test)]
+mod test_i64 {
+    crate::vector3_sint_tests!(scalar, i64);
+}
 
-    #[test]
-    fn magnitude() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let c = vector3::magnitude(a);
-        assert_abs_diff_eq!(c, 13.46291201783626);
-    }
+#[cfg(test)]
+mod test_f32 {
+    crate::vector3_float_tests!(scalar, f32);
+}
 
-    #[test]
-    fn magnitude_sqr() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5
-        };
-        let c = vector3::magnitude_sqr(a);
-        assert_abs_diff_eq!(c, 181.25);
-    }
-
-    #[test]
-    fn neg() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-        };
-        let c = vector3::negate(a);
-        assert_abs_diff_eq!(c.x, -5.0);
-        assert_abs_diff_eq!(c.y, -12.0);
-        assert_abs_diff_eq!(c.z, 3.5);
-    }
-
-    #[test]
-    fn normalize() {
-        let a = Vector3 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-        };
-        let c = vector3::normalize(a);
-        assert_abs_diff_eq!(vector3::magnitude_sqr(c), 1.0);
-        assert_abs_diff_eq!(c.x, 0.3713906763541037);
-        assert_abs_diff_eq!(c.y, 0.891337623249849);
-        assert_abs_diff_eq!(c.z, -0.25997347344787264);
-    }
+#[cfg(test)]
+mod test_f64 {
+    crate::vector3_float_tests!(scalar, f64);
 }
