@@ -95,191 +95,59 @@ pub fn normalize<T>(vec: Vector4<T>) -> Vector4<T> where
     div_with_denominator(vec, magnitude(vec))
 }
 
+pub fn project<T>(lhs: Vector4<T>, rhs: Vector4<T>) -> Vector4<T> where
+    T: Copy + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
+    let numerator = dot(lhs, rhs);
+    let denominator = dot(rhs, rhs);
+    mul(rhs, numerator / denominator)
+}
+
 #[cfg(test)]
-mod test {
-    use approx::assert_abs_diff_eq;
-    use crate::Vector4;
-    use crate::scalar::vector4;
+mod test_u8 {
+    crate::vector4_uint_tests!(scalar, u8);
+}
 
-    #[test]
-    fn addition() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let b = Vector4 {
-            x: 3.0,
-            y: 9.0,
-            z: 0.8,
-            w: 7.0
-        };
-        let c = vector4::add(a, b);
-        assert_abs_diff_eq!(c.x, 8.0);
-        assert_abs_diff_eq!(c.y, 21.0);
-        assert_abs_diff_eq!(c.z, -2.7);
-        assert_abs_diff_eq!(c.w, 9.0);
-    }
+#[cfg(test)]
+mod test_u16 {
+    crate::vector4_uint_tests!(scalar, u16);
+}
 
-    #[test]
-    fn sub() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let b = Vector4 {
-            x: 3.0,
-            y: 9.0,
-            z: 0.8,
-            w: 7.0
-        };
-        let c = vector4::sub(b, a);
-        assert_abs_diff_eq!(c.x, -2.0);
-        assert_abs_diff_eq!(c.y, -3.0);
-        assert_abs_diff_eq!(c.z, 4.3);
-        assert_abs_diff_eq!(c.w, 5.0);
-    }
+#[cfg(test)]
+mod test_u32 {
+    crate::vector4_uint_tests!(scalar, u32);
+}
 
-    #[test]
-    fn mul() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: 0.8,
-            w: 2.0
-        };
-        let b = 3.0;
-        let c = vector4::mul(a, b);
-        assert_abs_diff_eq!(c.x, 15.0);
-        assert_abs_diff_eq!(c.y, 36.0);
-        assert_abs_diff_eq!(c.z, 2.4000000000000004);
-        assert_abs_diff_eq!(c.w, 6.0);
-    }
+#[cfg(test)]
+mod test_u64 {
+    crate::vector4_uint_tests!(scalar, u64);
+}
 
-    #[test]
-    fn div_with_numerator() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let c = vector4::div_with_numerator(10.0, a);
-        assert_abs_diff_eq!(c.x, 2.0);
-        assert_abs_diff_eq!(c.y, 0.8333333333333334);
-        assert_abs_diff_eq!(c.z, -2.857142857142857);
-        assert_abs_diff_eq!(c.w, 5.0);
-    }
+#[cfg(test)]
+mod test_i8 {
+    crate::vector4_sint_tests!(scalar, i8);
+}
 
-    #[test]
-    fn div_with_denominator() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let c = vector4::div_with_denominator(a, 10.0);
-        assert_abs_diff_eq!(c.x, 0.5);
-        assert_abs_diff_eq!(c.y, 1.2);
-        assert_abs_diff_eq!(c.z, -0.35);
-        assert_abs_diff_eq!(c.w, 0.2);
-    }
+#[cfg(test)]
+mod test_i16 {
+    crate::vector4_sint_tests!(scalar, i16);
+}
 
-    #[test]
-    fn component_mul() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let b = Vector4 {
-            x: 6.7,
-            y: 8.7,
-            z: 5.0,
-            w: 3.4,
-        };
-        let c = vector4::component_mul(a, b);
-        assert_abs_diff_eq!(c.x, 33.5);
-        assert_abs_diff_eq!(c.y, 104.39999999999999);
-        assert_abs_diff_eq!(c.z, -17.5);
-        assert_abs_diff_eq!(c.w, 6.8);
-    }
+#[cfg(test)]
+mod test_i32 {
+    crate::vector4_sint_tests!(scalar, i32);
+}
 
-    #[test]
-    fn dot() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let b = Vector4 {
-            x: 6.7,
-            y: 8.7,
-            z: 5.0,
-            w: 3.4
-        };
-        let c = vector4::dot(a, b);
-        assert_abs_diff_eq!(c, 127.19999999999997);
-    }
+#[cfg(test)]
+mod test_i64 {
+    crate::vector4_sint_tests!(scalar, i64);
+}
 
-    #[test]
-    fn magnitude() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let c = vector4::magnitude(a);
-        assert_abs_diff_eq!(c, 13.6106575888162);
-    }
+#[cfg(test)]
+mod test_f32 {
+    crate::vector4_float_tests!(scalar, f32);
+}
 
-    #[test]
-    fn magnitude_sqr() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let c = vector4::magnitude_sqr(a);
-        assert_abs_diff_eq!(c, 185.25);
-    }
-
-    #[test]
-    fn neg() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let c = vector4::negate(a);
-        assert_abs_diff_eq!(c.x, -5.0);
-        assert_abs_diff_eq!(c.y, -12.0);
-        assert_abs_diff_eq!(c.z, 3.5);
-        assert_abs_diff_eq!(c.w, -2.0);
-    }
-
-    #[test]
-    fn normalize() {
-        let a = Vector4 {
-            x: 5.0,
-            y: 12.0,
-            z: -3.5,
-            w: 2.0
-        };
-        let c = vector4::normalize(a);
-        assert_abs_diff_eq!(vector4::magnitude_sqr(c), 1.0);
-        assert_abs_diff_eq!(c.x, 0.3673591791853225);
-        assert_abs_diff_eq!(c.y, 0.8816620300447741);
-        assert_abs_diff_eq!(c.z, -0.25715142542972574);
-        assert_abs_diff_eq!(c.w, 0.146943671674129);
-    }
+#[cfg(test)]
+mod test_f64 {
+    crate::vector4_float_tests!(scalar, f64);
 }

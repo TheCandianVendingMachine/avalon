@@ -299,351 +299,61 @@ pub fn normalize<T>(vec: Vector4<T>) -> Vector4<T> where
     }
 }
 
-#[cfg(test)]
-mod test_i32 {
-    use crate::Vector4;
-    use crate::sse2::vector4;
-
-    #[test]
-    fn addition() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: -3,
-            w: 2
-        };
-        let b = Vector4 {
-            x: 3,
-            y: 9,
-            z: 0,
-            w: 7
-        };
-        let c = vector4::add(a, b);
-        assert_eq!(c.x, 8);
-        assert_eq!(c.y, 21);
-        assert_eq!(c.z, -3);
-        assert_eq!(c.w, 9);
-    }
-
-    #[test]
-    fn sub() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: -3,
-            w: 2
-        };
-        let b = Vector4 {
-            x: 3,
-            y: 9,
-            z: 0,
-            w: 7
-        };
-        let c = vector4::sub(b, a);
-        assert_eq!(c.x, -2);
-        assert_eq!(c.y, -3);
-        assert_eq!(c.z, 3);
-        assert_eq!(c.w, 5);
-    }
-
-    #[test]
-    fn mul() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: 0,
-            w: 2
-        };
-        let b = 3;
-        let c = vector4::mul(a, b);
-        assert_eq!(c.x, 15);
-        assert_eq!(c.y, 36);
-        assert_eq!(c.z, 0);
-        assert_eq!(c.w, 6);
-    }
-
-    #[test]
-    fn div_with_numerator() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: 3,
-            w: -2
-        };
-        let c = vector4::div_with_numerator(10, a);
-        assert_eq!(c.x, 2);
-        assert_eq!(c.y, 0);
-        assert_eq!(c.z, 3);
-        assert_eq!(c.w, -5);
-    }
-
-    #[test]
-    fn div_with_denominator() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: 3,
-            w: -2
-        };
-        let c = vector4::div_with_denominator(a, 10);
-        assert_eq!(c.x, 0);
-        assert_eq!(c.y, 1);
-        assert_eq!(c.z, 0);
-        assert_eq!(c.w, 0);
-    }
-
-    #[test]
-    fn component_mul() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: 3,
-            w: -2
-        };
-        let b = Vector4 {
-            x: 3,
-            y: 9,
-            z: 0,
-            w: 7
-        };
-        let c = vector4::component_mul(a, b);
-        assert_eq!(c.x, 15);
-        assert_eq!(c.y, 108);
-        assert_eq!(c.z, 0);
-        assert_eq!(c.w, -14);
-    }
-
-    #[test]
-    fn dot() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: 3,
-            w: -2
-        };
-        let b = Vector4 {
-            x: 3,
-            y: 9,
-            z: 0,
-            w: 7
-        };
-        let c = vector4::dot(a, b);
-        assert_eq!(c, 109)
-    }
-
-    #[test]
-    fn magnitude_sqr() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: 3,
-            w: -2
-        };
-        let c = vector4::magnitude_sqr(a);
-        assert_eq!(c, 182);
-    }
-
-    #[test]
-    fn neg() {
-        let a = Vector4 {
-            x: 5,
-            y: 12,
-            z: 3,
-            w: -2
-        };
-        let c = vector4::negate(a);
-        assert_eq!(c.x, -5);
-        assert_eq!(c.y, -12);
-        assert_eq!(c.z, -3);
-        assert_eq!(c.w, 2);
+pub fn project<T>(lhs: Vector4<T>, rhs: Vector4<T>) -> Vector4<T> where
+    T: SimdType + Copy + Add<Output = T> + Mul<Output = T> + Div<Output = T> {
+    match T::to_type() {
+        _ => {
+            scalar::project(lhs, rhs)
+        }
     }
 }
 
 #[cfg(test)]
+mod test_u8 {
+    crate::vector4_uint_tests!(sse2, u8);
+}
+
+#[cfg(test)]
+mod test_u16 {
+    crate::vector4_uint_tests!(sse2, u16);
+}
+
+#[cfg(test)]
+mod test_u32 {
+    crate::vector4_uint_tests!(sse2, u32);
+}
+
+#[cfg(test)]
+mod test_u64 {
+    crate::vector4_uint_tests!(sse2, u64);
+}
+
+#[cfg(test)]
+mod test_i8 {
+    crate::vector4_sint_tests!(sse2, i8);
+}
+
+#[cfg(test)]
+mod test_i16 {
+    crate::vector4_sint_tests!(sse2, i16);
+}
+
+#[cfg(test)]
+mod test_i32 {
+    crate::vector4_sint_tests!(sse2, i32);
+}
+
+#[cfg(test)]
+mod test_i64 {
+    crate::vector4_sint_tests!(sse2, i64);
+}
+
+#[cfg(test)]
 mod test_f32 {
-    use approx::assert_abs_diff_eq;
-    use crate::Vector4;
-    use crate::sse2::vector4;
+    crate::vector4_float_tests!(sse2, f32);
+}
 
-    #[test]
-    fn addition() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let b = Vector4 {
-            x: 3.0_f32,
-            y: 9.0_f32,
-            z: 0.8_f32,
-            w: 7.0_f32
-        };
-        let c = vector4::add(a, b);
-        assert_abs_diff_eq!(c.x, 8.0_f32);
-        assert_abs_diff_eq!(c.y, 21.0_f32);
-        assert_abs_diff_eq!(c.z, -2.7_f32);
-        assert_abs_diff_eq!(c.w, 9.0_f32);
-    }
-
-    #[test]
-    fn sub() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let b = Vector4 {
-            x: 3.0_f32,
-            y: 9.0_f32,
-            z: 0.8_f32,
-            w: 7.0_f32
-        };
-        let c = vector4::sub(b, a);
-        assert_abs_diff_eq!(c.x, -2.0_f32);
-        assert_abs_diff_eq!(c.y, -3.0_f32);
-        assert_abs_diff_eq!(c.z, 4.3_f32);
-        assert_abs_diff_eq!(c.w, 5.0_f32);
-    }
-
-    #[test]
-    fn mul() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: 0.8_f32,
-            w: 2.0_f32
-        };
-        let b = 3.0_f32;
-        let c = vector4::mul(a, b);
-        assert_abs_diff_eq!(c.x, 15.0_f32);
-        assert_abs_diff_eq!(c.y, 36.0_f32);
-        assert_abs_diff_eq!(c.z, 2.4000000000000004_f32);
-        assert_abs_diff_eq!(c.w, 6.0_f32);
-    }
-
-    #[test]
-    fn div_with_numerator() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let c = vector4::div_with_numerator(10.0_f32, a);
-        assert_abs_diff_eq!(c.x, 2.0_f32);
-        assert_abs_diff_eq!(c.y, 0.8333333333333334_f32);
-        assert_abs_diff_eq!(c.z, -2.857142857142857_f32);
-        assert_abs_diff_eq!(c.w, 5.0_f32);
-    }
-
-    #[test]
-    fn div_with_denominator() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let c = vector4::div_with_denominator(a, 10.0_f32);
-        assert_abs_diff_eq!(c.x, 0.5_f32);
-        assert_abs_diff_eq!(c.y, 1.2_f32);
-        assert_abs_diff_eq!(c.z, -0.35_f32);
-        assert_abs_diff_eq!(c.w, 0.2_f32);
-    }
-
-    #[test]
-    fn component_mul() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let b = Vector4 {
-            x: 6.7_f32,
-            y: 8.7_f32,
-            z: 5.0_f32,
-            w: 3.4_f32,
-        };
-        let c = vector4::component_mul(a, b);
-        assert_abs_diff_eq!(c.x, 33.5_f32);
-        assert_abs_diff_eq!(c.y, 104.399994_f32);
-        assert_abs_diff_eq!(c.z, -17.5_f32);
-        assert_abs_diff_eq!(c.w, 6.8_f32);
-    }
-
-    #[test]
-    fn dot() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let b = Vector4 {
-            x: 6.7_f32,
-            y: 8.7_f32,
-            z: 5.0_f32,
-            w: 3.4_f32
-        };
-        let c = vector4::dot(a, b);
-        assert_abs_diff_eq!(c, 127.19999999999997_f32);
-    }
-
-    #[test]
-    fn magnitude() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let c = vector4::magnitude(a);
-        assert_abs_diff_eq!(c, 13.6106575888162_f32);
-    }
-
-    #[test]
-    fn magnitude_sqr() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let c = vector4::magnitude_sqr(a);
-        assert_abs_diff_eq!(c, 185.25_f32);
-    }
-
-    #[test]
-    fn neg() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let c = vector4::negate(a);
-        assert_abs_diff_eq!(c.x, -5.0_f32);
-        assert_abs_diff_eq!(c.y, -12.0_f32);
-        assert_abs_diff_eq!(c.z, 3.5_f32);
-        assert_abs_diff_eq!(c.w, -2.0_f32);
-    }
-
-    #[test]
-    fn normalize() {
-        let a = Vector4 {
-            x: 5.0_f32,
-            y: 12.0_f32,
-            z: -3.5_f32,
-            w: 2.0_f32
-        };
-        let c = vector4::normalize(a);
-        assert_abs_diff_eq!(vector4::magnitude_sqr(c), 1.0);
-        assert_abs_diff_eq!(c.x, 0.3673591791853225);
-        assert_abs_diff_eq!(c.y, 0.8816620300447741);
-        assert_abs_diff_eq!(c.z, -0.25715142542972574);
-        assert_abs_diff_eq!(c.w, 0.146943671674129);
-    }
+#[cfg(test)]
+mod test_f64 {
+    crate::vector4_float_tests!(sse2, f64);
 }

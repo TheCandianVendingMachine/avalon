@@ -1,3 +1,5 @@
+mod boilerplate;
+
 pub mod simd;
 pub mod scalar;
 #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
@@ -11,6 +13,36 @@ pub mod vector1;
 pub mod vector2;
 pub mod vector3;
 pub mod vector4;
+
+#[macro_export]
+macro_rules! Vector {
+    ( $x:expr ) => {
+        Vector1 {
+            x: $x,
+        }
+    };
+    ( $x:expr, $y: expr ) => {
+        Vector2 {
+            x: $x,
+            y: $y,
+        }
+    };
+    ( $x:expr, $y: expr, $z: expr ) => {
+        Vector3 {
+            x: $x,
+            y: $y,
+            z: $z,
+        }
+    };
+    ( $x:expr, $y: expr, $z: expr, $w: expr ) => {
+        Vector4 {
+            x: $x,
+            y: $y,
+            z: $z,
+            w: $w
+        }
+    };
+}
 
 #[repr(align(16))]
 #[derive(Debug, Copy, Clone)]
