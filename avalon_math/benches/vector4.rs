@@ -445,6 +445,53 @@ pub fn benchmark_normalize(c: &mut Criterion) {
     );
 }
 
+pub fn benchmark_project(c: &mut Criterion) {
+    let mut rng = rand::rng();
+    let vectors = vector_samples::<f32>(&mut rng);
+
+    let mut group = c.benchmark_group("Vector4 Project");
+    group.bench_function(
+        "Scalar",
+        |b| {
+            b.iter_batched(
+                || {
+                    let i = rng.random_range(0..vectors.len());
+                    let j = rng.random_range(0..vectors.len());
+
+                    let v0 = vectors[i];
+                    let v1 = vectors[j];
+
+                    (v0, v1)
+                },
+                |(v0, v1)| {
+                    black_box(scalar::project(v0, v1));
+                },
+                BatchSize::SmallInput
+            )
+        }
+    );
+    group.bench_function(
+        "SSE2",
+        |b| {
+            b.iter_batched(
+                || {
+                    let i = rng.random_range(0..vectors.len());
+                    let j = rng.random_range(0..vectors.len());
+
+                    let v0 = vectors[i];
+                    let v1 = vectors[j];
+
+                    (v0, v1)
+                },
+                |(v0, v1)| {
+                    black_box(sse2::project(v0, v1));
+                },
+                BatchSize::SmallInput
+            )
+        }
+    );
+}
+
 criterion_group!(
     benches,
         benchmark_addition,
