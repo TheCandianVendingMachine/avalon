@@ -100,182 +100,51 @@ pub fn inverse<T>(matrix: Matrix2<T>) -> Matrix2<T> where
 }
 
 #[cfg(test)]
-mod test {
-    use approx::assert_abs_diff_eq;
-    use crate::{ Matrix2, Vector2 };
-    use crate::scalar::mat2;
+mod test_u8 {
+    crate::matrix2_uint_tests!(scalar, u8);
+}
 
-    #[test]
-    fn identity() {
-        let matrix: Matrix2<f64> = mat2::identity();
-        assert_abs_diff_eq!(matrix.m11, 1.0);
-        assert_abs_diff_eq!(matrix.m12, 0.0);
-        assert_abs_diff_eq!(matrix.m21, 0.0);
-        assert_abs_diff_eq!(matrix.m22, 1.0);
-    }
+#[cfg(test)]
+mod test_u16 {
+    crate::matrix2_uint_tests!(scalar, u16);
+}
 
-    #[test]
-    fn determinate() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let c = mat2::determinate(a);
-        assert_abs_diff_eq!(c, 18.6468);
-    }
+#[cfg(test)]
+mod test_u32 {
+    crate::matrix2_uint_tests!(scalar, u32);
+}
 
-    #[test]
-    fn trace() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let c = mat2::trace(a);
-        assert_abs_diff_eq!(c, 11.144);
-    }
+#[cfg(test)]
+mod test_u64 {
+    crate::matrix2_uint_tests!(scalar, u64);
+}
 
-    #[test]
-    fn add() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let b = Matrix2 {
-            m11: 1.0,
-            m12: 4.0,
-            m21: 0.0,
-            m22: 4.0
-        };
-        let c = mat2::add(a, b);
-        assert_abs_diff_eq!(c.m11, 5.7);
-        assert_abs_diff_eq!(c.m12, 4.6);
-        assert_abs_diff_eq!(c.m21, 19.4);
-        assert_abs_diff_eq!(c.m22, 10.443999999999999);
-    }
+#[cfg(test)]
+mod test_i8 {
+    crate::matrix2_sint_tests!(scalar, i8);
+}
 
-    #[test]
-    fn sub() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let b = Matrix2 {
-            m11: 1.0,
-            m12: 4.0,
-            m21: 0.0,
-            m22: 4.0
-        };
-        let c = mat2::sub(b, a);
-        assert_abs_diff_eq!(c.m11, -3.7);
-        assert_abs_diff_eq!(c.m12, 3.4);
-        assert_abs_diff_eq!(c.m21, -19.4);
-        assert_abs_diff_eq!(c.m22, -2.444);
-    }
+#[cfg(test)]
+mod test_i16 {
+    crate::matrix2_sint_tests!(scalar, i16);
+}
 
-    #[test]
-    fn multiply() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let b = Matrix2 {
-            m11: 1.0,
-            m12: 4.0,
-            m21: 0.0,
-            m22: 4.0
-        };
-        let c = mat2::multiply(a, b);
-        assert_abs_diff_eq!(c.m11, 4.7);
-        assert_abs_diff_eq!(c.m12, 21.2);
-        assert_abs_diff_eq!(c.m21, 19.4);
-        assert_abs_diff_eq!(c.m22, 103.37599999999999);
-    }
+#[cfg(test)]
+mod test_i32 {
+    crate::matrix2_sint_tests!(scalar, i32);
+}
 
-    #[test]
-    fn multiply_scalar() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let b = 3.125;
-        let c = mat2::multiply_scalar(a, b);
-        assert_abs_diff_eq!(c.m11, 14.6875);
-        assert_abs_diff_eq!(c.m12, 1.875);
-        assert_abs_diff_eq!(c.m21, 60.62499999999999);
-        assert_abs_diff_eq!(c.m22, 20.1375);
-    }
+#[cfg(test)]
+mod test_i64 {
+    crate::matrix2_sint_tests!(scalar, i64);
+}
 
-    #[test]
-    fn multiply_vector() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let b = Vector2 {
-            x: 4.0,
-            y: 77.7
-        };
-        let c = mat2::multiply_vec(a, b);
-        assert_abs_diff_eq!(c.x, 65.42);
-        assert_abs_diff_eq!(c.y, 578.2988);
-    }
+#[cfg(test)]
+mod test_f32 {
+    crate::matrix2_float_tests!(scalar, f32);
+}
 
-    #[test]
-    fn pow() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let c = mat2::pow(a, 7);
-        assert_abs_diff_eq!(c.m11, 1934257.574745446);
-        assert_abs_diff_eq!(c.m12, 438006.80663268637091);
-        assert_abs_diff_eq!(c.m21, 14162220.081123523);
-        assert_abs_diff_eq!(c.m22, 3207397.359357787976);
-    }
-
-    #[test]
-    fn transpose() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let c = mat2::transpose(a);
-        assert_abs_diff_eq!(c.m11, 4.7);
-        assert_abs_diff_eq!(c.m12, 19.4);
-        assert_abs_diff_eq!(c.m21, 0.6);
-        assert_abs_diff_eq!(c.m22, 6.444);
-    }
-
-    #[test]
-    fn inverse() {
-        let a = Matrix2 {
-            m11: 4.7,
-            m12: 0.6,
-            m21: 19.4,
-            m22: 6.444,
-        };
-        let c = mat2::inverse(a);
-        assert_abs_diff_eq!(c.m11, 0.34558208378917562259);
-        assert_abs_diff_eq!(c.m12, -0.032177102773666259087);
-        assert_abs_diff_eq!(c.m21, -1.0403929896818757104);
-        assert_abs_diff_eq!(c.m22, 0.25205397172705236286);
-    }
+#[cfg(test)]
+mod test_f64 {
+    crate::matrix2_float_tests!(scalar, f64);
 }
