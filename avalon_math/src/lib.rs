@@ -46,13 +46,13 @@ macro_rules! Matrix {
     ) => {
         Matrix2 {
             m11: $c1r1, m12: $c2r1,
-            m21: $c1r2, m22: $c2r2,
+            m21: $c1r2, m22: $c2r2
         }
     };
     (
         $c1r1:expr, $c2r1:expr, $c3r1:expr,
         $c1r2:expr, $c2r2:expr, $c3r2:expr,
-        $c1r3:expr, $c2r3:expr, $c3r3:expr,
+        $c1r3:expr, $c2r3:expr, $c3r3:expr
     ) => {
         Matrix3 {
             m11: $c1r1, m12: $c2r1, m13: $c3r1,
@@ -64,7 +64,7 @@ macro_rules! Matrix {
         $c1r1:expr, $c2r1:expr, $c3r1:expr, $c4r1:expr,
         $c1r2:expr, $c2r2:expr, $c3r2:expr, $c4r2:expr,
         $c1r3:expr, $c2r3:expr, $c3r3:expr, $c4r3:expr,
-        $c1r4:expr, $c2r4:expr, $c3r4:expr, $c4r4:expr,
+        $c1r4:expr, $c2r4:expr, $c3r4:expr, $c4r4:expr
     ) => {
         Matrix4 {
             m11: $c1r1, m12: $c2r1, m13: $c3r1, m14: $c4r1,
