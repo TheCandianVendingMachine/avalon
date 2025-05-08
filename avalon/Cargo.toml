@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 aligned-vec = "0.6.1"
 avalon_asset = { path = "../avalon_asset", features = ["read"] }
+bit-set = "0.8.0"
 bitfield = "0.17.0"
 bitflags = "2.6.0"
 bytemuck = "1.21.0"
