@@ -23,6 +23,7 @@ impl Clone for Cell {
 }
 
 impl Cell {
+    #[allow(clippy::unusual_byte_groupings)]
     const EMPTY: Cell = Cell(
         0b000_0000_0000_0000_0000000000_0_1_00000
     );

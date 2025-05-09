@@ -39,7 +39,7 @@ impl PassLighting {
         grid: &voxel::Grid<SIDE_LENGTH, VOXELS_PER_METER>,
         normals: &GpuTexture2d,
         positions: &GpuTexture2d,
-        lights: &Vec<Light>
+        lights: &[Light]
     ) where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
         let _lighting_annotation = GpuAnnotation::push("Deferred Lighting");

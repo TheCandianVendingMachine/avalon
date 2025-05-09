@@ -184,7 +184,7 @@ pub mod write {
                     options
                 )?;
                 let meta_json = json::to_string(&asset);
-                archive.write(meta_json.as_bytes())?;
+                archive.write_all(meta_json.as_bytes())?;
 
                 archive.start_file_from_path(
                     directory.join(".stored"),

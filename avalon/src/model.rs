@@ -48,6 +48,7 @@ impl From<&PackedModel> for Model {
                 indices.push(vertex.index);
             }
         }
+        #[allow(clippy::erasing_op)]
         unsafe {
             let vao_bind = gpu.vertex_array_object.bind();
             gl::BindBuffer(gl::ARRAY_BUFFER, gpu.position_vbo);

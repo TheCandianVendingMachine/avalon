@@ -298,6 +298,7 @@ impl Triangle {
     }
 
     pub fn from_buffer(buffer: &[u8; Vertex::BYTE_N * 3]) -> Triangle {
+        #[allow(clippy::erasing_op)]
         Triangle {
             vertices: [
                 Vertex::unpack(&buffer[(0 * Vertex::BYTE_N)..(1 * Vertex::BYTE_N)].as_array().unwrap()),

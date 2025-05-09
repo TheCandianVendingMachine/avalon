@@ -43,22 +43,22 @@ pub mod component {
         tag: u32,
     }
 
-    pub struct Group<const BlockSize: usize = 64> {
+    pub struct Group<const BLOCK_SIZE: usize = 64> {
         entity: Entity,
         item_map: HashMap<u32, (usize, usize)>,
-        blocks: AVec<[u8; BlockSize], ConstAlign<128>>,
+        blocks: AVec<[u8; BLOCK_SIZE], ConstAlign<128>>,
         available_block: usize,
         available_idx: usize,
         last_block: usize
     }
 
-    impl<const BlockSize: usize> Group<BlockSize> {
-        const DEFAULT_BLOCK: [u8; BlockSize] = [0xFC; BlockSize];
+    impl<const BLOCK_SIZE: usize> Group<BLOCK_SIZE> {
+        const DEFAULT_BLOCK: [u8; BLOCK_SIZE] = [0xFC; BLOCK_SIZE];
         pub fn new(entity: Entity) -> Group {
             Group {
                 entity,
                 item_map: HashMap::new(),
-                blocks: AVec::with_capacity(128, BlockSize),
+                blocks: AVec::with_capacity(128, BLOCK_SIZE),
                 available_idx: 0,
                 available_block: 0,
                 last_block: 0
@@ -99,7 +99,7 @@ pub mod component {
             let component_stride: usize = std::mem::size_of::<T>();
 
             let alloc_size = metadata_stride + component_stride;
-            let block_count = alloc_size.div_ceil(BlockSize);
+            let block_count = alloc_size.div_ceil(BLOCK_SIZE);
 
             // since we are aligned on the 128 line, all elements can be allocated at the
             // start of a block. this means that we can be greedy with allocating blocks,
@@ -138,7 +138,7 @@ pub mod component {
             // We know from axiom (1) that there is enough space to treat this area of
             // memory as contigious, and with enough size to store the metadata. So we can
             // naively copy bits to the element at the index
-            std::debug_assert!(metadata_stride.div_ceil(BlockSize) + self.available_block < self.blocks.len());
+            std::debug_assert!(metadata_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
             std::debug_assert_eq!(self.available_idx % metadata_alignment, 0);
             {
                 let mut ptr = &mut self.blocks[self.available_block][self.available_idx] as *mut u8;
@@ -149,12 +149,12 @@ pub mod component {
             };
 
             // 2) push component
-            std::debug_assert!(component_stride.div_ceil(BlockSize) + self.available_block < self.blocks.len());
+            std::debug_assert!(component_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
 
             self.available_idx += metadata_stride + alignment_error;
-            if self.available_idx >= BlockSize {
+            if self.available_idx >= BLOCK_SIZE {
                 self.available_block += 1;
-                self.available_idx -= BlockSize;
+                self.available_idx -= BLOCK_SIZE;
             }
             std::debug_assert_eq!(self.available_idx % component_alignment, 0);
 
@@ -171,9 +171,9 @@ pub mod component {
 
             self.item_map.insert(T::tag().uid(), (self.available_block, self.available_idx));
             self.available_idx += component_stride;
-            if self.available_idx >= BlockSize {
+            if self.available_idx >= BLOCK_SIZE {
                 self.available_block += 1;
-                self.available_idx -= BlockSize;
+                self.available_idx -= BLOCK_SIZE;
             }
 
             if self.available_idx % metadata_alignment != 0 {

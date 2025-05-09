@@ -30,7 +30,7 @@ impl DebugPassLights {
         &mut self,
         icon_bundle: avalon::asset_library::BundleView,
         camera: &Camera,
-        lights: &Vec<Light>
+        lights: &[Light]
     ) {
         let _annotation = GpuAnnotation::push("Light Icons");
         viewport::Viewport::screen_viewport()

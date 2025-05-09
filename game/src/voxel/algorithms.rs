@@ -7,7 +7,8 @@ use nalgebra_glm::vec3;
 impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VOXELS_PER_METER> where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
     pub fn bake(&mut self) {
-        if let None = self.gpu_grid {
+        #[allow(clippy::erasing_op)]
+        if self.gpu_grid.is_none() {
             self.gpu_grid = Some(Texture3d::generate(Arguments3d {
                 dimensions: vec3(SIDE_LENGTH, SIDE_LENGTH, SIDE_LENGTH).cast(),
                 internal_components: Component::IntR,
@@ -101,6 +102,6 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
         for (idx, cell) in self.cells.iter().enumerate() {
             cell_data.set(idx, cell.0);
         }
-        let grid_bind = self.gpu_grid.as_mut().unwrap().bind().write_pixels(0, cell_data);
+        self.gpu_grid.as_mut().unwrap().bind().write_pixels(0, cell_data);
     }
 }

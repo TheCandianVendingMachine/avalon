@@ -30,27 +30,15 @@ pub enum Light {
 
 impl Light {
     pub fn is_directional(&self) -> bool {
-        if let Light::Directional {..} = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Light::Directional {..})
     }
 
     pub fn is_point(&self) -> bool {
-        if let Light::Point {..} = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Light::Point {..})
     }
 
     pub fn is_spotlight(&self) -> bool {
-        if let Light::Spotlight {..} = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Light::Spotlight {..})
     }
 }
 
@@ -80,9 +68,9 @@ impl Camera {
         let dimensions: Vec2 = dimensions.cast();
         let aspect = dimensions.y / dimensions.x;
         let near = 0.01;
-        let far = std::f32::INFINITY;
+        let far = f32::INFINITY;
 
-        let projection = if far == std::f32::INFINITY {
+        let projection = if far == f32::INFINITY {
             Mat4::new(
                 focal,  0.0,            0.0,                        0.0,
                 0.0,   -focal / aspect, 0.0,                        0.0,
@@ -276,7 +264,7 @@ impl RenderPass {
         let lighted_scene = self.pass_lighting_combine.viewport.colour_attachment(0).unwrap().colour;
         self.pass_ao.execute(
             &lighted_scene,
-            &grid,
+            grid,
             &positions,
             &normals,
             &tangents,

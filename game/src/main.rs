@@ -6,7 +6,6 @@ use nalgebra_glm::{ Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 pub mod voxel;
 pub mod render;
 
-use avalon;
 use avalon::input;
 use avalon::debug::GpuAnnotation;
 use avalon::gpu_buffer;
