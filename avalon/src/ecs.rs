@@ -18,7 +18,6 @@ pub mod component {
     use std::collections::{ HashMap, BinaryHeap };
     use bit_set::BitSet;
     use aligned_vec::{ AVec, ConstAlign };
-    use image::imageops::FilterType::Triangle;
     use crate::ecs::Entity;
 
     pub trait Tag {
