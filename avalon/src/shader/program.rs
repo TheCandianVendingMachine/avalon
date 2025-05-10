@@ -26,6 +26,7 @@ pub struct AttachedProgram<'program> {
 }
 
 impl Program {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> ProgramBuilder {
         ProgramBuilder {
             shaders: Vec::new(),
@@ -128,9 +129,9 @@ impl Drop for Program {
 }
 
 impl AttachedProgram<'_> {
-    fn location_from_uniform(&self, uniform: &String) -> gl::types::GLint {
+    fn location_from_uniform(&self, uniform: &str) -> gl::types::GLint {
         unsafe {
-            let uniform_cstr = std::ffi::CString::new(uniform.clone()).expect("Uniform variable must not contain \\0 bytes");
+            let uniform_cstr = std::ffi::CString::new(uniform.to_owned()).expect("Uniform variable must not contain \\0 bytes");
             gl::GetUniformLocation(self.program.program, uniform_cstr.as_ptr())
         }
     }

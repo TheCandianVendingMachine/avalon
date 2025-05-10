@@ -1,17 +1,16 @@
 mod event;
 use crate::event::Channel;
 use crate::render_engine::RenderEngine;
-use sdl2;
 
 use std::time::{ Instant, Duration };
 use ringbuffer::{ RingBuffer, AllocRingBuffer };
 
 pub struct Window {
-    video: sdl2::VideoSubsystem,
+    _video: sdl2::VideoSubsystem,
     window: sdl2::video::Window,
-    gl_context: sdl2::video::GLContext,
+    _gl_context: sdl2::video::GLContext,
     event: event::Event,
-    event_subsystem: sdl2::EventSubsystem,
+    _event_subsystem: sdl2::EventSubsystem,
 }
 
 impl Window {
@@ -27,15 +26,15 @@ impl Window {
             .build()
             .unwrap();
         let gl_context = window.gl_create_context().unwrap();
-        let _gl = gl::load_with(|s| video.gl_get_proc_address(s) as *const std::ffi::c_void);
+        gl::load_with(|s| video.gl_get_proc_address(s) as *const std::ffi::c_void);
 
-        let event = event::Event::new(&sdl);
+        let event = event::Event::new(sdl);
         Window {
-            video,
+            _video: video,
             window,
-            gl_context,
+            _gl_context: gl_context,
             event,
-            event_subsystem: sdl.event().unwrap()
+            _event_subsystem: sdl.event().unwrap()
         }
     }
 
@@ -144,6 +143,7 @@ impl Engine {
         self.quantatives.end_frame();
     }
 
+    #[allow(clippy::single_match)]
     pub fn is_open(&mut self) -> bool {
         while let Some(event) = self.window_listener.pop() {
             match event.id {

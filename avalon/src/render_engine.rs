@@ -1,5 +1,3 @@
-use gl;
-
 use crate::shader;
 use crate::viewport;
 

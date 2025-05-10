@@ -165,6 +165,7 @@ impl MapBuilder {
 }
 
 impl Map {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> MapBuilder {
         MapBuilder {
             mappings: Vec::new()

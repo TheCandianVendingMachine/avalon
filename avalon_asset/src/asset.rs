@@ -135,7 +135,7 @@ impl<'reference, 'asset: 'reference> From<&'asset Asset> for AssetReference<'ref
     fn from(asset: &'asset Asset) -> AssetReference<'reference> {
         asset.increment_reference();
         AssetReference {
-            asset: &asset
+            asset
         }
     }
 }

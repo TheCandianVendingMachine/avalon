@@ -43,7 +43,7 @@ impl<'r, 'v: 'r> BundleView<'v> {
             _asset: asset_reference.refer(),
             resource: {
                 let ref_asset = asset.as_ref();
-                let asset_ptr = &*ref_asset as *const dyn Asset;
+                let asset_ptr = ref_asset as *const dyn Asset;
                 let asset_cvoid = asset_ptr as *const std::ffi::c_void;
                 /* Proof this fuckery is safe:
                  *  We assume the programmer is competent, and that the asset_tag refers
@@ -68,7 +68,7 @@ pub struct Library {
 impl Library {
     pub fn bundle(&self, tag: impl Into<String>) -> Option<BundleView> {
         Some(BundleView {
-            library: &self,
+            library: self,
             bundle: self.bundle_library.get(&bundle::Bundle {
                 name: tag.into(),
                 group: Vec::new()
@@ -81,7 +81,7 @@ impl Library {
         let bundles = glob::glob(scan_directory.join("*.bundle").to_str().unwrap())
             .unwrap()
             .filter_map(|f| f.ok())
-            .map(|path| packed::Packed::read_from_file(path));
+            .map(packed::Packed::read_from_file);
 
         let mut library = Library {
             asset_library: HashMap::new(),
@@ -103,8 +103,8 @@ impl Library {
                         let model = library.load_model(model, data);
                         library.asset_library.insert(asset::Asset::from(asset.clone()), Box::new(model));
                     },
-                    asset::Unit::Text(text) => todo!(),
-                    asset::Unit::Shader(shader) => todo!(),
+                    asset::Unit::Text(_text) => todo!(),
+                    asset::Unit::Shader(_shader) => todo!(),
                     asset::Unit::Texture(texture) => {
                         let texture = library.load_texture(asset, texture, data);
                         library.asset_library.insert(asset::Asset::from(asset.clone()), Box::new(texture));

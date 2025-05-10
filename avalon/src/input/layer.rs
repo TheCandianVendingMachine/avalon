@@ -54,7 +54,7 @@ impl Layer {
         let mut only_critical = false;
         for context in self.context_stack.iter_mut()
             .rev()
-            .take_while_inclusive(|context| if let context::Block::All = context.block { false } else { true }) {
+            .take_while_inclusive(|context| !matches!(context.block, context::Block::All)) {
             if only_critical {
                 if let context::Priority::Low = context.priority {
                     continue;

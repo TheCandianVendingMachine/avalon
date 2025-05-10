@@ -39,7 +39,7 @@ pub mod write {
     impl Serialize for Metadata {
         fn begin(&self) -> ser::Fragment {
             ser::Fragment::Map(Box::new(MetadataStream {
-                metadata: &self,
+                metadata: self,
                 uuid_string: None,
                 state: 0
             }))
@@ -77,7 +77,7 @@ pub mod read {
             if let Some(text) = self.text {
                 return Some(Unit::Text(text));
             }
-            return None;
+            None
         }
     }
 
@@ -120,7 +120,7 @@ pub mod read {
         fn finish(&mut self) -> Result<()> {
             let tag = self.tag.take().ok_or(miniserde::Error)?;
             let uuid = self.uuid_string.take().ok_or(miniserde::Error)?;
-            let unit = self.unit.as_unit().take().ok_or(miniserde::Error)?;
+            let unit = self.unit.as_unit().ok_or(miniserde::Error)?;
 
             *self.out = Some(Metadata {
                 tag,

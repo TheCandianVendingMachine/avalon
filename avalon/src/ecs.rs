@@ -1,9 +1,8 @@
 use bitfield;
-use std::collections::HashMap;
 
 bitfield::bitfield!{
     #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-    struct Handle(u64);
+    pub struct Handle(u64);
     impl Debug;
     idx, set_idx: 16, 0;
     pool_id, set_pool_id: 64, 11;
@@ -66,7 +65,7 @@ pub mod component {
         }
 
         pub fn get<T: Component>(&self) -> &T {
-            std::debug_assert_eq!(self.item_map.contains_key(&T::tag().uid()), true);
+            debug_assert!(self.item_map.contains_key(&T::tag().uid()));
             let (block, idx) = self.item_map.get(&T::tag().uid()).unwrap();
             let ptr = &self.blocks[*block][*idx] as *const u8;
             unsafe {
@@ -76,7 +75,7 @@ pub mod component {
         }
 
         pub fn get_mut<T: Component>(&mut self) -> &mut T {
-            std::debug_assert_eq!(self.item_map.contains_key(&T::tag().uid()), true);
+            debug_assert!(self.item_map.contains_key(&T::tag().uid()));
             let (block, idx) = self.item_map.get(&T::tag().uid()).unwrap();
             let ptr = &mut self.blocks[*block][*idx] as *mut u8;
             unsafe {
@@ -87,13 +86,13 @@ pub mod component {
 
         pub fn assign<T: Component>(&mut self, component: T) {
             // only one of each component can be in a block
-            std::debug_assert_eq!(self.item_map.contains_key(&T::tag().uid()), false);
+            debug_assert!(!self.item_map.contains_key(&T::tag().uid()));
 
             let component_alignment: usize = std::mem::align_of::<T>();
             let metadata_alignment: usize = std::mem::align_of::<Metadata>();
 
-            std::debug_assert_eq!(128 % component_alignment, 0);
-            std::debug_assert_eq!(128 % metadata_alignment, 0);
+            debug_assert_eq!(128 % component_alignment, 0);
+            debug_assert_eq!(128 % metadata_alignment, 0);
 
             let metadata_stride: usize = std::mem::size_of::<Metadata>();
             let component_stride: usize = std::mem::size_of::<T>();
@@ -123,7 +122,7 @@ pub mod component {
             // axiom: the available index of the available block is _always_ aligned with
             // the metadata, and has space to store it
 
-            let mut alignment_error = ((self.available_idx + metadata_stride) % component_alignment);
+            let mut alignment_error = (self.available_idx + metadata_stride) % component_alignment;
             if alignment_error != 0 {
                 alignment_error = component_alignment - alignment_error;
             }
@@ -138,32 +137,32 @@ pub mod component {
             // We know from axiom (1) that there is enough space to treat this area of
             // memory as contigious, and with enough size to store the metadata. So we can
             // naively copy bits to the element at the index
-            std::debug_assert!(metadata_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
-            std::debug_assert_eq!(self.available_idx % metadata_alignment, 0);
+            debug_assert!(metadata_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
+            debug_assert_eq!(self.available_idx % metadata_alignment, 0);
             {
-                let mut ptr = &mut self.blocks[self.available_block][self.available_idx] as *mut u8;
-                let mut type_ptr = ptr as *mut Metadata;
+                let ptr = &mut self.blocks[self.available_block][self.available_idx] as *mut u8;
+                let type_ptr = ptr as *mut Metadata;
                 unsafe {
                     *type_ptr = metadata;
                 };
             };
 
             // 2) push component
-            std::debug_assert!(component_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
+            debug_assert!(component_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
 
             self.available_idx += metadata_stride + alignment_error;
             if self.available_idx >= BLOCK_SIZE {
                 self.available_block += 1;
                 self.available_idx -= BLOCK_SIZE;
             }
-            std::debug_assert_eq!(self.available_idx % component_alignment, 0);
+            debug_assert_eq!(self.available_idx % component_alignment, 0);
 
             // Proof of Safety:
             // We have incremented the index to a valid alignment, and have proved through
             // assertion that the current index can support the alignment of the type
             {
-                let mut ptr = &mut self.blocks[self.available_block][self.available_idx] as *mut u8;
-                let mut type_ptr = ptr as *mut T;
+                let ptr = &mut self.blocks[self.available_block][self.available_idx] as *mut u8;
+                let type_ptr = ptr as *mut T;
                 unsafe {
                     *type_ptr = component;
                 };
@@ -196,7 +195,7 @@ pub mod component {
 
     impl PartialOrd for EntityPair {
         fn partial_cmp(&self, other: &EntityPair) -> Option<std::cmp::Ordering> {
-            self.entity.partial_cmp(&other.entity)
+            Some(self.cmp(other))
         }
     }
 
@@ -230,7 +229,7 @@ pub mod component {
     }
 }
 
-trait Poolable: Sized + Copy {
+pub trait Poolable: Sized + Copy {
     fn with_handle(handle: Handle) -> Self;
     fn handle(&self) -> Handle;
 }
@@ -281,9 +280,7 @@ impl<T: Poolable> GrowablePool<T> {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.pools.iter()
-            .map(|p| p.iter())
-            .flatten()
+        self.pools.iter().flat_map(|p| p.iter())
     }
 
     pub fn allocate(&mut self) -> T {

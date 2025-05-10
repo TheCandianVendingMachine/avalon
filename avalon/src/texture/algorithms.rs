@@ -76,8 +76,7 @@ impl Rescaler {
         }
 
         let mut downsampled = temp_downsampled[((halve_count + 1) % 2) as usize].take();
-        let owned = downsampled.take().unwrap();
-        owned
+        downsampled.take().unwrap()
     }
 
     pub fn upscale_doubling(&self, original: &GpuTexture2d, double_count: u32) -> ManagedTexture<GpuTexture2d> {
@@ -133,8 +132,7 @@ impl Rescaler {
         }
 
         let mut upscaled = temp_upscaled[((double_count + 1) % 2) as usize].take();
-        let owned = upscaled.take().unwrap();
-        owned
+        upscaled.take().unwrap()
     }
 
     pub fn downsample(&self, original: &GpuTexture2d, desired_size: IVec2) -> ManagedTexture<GpuTexture2d> {

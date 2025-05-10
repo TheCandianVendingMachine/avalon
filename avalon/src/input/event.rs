@@ -58,10 +58,10 @@ impl From<Controller> for Event {
 impl PartialEq for Controller {
     fn eq(&self, rhs: &Controller) -> bool {
         match self {
-            Controller::LeftStick(_) => if let Controller::LeftStick(_) = rhs { true } else { false },
-            Controller::RightStick(_) => if let Controller::RightStick(_) = rhs { true } else { false },
-            Controller::LeftTrigger(_) => if let Controller::LeftTrigger(_) = rhs { true } else { false },
-            Controller::RightTrigger(_) => if let Controller::RightTrigger(_) = rhs { true } else { false },
+            Controller::LeftStick(_) => matches!(rhs, Controller::LeftStick(_)),
+            Controller::RightStick(_) => matches!(rhs, Controller::RightStick(_)),
+            Controller::LeftTrigger(_) => matches!(rhs, Controller::LeftTrigger(_)),
+            Controller::RightTrigger(_) => matches!(rhs, Controller::RightTrigger(_)),
             Controller::Button { state, button } => {
                 let lhs_state = state;
                 let lhs_button = button;
@@ -95,8 +95,8 @@ impl std::hash::Hash for Controller {
 impl PartialEq for Mouse {
     fn eq(&self, rhs: &Mouse) -> bool {
         match self {
-            Mouse::Scroll { .. }  => if let Mouse::Scroll { .. } = rhs { true } else { false },
-            Mouse::Move { .. } => if let Mouse::Move { .. } = rhs { true } else { false },
+            Mouse::Scroll { .. }  => matches!(rhs, Mouse::Scroll{..}),
+            Mouse::Move { .. } => matches!(rhs, Mouse::Move{..}),
             Mouse::Button { state, button } => {
                 let lhs_state = state;
                 let lhs_button = button;

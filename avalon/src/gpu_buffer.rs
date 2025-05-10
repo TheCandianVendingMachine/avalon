@@ -20,7 +20,7 @@ impl State {
     pub fn degenerate() -> &'static State {
         static mut DEGENERATE_STATE: Option<State> = None;
         unsafe {
-            if let None = DEGENERATE_STATE {
+            if DEGENERATE_STATE.is_none() {
                 DEGENERATE_STATE = Some(State::new());
                 DEGENERATE_STATE.as_mut().unwrap().count = Kind::Counted {
                     vertex_count: 6
@@ -56,7 +56,7 @@ impl State {
             gl::BindVertexArray(self.vao);
         }
         MutStateBind {
-            buffer_state: self
+            _buffer_state: self
         }
     }
 }
@@ -68,7 +68,7 @@ pub struct StateBind<'b> {
 
 #[derive(Debug)]
 pub struct MutStateBind<'b> {
-    buffer_state: &'b mut State
+    _buffer_state: &'b mut State
 }
 
 impl StateBind<'_> {

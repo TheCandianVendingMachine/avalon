@@ -9,6 +9,7 @@ pub struct Texture3d {
 }
 
 impl Texture3d {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(dimensions: IVec3) -> Texture3dBuilder {
         Texture3dBuilder::new(dimensions)
     }
@@ -19,10 +20,8 @@ impl Texture3d {
 
     pub fn cpu_to_gpu(&mut self) {
         if let Some(gpu) = &mut self.gpu {
-            if let None = self.cpu {
+            if self.cpu.is_none() {
                 gpu.bind().clear(0);
-            } else {
-
             }
         } else {
             let arguments = gpu::texture_3d::Arguments {
@@ -38,9 +37,6 @@ impl Texture3d {
 
     pub fn gpu_to_cpu(&mut self) {
         todo!();
-        if let Some(cpu) = &mut self.cpu {
-
-        }
     }
 
     pub fn gpu(&self) -> Option<&GpuTexture3d> {

@@ -9,7 +9,10 @@ pub struct Vertex {
 }
 
 impl Vertex {
+    #[allow(clippy::identity_op)]
     pub const BYTE_N: usize = (1 * 4) + (3 * 4) + (3 * 4) + (2 * 4);
+    #[allow(clippy::erasing_op)]
+    #[allow(clippy::identity_op)]
     pub fn unpack(bytes: &[u8; Vertex::BYTE_N]) -> Vertex {
         let mut offset = 0;
         let index = u32::from_be_bytes([
@@ -109,7 +112,7 @@ impl Quad {
             ]
         }
     }
-    pub fn to_triangles(self, positions: &Vec<[f32; 3]>) -> Result<(Triangle, Triangle), error::NgonError> {
+    pub fn to_triangles(self, positions: &[[f32; 3]]) -> Result<(Triangle, Triangle), error::NgonError> {
         // Triangulate quad by splitting on shortest possible non-existing edge
         let edges = self.edges.map(|(v0, v1)| (v0.min(v1), v1.max(v0)));
         let mut non_connected_edges = vec![
@@ -141,7 +144,7 @@ impl Quad {
         }
 
         // Find smallest edge
-        let mut smallest_distance = std::f32::INFINITY;
+        let mut smallest_distance = f32::INFINITY;
         let mut smallest_edge = None;
         for edge in non_connected_edges {
             let v0 = self.vertices[edge.0];
@@ -219,7 +222,7 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    pub fn new(positions: &Vec<[f32; 3]>, vertices: [(u32, [f32; 3], [f32; 2]); 3]) -> Triangle {
+    pub fn new(positions: &[[f32; 3]], vertices: [(u32, [f32; 3], [f32; 2]); 3]) -> Triangle {
         let p1 = Point3::from(positions[vertices[0].0 as usize]);
         let p2 = Point3::from(positions[vertices[1].0 as usize]);
         let p3 = Point3::from(positions[vertices[2].0 as usize]);
@@ -297,13 +300,14 @@ impl Triangle {
         buffer
     }
 
+    #[allow(clippy::erasing_op)]
+    #[allow(clippy::identity_op)]
     pub fn from_buffer(buffer: &[u8; Vertex::BYTE_N * 3]) -> Triangle {
-        #[allow(clippy::erasing_op)]
         Triangle {
             vertices: [
-                Vertex::unpack(&buffer[(0 * Vertex::BYTE_N)..(1 * Vertex::BYTE_N)].as_array().unwrap()),
-                Vertex::unpack(&buffer[(1 * Vertex::BYTE_N)..(2 * Vertex::BYTE_N)].as_array().unwrap()),
-                Vertex::unpack(&buffer[(2 * Vertex::BYTE_N)..(3 * Vertex::BYTE_N)].as_array().unwrap()),
+                Vertex::unpack(buffer[(0 * Vertex::BYTE_N)..(1 * Vertex::BYTE_N)].as_array().unwrap()),
+                Vertex::unpack(buffer[(1 * Vertex::BYTE_N)..(2 * Vertex::BYTE_N)].as_array().unwrap()),
+                Vertex::unpack(buffer[(2 * Vertex::BYTE_N)..(3 * Vertex::BYTE_N)].as_array().unwrap()),
             ],
         }
     }

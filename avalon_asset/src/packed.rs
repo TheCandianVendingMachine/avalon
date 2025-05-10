@@ -191,7 +191,7 @@ pub mod write {
                     zip::write::SimpleFileOptions::default()
                 )?;
 
-                let mut packer = Packer::new(
+                let packer = Packer::new(
                     std::fs::OpenOptions::new()
                         .read(true)
                         .open(asset.filepath.as_ref().expect("Need to have filepath to bundle"))?
@@ -227,7 +227,7 @@ pub mod read {
             let path = path.as_ref();
             let packed_file = std::fs::File::options()
                 .read(true)
-                .open(path.to_path_buf())?;
+                .open(path)?;
 
             let mut data_map: HashMap<asset::Metadata, Vec<u8>> = HashMap::new();
             let mut bundle = Bundle {
@@ -252,7 +252,7 @@ pub mod read {
                             file.read_to_string(&mut buffer)?;
                             let metadata: asset::Metadata = json::from_str(buffer.as_str())?;
                             data_map.insert(metadata.clone(), Vec::new());
-                            bundle.group.push(metadata.into());
+                            bundle.group.push(metadata);
                         },
                         ".stored" => {
                             if let Some((_, stored)) = data_map.iter_mut().find(|(metadata, _)| metadata.uuid.to_string() == directory) {

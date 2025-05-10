@@ -8,6 +8,7 @@ use std::marker::PhantomData;
 pub trait UniqueTexture where Self: Sized {
     fn handle(&self) -> u32;
     fn levels(&self) -> u32;
+    #[allow(clippy::wrong_self_convention)]
     fn as_managed(self) -> ManagedTexture<Self> where Self: Sized {
         Into::<ManagedTexture<Self>>::into(self)
     }
@@ -270,7 +271,7 @@ impl SizedComponent {
                     SizedComponent::UnsignedIntR16 => (),
                     SizedComponent::IntR32 => (),
                     SizedComponent::UnsignedIntR32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                    _ => panic!("Mismatched components and desired size: components[{components:?}] vs size[{self:?}]"),
                 }
             },
             Component::IntRG | Component::RG => {
@@ -287,7 +288,7 @@ impl SizedComponent {
                     SizedComponent::UnsignedIntRG16 => (),
                     SizedComponent::IntRG32 => (),
                     SizedComponent::UnsignedIntRG32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                    _ => panic!("Mismatched components and desired size: components[{components:?}] vs size[{self:?}]"),
                 }
             },
             Component::IntRGB | Component::RGB => {
@@ -312,7 +313,7 @@ impl SizedComponent {
                     SizedComponent::UnsignedIntRGB16 => (),
                     SizedComponent::IntRGB32 => (),
                     SizedComponent::UnsignedIntRGB32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                    _ => panic!("Mismatched components and desired size: components[{components:?}] vs size[{self:?}]"),
                 }
             },
             Component::IntRGBA | Component::RGBA => {
@@ -331,7 +332,7 @@ impl SizedComponent {
                     SizedComponent::UnsignedIntRGBA16 => (),
                     SizedComponent::IntRGBA32 => (),
                     SizedComponent::UnsignedIntRGBA32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                    _ => panic!("Mismatched components and desired size: components[{components:?}] vs size[{self:?}]"),
                 }
             },
             Component::Depth => {
@@ -340,13 +341,13 @@ impl SizedComponent {
                     SizedComponent::Depth16 => (),
                     SizedComponent::Depth24 => (),
                     SizedComponent::FloatDepth32 => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                    _ => panic!("Mismatched components and desired size: components[{components:?}] vs size[{self:?}]"),
                 }
             },
             Component::DepthStencil => {
                 match self {
                     SizedComponent::DepthStencil => (),
-                    _ => panic!("Mismatched components and desired size: components[{:?}] vs size[{:?}]", components, self),
+                    _ => panic!("Mismatched components and desired size: components[{components:?}] vs size[{self:?}]"),
                 }
             },
         };

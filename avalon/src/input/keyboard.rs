@@ -18,8 +18,8 @@ impl Keyboard {
     }
 
     pub fn held(&self) -> Vec<event::Keyboard> {
-        self.pressed_keys.iter()
-            .map(|(key, _)| event::Keyboard::Button {
+        self.pressed_keys.keys()
+            .map(|key| event::Keyboard::Button {
                 state: event::Binary::Hold,
                 key: *key
             })

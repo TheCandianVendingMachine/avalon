@@ -270,6 +270,7 @@ impl Data {
         (Data::from_image(image), IVec2::new(dimension.0 as i32, dimension.1 as i32))
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.data.len()
     }

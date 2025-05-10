@@ -26,7 +26,7 @@ impl Bundle {
                 return Some(asset.clone());
             }
         }
-        return None;
+        None
     }
 }
 

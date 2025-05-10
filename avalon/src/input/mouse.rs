@@ -33,8 +33,8 @@ impl Mouse {
     }
 
     pub fn held(&self) -> Vec<event::Mouse> {
-        self.pressed_buttons.iter()
-            .map(|(button, _)| event::Mouse::Button {
+        self.pressed_buttons.keys()
+            .map(|button| event::Mouse::Button {
                 state: event::Binary::Hold,
                 button: *button
             })

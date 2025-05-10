@@ -18,7 +18,7 @@ mod utils {
     }
 }
 
-trait MetaShader {
+pub trait MetaShader {
     fn from_id(id: gl::types::GLuint) -> Self;
     fn id(&self) -> gl::types::GLuint;
     fn shader_type() -> gl::types::GLuint;

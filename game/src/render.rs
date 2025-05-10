@@ -137,56 +137,40 @@ pub struct RenderPass {
 
 impl RenderPass {
     pub fn new() -> RenderPass {
-        let mut lights = Vec::new();
-        lights.push(
+        let mut lights = vec![
             Light::Directional {
                 colour: vec3(1.0, 0.50, 0.55),
                 direction: vec3(1.0, -0.4, 0.2).normalize(),
                 intensity: 0.9
-            }
-        );
-
-        lights.push(
+            },
             Light::Directional {
                 colour: vec3(1.0, 1.0, 1.0),
                 direction: vec3(0.3, -0.9, 0.2).normalize(),
                 intensity: 0.1
-            }
-        );
-
-        lights.push(
+            },
             Light::Point {
                 colour: vec3(0.6, 0.6, 0.6),
                 position: vec3(4.0, 7.0, 25.0),
                 intensity: 160.0
-            }
-        );
-
-        lights.push(
+            },
             Light::Point {
                 colour: vec3(0.6, 0.6, 0.6),
                 position: vec3(4.0, 2.5, -2.0),
                 intensity: 15.0
-            }
-        );
-
-        lights.push(
+            },
             Light::Point {
                 colour: vec3(0.6, 0.1, 0.3),
                 position: vec3(3.0, 1.5, 1.0),
                 intensity: 3.0
-            }
-        );
-
-        lights.push(
+            },
             Light::Spotlight {
                 colour: vec3(0.6, 0.6, 1.0),
                 position: vec3(30.5, 8.0, -5.0),
                 direction: vec3(-0.8, -0.3, 1.0).normalize(),
                 angle: 5.0_f32.to_radians(),
                 intensity: 170.0
-            }
-        );
+            },
+        ];
 
         let final_size = vec2(1920, 1080);
         let options = PassOptions {
@@ -321,7 +305,7 @@ impl DebugRenderPass {
         &mut self,
         asset_library: &avalon::asset_library::Library,
         camera: &Camera,
-        lights: &Vec<Light>
+        lights: &[Light]
     ) {
         let _annotation = GpuAnnotation::push("Debug Render Pass");
         let dev_icons = asset_library.bundle("dev-icons").unwrap();

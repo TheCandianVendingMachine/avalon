@@ -6,7 +6,7 @@ use crate::texture::gpu::{ self, UniqueTexture, Arguments2d, Texture2d, ManagedT
 use crate::model;
 
 impl Library {
-    pub fn load_texture(&self, metadata: &assets::asset::Metadata, texture_info: assets::texture::Texture, data: &Vec<u8>) -> ManagedTexture<Texture2d> {
+    pub fn load_texture(&self, metadata: &assets::asset::Metadata, texture_info: assets::texture::Texture, data: &[u8]) -> ManagedTexture<Texture2d> {
         let (image, dimensions) = data::Data::from_buffer(data.to_vec());
         let (components, size) = match texture_info.colour_space {
             assets::texture::ColourSpace::RGBA => (
@@ -40,7 +40,7 @@ impl Library {
         texture.as_managed()
     }
 
-    pub fn load_model(&self, _model_info: assets::model::Model, data: &Vec<u8>) -> model::Model {
+    pub fn load_model(&self, _model_info: assets::model::Model, data: &[u8]) -> model::Model {
         let packed = assets::model::packed::PackedModel::from_buffer(data);
         model::Model::from(packed)
     }

@@ -6,6 +6,7 @@ use nalgebra_glm::vec3;
 
 impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VOXELS_PER_METER> where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
+    #[allow(clippy::identity_op)]
     pub fn bake(&mut self) {
         #[allow(clippy::erasing_op)]
         if self.gpu_grid.is_none() {

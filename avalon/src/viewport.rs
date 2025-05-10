@@ -81,6 +81,7 @@ impl Viewport {
         }
     }
 
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(dimensions: IVec2) -> builder::ViewportBuilder {
         builder::ViewportBuilder {
             dimensions,

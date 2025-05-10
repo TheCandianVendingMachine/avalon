@@ -59,8 +59,8 @@ impl Controller {
     }
 
     pub fn held(&self) -> Vec<event::Controller> {
-        self.pressed_buttons.iter()
-            .map(|(button, _)| event::Controller::Button {
+        self.pressed_buttons.keys()
+            .map(|button| event::Controller::Button {
                 state: event::Binary::Hold,
                 button: *button
             })

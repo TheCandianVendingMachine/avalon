@@ -149,20 +149,20 @@ impl Engine {
         }
 
         for (_, controller) in self.controllers.iter() {
-            self.events.extend(controller.controller.held().iter().map(|e| *e).map(Into::<event::Event>::into));
+            self.events.extend(controller.controller.held().iter().copied().map(Into::<event::Event>::into));
         }
-        self.events.extend(self.keyboard.held().iter().map(|e| *e).map(Into::<event::Event>::into));
-        self.events.extend(self.mouse.held().iter().map(|e| *e).map(Into::<event::Event>::into));
+        self.events.extend(self.keyboard.held().iter().copied().map(Into::<event::Event>::into));
+        self.events.extend(self.mouse.held().iter().copied().map(Into::<event::Event>::into));
 
         if self.last_controller_timestamp > self.last_kbm_timestamp {
             // use controller
-            self.events.retain(|e| if let event::Event::Controller(_) = e { true } else { false });
+            self.events.retain(|e| matches!(e, event::Event::Controller(_)));
         } else {
             // use keyboard
-            self.events.retain(|e| if let event::Event::Controller(_) = e { false } else { true });
+            self.events.retain(|e| !matches!(e, event::Event::Controller(_)));
         }
 
-        let events: HashSet<event::Event> = HashSet::from_iter(self.events.iter().map(|e| *e));
+        let events: HashSet<event::Event> = HashSet::from_iter(self.events.iter().copied());
 
         let mut actions: Vec<(action::Action, Vec<&event::Event>)> = Vec::new();
         for action in self.action_map.mappings.iter() {
@@ -170,7 +170,7 @@ impl Engine {
                 let mut triggered_events: Vec<&event::Event> = Vec::new();
                 for required in action.required_events.iter() {
                     if events.contains(required) {
-                        triggered_events.push(events.get(&required).unwrap());
+                        triggered_events.push(events.get(required).unwrap());
                     }
                 }
                 actions.push((action.into(), triggered_events));

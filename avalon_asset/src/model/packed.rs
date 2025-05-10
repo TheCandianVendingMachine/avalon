@@ -15,8 +15,8 @@ impl PackedModel {
         buffer.extend_from_slice(&(self.positions.len() as u32).to_be_bytes());
         buffer.extend_from_slice(&(self.index_count as u32).to_be_bytes());
         buffer.extend_from_slice(&(self.triangles.len() as u32).to_be_bytes());
-        buffer.extend_from_slice(&self.min_bounds.map(|p| p.to_be_bytes()).as_flattened());
-        buffer.extend_from_slice(&self.max_bounds.map(|p| p.to_be_bytes()).as_flattened());
+        buffer.extend_from_slice(self.min_bounds.map(|p| p.to_be_bytes()).as_flattened());
+        buffer.extend_from_slice(self.max_bounds.map(|p| p.to_be_bytes()).as_flattened());
         for v in self.positions.iter() {
             buffer.extend_from_slice(
                 v.map(|p|
@@ -31,6 +31,8 @@ impl PackedModel {
         buffer
     }
 
+    #[allow(clippy::erasing_op)]
+    #[allow(clippy::identity_op)]
     pub fn from_buffer(buffer: &[u8]) -> PackedModel {
         let mut offset = 0;
         let vertex_count = u32::from_be_bytes([
@@ -129,7 +131,7 @@ impl PackedModel {
         let mut triangles = Vec::new();
         for _ in 0..triangle_count {
             triangles.push(
-                Triangle::from_buffer(&buffer[offset..(offset + 3 * Vertex::BYTE_N)].as_array().unwrap())
+                Triangle::from_buffer(buffer[offset..(offset + 3 * Vertex::BYTE_N)].as_array().unwrap())
             );
             offset += 3 * Vertex::BYTE_N;
         }

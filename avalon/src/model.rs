@@ -84,7 +84,7 @@ impl From<&PackedModel> for Model {
                 gl::FLOAT,
                 gl::FALSE,
                 8 * std::mem::size_of::<f32>() as i32,
-                std::mem::transmute(0 * std::mem::size_of::<f32>())
+                (0 * std::mem::size_of::<f32>()) as *const std::ffi::c_void
             );
             // vertex tangent
             gl::VertexAttribPointer(
@@ -93,7 +93,7 @@ impl From<&PackedModel> for Model {
                 gl::FLOAT,
                 gl::FALSE,
                 8 * std::mem::size_of::<f32>() as i32,
-                std::mem::transmute(3 * std::mem::size_of::<f32>())
+                (3 * std::mem::size_of::<f32>()) as *const std::ffi::c_void
             );
             // vertex uv
             gl::VertexAttribPointer(
@@ -102,7 +102,7 @@ impl From<&PackedModel> for Model {
                 gl::FLOAT,
                 gl::FALSE,
                 8 * std::mem::size_of::<f32>() as i32,
-                std::mem::transmute(6 * std::mem::size_of::<f32>())
+                (6 * std::mem::size_of::<f32>()) as *const std::ffi::c_void
             );
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu.index_buffer);

@@ -1,4 +1,3 @@
-use inquire;
 use avalon_asset::packed;
 use avalon_asset::bundle;
 use avalon_asset::{ shader, texture, text, model };
@@ -10,6 +9,7 @@ trait Operation {
     fn execute(&mut self) -> Result<()>;
 }
 
+#[derive(Default)]
 struct CreateBundle {
 
 }
@@ -32,7 +32,7 @@ impl CreateBundle {
                 ));
             }
 
-            return Ok(inquire::validator::Validation::Valid);
+            Ok(inquire::validator::Validation::Valid)
         };
 
         let path = inquire::Text::new("Asset filepath:")
@@ -50,7 +50,9 @@ impl CreateBundle {
             .prompt()?;
 
         let file_type = Type::from_path(&path);
-        let file_type = if let None = file_type {
+        let file_type = if let Some(file_type) = file_type {
+            file_type
+        } else {
             println!("Could not determine filetype from path");
             inquire::Select::new("File type:", vec![
                 Type::Texture,
@@ -60,8 +62,6 @@ impl CreateBundle {
             ])
                 .with_help_message("Manually select filetype from options")
                 .prompt()?
-        } else {
-            file_type.unwrap()
         };
 
         let unit = match file_type {
@@ -113,7 +113,7 @@ impl CreateBundle {
             return Ok(None);
         }
 
-        return Ok(Some(Metadata::new(tag, path, unit)));
+        Ok(Some(Metadata::new(tag, path, unit)))
     }
 }
 
@@ -137,7 +137,7 @@ impl Operation for CreateBundle {
             let metadata_result = self.add_asset();
             if let Ok(metadata) = metadata_result {
                 if let Some(metadata) = metadata {
-                    bundle.group.push(metadata.into());
+                    bundle.group.push(metadata);
                 }
             } else {
                 println!("Error while adding asset to bundle: {}", metadata_result.err().unwrap());
@@ -171,14 +171,6 @@ impl Operation for CreateBundle {
     }
 }
 
-impl Default for CreateBundle {
-    fn default() -> CreateBundle {
-        CreateBundle {
-
-        }
-    }
-}
-
 struct Op {
     operation: Box<dyn Operation>
 }
@@ -209,6 +201,6 @@ fn main() {
     let result = operation.execute();
     if let Err(e) = result {
         println!("An error occured:");
-        println!("{}", e);
+        println!("{e}");
     }
 }
