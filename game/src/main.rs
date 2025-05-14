@@ -5,6 +5,7 @@ use nalgebra_glm::{ Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 
 pub mod voxel;
 pub mod render;
+pub mod components;
 
 use avalon::input;
 use avalon::debug::GpuAnnotation;
@@ -31,39 +32,54 @@ fn main() {
     });
 
     let mut grid: voxel::Grid<32, 1> = voxel::Grid::new();
-    let mut set_cell = |position: TVec3<u8>| {
+    let mut set_cell = |position: TVec3<u8>, id: u32| {
         let mut cell = grid.cell_mut(position);
         cell.set_empty(0);
-        cell.set_opaque(1);
-        cell.set_cell_id(1);
+        if id == 2 {
+            cell.set_opaque(0);
+        } else {
+            cell.set_opaque(1);
+        }
+        cell.set_cell_id(id);
     };
 
     for x in 0..20 {
         for z in 0..32 {
-            set_cell(vec3(x, 0, z));
+            set_cell(vec3(x, 0, z), 1);
         }
     }
 
     for x in 13..20 {
         for y in 1..8 {
-            set_cell(vec3(x, y, 15));
+            set_cell(vec3(x, y, 15), 1);
         }
     }
 
     for x in 5..10 {
         for y in 1..10 {
-            set_cell(vec3(x, y, 15));
+            set_cell(vec3(x, y, 15), 1);
         }
     }
 
     for x in 1..=5 {
         for y in 1..=5 {
-            set_cell(vec3(x, y, 3));
-            set_cell(vec3(x, y, 8));
+            set_cell(vec3(x, y, 3), 1);
+            set_cell(vec3(x, y, 8), 1);
         }
 
         for z in 3..=8 {
-            set_cell(vec3(x, 6, z));
+            set_cell(vec3(x, 6, z), 1);
+        }
+    }
+
+    for x in 15..=18 {
+        for z in 20..30 {
+            set_cell(vec3(x, 1, z), 2);
+            set_cell(vec3(x, 1, z), 2);
+            set_cell(vec3(x, 2, z), 2);
+            set_cell(vec3(x, 2, z), 2);
+            set_cell(vec3(x, 3, z), 2);
+            set_cell(vec3(x, 3, z), 2);
         }
     }
     grid.bake();

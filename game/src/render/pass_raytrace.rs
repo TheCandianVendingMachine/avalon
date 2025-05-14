@@ -69,9 +69,9 @@ impl PassRaytrace {
         //bind.sampler("bump", grid_texture).unwrap();
 
         bind.uniform("view").unwrap().set_mat4(camera.transform.matrix());
-        bind.uniform("inverseView").unwrap().set_mat4(camera.transform.matrix().try_inverse().unwrap());
+        //bind.uniform("inverseView").unwrap().set_mat4(camera.transform.matrix().try_inverse().unwrap());
         bind.uniform("projection").unwrap().set_mat4(camera.projection);
-        bind.uniform("inverseProjection").unwrap().set_mat4(camera.projection.try_inverse().unwrap());
+        //bind.uniform("inverseProjection").unwrap().set_mat4(camera.projection.try_inverse().unwrap());
         bind.uniform("cameraPos").unwrap().set_vec3(camera.transform.position());
         bind.uniform("gridSideLength").unwrap().set_i32(SIDE_LENGTH as i32);
 

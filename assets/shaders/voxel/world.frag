@@ -22,18 +22,11 @@ out vec4 positionColour;
 
 void bendRay(in vec3 cameraDir, in float theta, in vec3 normal, in vec3 startRayPos, in vec3 rayPos, inout vec3 rayDir, out vec3 deltaDist, out ivec3 rayStep, out vec3 tMax) {
     vec3 mapPos = floor(rayPos);
-    rayDir = cameraDir + (view * inverseProjection * vec4(rayDir - cameraDir, 0.0)).xyz;
 
-    float mod = 1.0 - ((dot(rayDir, normal) / cos(theta)) * 0.5 + 0.5);
-    float adjustedTheta = mod * theta;
-
-    vec3 dTick = normalize((cross(cross(rayDir, normal), rayDir)));
-    vec3 newDir = cos(adjustedTheta) * rayDir + sin(adjustedTheta) * dTick;
+    vec3 newDir = cos(theta) * rayDir + sin(theta) * normal;
     rayDir = newDir;
 
-    rayDir = cameraDir + (projection * (inverseView * vec4(rayDir - cameraDir, 0.0))).xyz;
-
-    deltaDist = abs(vec3(length(rayDir)) / rayDir);
+    deltaDist = abs(length(rayDir) / rayDir);
     rayStep = ivec3(sign(rayDir));
     tMax = (sign(rayDir) * (mapPos - startRayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
 }
@@ -82,8 +75,6 @@ void main() {
     vec3 deltaDist = abs(1.0 / rayDir);
     ivec3 rayStep = ivec3(sign(rayDir));
     vec3 tMax = (sign(rayDir) * (mapPos - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
-    ivec3 tMoved = ivec3(0);
-    ivec3 tMovedTick = tMoved;
 
     rayPos = floor(rayPos);
     ivec3 iMapPos = ivec3(mapPos);
@@ -97,10 +88,13 @@ void main() {
     int previousCell = -1;
     bvec3 mask;
 
-    vec3 normalCameraDir = normalize(vec3(0, 0, 1));
+    vec3 enteredFus = cameraPos;
+
+    vec3 normalCameraDir = normalize(sign(cameraDir));
     if (!cellEmpty && cellId == 2) {
         mask = greaterThan(rayDir.xyz, max(rayDir.yzx, rayDir.zxy));
-        bendRay(cameraDir, -LIGHT_BEND_T, normalCameraDir, cameraPos, mapPos, rayDir, deltaDist, rayStep, tMax);
+        vec3 normal = -vec3(rayStep) * vec3(mask);
+        bendRay(cameraDir, LIGHT_BEND_T, normal, cameraPos, mapPos, rayDir, deltaDist, rayStep, tMax);
         previousCell = cellId;
     }
 
@@ -108,7 +102,7 @@ void main() {
 
     vec3 tint = vec3(1.0, 1.0, 1.0);
     int iter;
-    const int ITER_MAX = int(ceil(sqrt(32 * 32 * 32)));
+    const int ITER_MAX = int(ceil(sqrt(gridSideLength * gridSideLength * gridSideLength)));
     for (iter = 0; iter < ITER_MAX; iter++) {
         iMapPos = ivec3(floor(mapPos));
         bool inBounds = all(lessThan(iMapPos, mapBounds)) && all(greaterThanEqual(iMapPos, ivec3(0)));
@@ -118,39 +112,49 @@ void main() {
         if (inBounds) {
             getGridData(iMapPos, cellEmpty, cellOpaque, cellStep, cellId);
 
+            if (cellEmpty && previousCell == 2) {
+                // bend light back
+                vec3 normal = -vec3(rayStep) * vec3(mask);
+                bendRay(cameraDir, -LIGHT_BEND_T, normal, cameraPos, mapPos, rayDir, deltaDist, rayStep, tMax);
+
+                vec3 backStep = -(0.5 * -rayStep * vec3(mask) + 0.5);
+                vec3 center = mapPos - backStep + vec3(not(mask)) * 0.5;
+                float t = getPlaneIntersection(normal, center, cameraPos, rayDir);
+
+                vec3 exitedFus = cameraPos + rayDir * (t + 0.00001 * dot(-backStep, vec3(1.0)));
+
+                float distanceInFus = length(enteredFus - exitedFus);
+
+                float scale = pow(0.5, log(1 + distanceInFus));
+
+                rayDir *= vec3(1, 1, scale);
+                deltaDist = abs(length(rayDir) / rayDir);
+
+                tMax = (sign(rayDir) * (floor(exitedFus) - enteredFus) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
+            }
+
             if (!cellEmpty) {
                 if (cellId == 1) {
                     break;
                 } else if (cellId == 2) {
                     cellStep = 1;
-                    tint = vec3(0.9, 0.7, 0.7);
                     if (previousCell != 2) {
                         // bend light
-                        bendRay(cameraDir, -LIGHT_BEND_T, normalCameraDir, cameraPos, mapPos, rayDir, deltaDist, rayStep, tMax);
-                        tMovedTick = tMoved;
+                        vec3 normal = -vec3(rayStep) * vec3(mask);
+                        bendRay(cameraDir, LIGHT_BEND_T, normal, cameraPos, mapPos, rayDir, deltaDist, rayStep, tMax);
+
+                        vec3 backStep = -(0.5 * -rayStep * vec3(mask) + 0.5);
+                        vec3 center = mapPos - backStep + vec3(not(mask)) * 0.5;
+                        float t = getPlaneIntersection(normal, center, cameraPos, rayDir);
+
+                        enteredFus = cameraPos + rayDir * (t + 0.00001 * dot(-backStep, vec3(1.0)));
+                        float distanceToFus = length(cameraPos - enteredFus);
+
+                        rayDir *= vec3(1, 1, pow(0.5, -log(1 + distanceToFus)));
+                        deltaDist = abs(length(rayDir) / rayDir);
+
+                        tMax = (sign(rayDir) * (floor(enteredFus) - cameraPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
                     }
-                } else if (previousCell == 2) {
-                    // bend light back
-                    bendRay(cameraDir, LIGHT_BEND_T, normalCameraDir, cameraPos, mapPos, rayDir, deltaDist, rayStep, tMax);
-                    vec3 normal = -vec3(rayStep) * vec3(mask);
-                    vec3 backStep = -(0.5 * -rayStep * vec3(mask) + 0.5);
-                    vec3 center = mapPos - backStep + vec3(not(mask)) * 0.5;
-                    float t = getPlaneIntersection(normal, center, cameraPos, rayDir);
-
-                    vec3 intersect = cameraPos + rayDir * t;
-                    vec3 dist = abs(intersect - center);
-                    float mod = 1.0 - dist.z;
-                    albedoColour = vec4(vec3(mod), 1.0);
-
-                    // get distance to next cell
-                    // interpolate stretching by this distance to avoid jitter between cells
-                    float distanceToNextCell = abs(fract(mapPos - cameraPos).z);
-                    vec3 tPartial = tMoved + distanceToNextCell * vec3(mask) * rayStep;
-
-                    float exponent = mod * (dot(tPartial - vec3(tMovedTick), vec3(1)) - 1.0);
-                    rayDir.z *= pow(0.5, exponent);
-                    deltaDist = abs(vec3(length(rayDir)) / rayDir);
-                    tMax = (sign(rayDir) * (mapPos - intersect) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
                 }
             }
 
@@ -159,17 +163,19 @@ void main() {
                 mask = lessThanEqual(tMax.xyz, min(tMax.yzx, tMax.zxy));
                 tMax += vec3(mask) * deltaDist;
                 mapPos += vec3(mask) * rayStep;
-                tMoved += ivec3(mask);
             }
 
-            previousCell = cellId;
+            if (!cellEmpty) {
+                previousCell = cellId;
+            } else {
+                previousCell = 0;
+            }
             previousBounds = inBounds;
 
         } else {
             mask = lessThanEqual(tMax.xyz, min(tMax.yzx, tMax.zxy));
             tMax += vec3(mask) * deltaDist;
             mapPos += ivec3(mask) * rayStep;
-            tMoved += ivec3(mask);
         }
     }
 
@@ -200,7 +206,7 @@ void main() {
     vec3 intersect = cameraPos + rayDir * (t + 0.00001 * dot(-backStep, vec3(1.0)));
     vec3 dist = abs(intersect - center);
 
-    //iMapPos.y -= 2;
+    iMapPos = ivec3(floor(intersect));
 
     vec2 sizeMod = vec2(1.0 / 3.0, 1.0 / 7.0);
     vec2 offset = (1.0 - sizeMod) - sizeMod * mod(iMapPos.zy, 1.0 / sizeMod);

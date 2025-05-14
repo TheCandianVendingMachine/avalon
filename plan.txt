@@ -53,3 +53,73 @@ Input
 [X] Input Layers
 [X] Input blocking
 [X] Setting context priority (2 levels: Regular, Important)
+
+Roadmap
+
+Overall:
+12-05-25 Current goal is to get a vertical slice; anything beyond that is unknown.
+
+Vertical Slice:
+[ ] Art Assets
+    ( ) Models
+        { } Jas
+        { } Button
+        { } Door
+        { } Clock
+    ( ) Textures
+        { } Wall
+        { } Floor
+        { } Wire
+    ( ) Audio
+        { } Placeholder voicelines
+        { } Door
+        { } Walking
+        { } Running
+        { } Interact
+    ( ) Music
+    ( ) UI
+        { } FUS state
+        { } Movement state
+
+[ ] Player movement
+    ( ) WASD
+    ( ) Mouse Look
+    ( ) Slide
+    ( ) Sprint
+    ( ) Wall runnin'
+    ( ) Collision
+    ( ) Feels good
+
+[ ] 20 minute gameplay
+    ( ) Space/Time FUS
+        { } Toggle FUS
+    ( ) Boxes
+    ( ) Push Buttons
+    ( ) Box Buttons
+    ( ) Wires
+    ( ) Doors
+    ( ) Props
+    ( ) Checkpointz (radical)
+    ( ) Levels!
+
+[ ] Audio
+    ( ) Event based audio
+    ( ) Voice lines
+        { } subtitles
+        { } different languages
+
+[ ] User Interface
+    ( ) Buttons
+    ( ) Panel
+    ( ) Text
+    ( ) Slider
+
+[ ] UI States
+    ( ) Main Menu
+    ( ) Pause Menu
+    ( ) Options Menu
+        { } Controls
+        { } Video
+        { } Gameplay
+        { } Audio
+    ( ) HUD
