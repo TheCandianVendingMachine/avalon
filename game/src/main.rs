@@ -1,4 +1,5 @@
 #![feature(generic_const_exprs)]
+#![feature(default_field_values)]
 #![allow(incomplete_features, unused)]
 
 use nalgebra_glm::{ Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
@@ -6,6 +7,8 @@ use nalgebra_glm::{ Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 pub mod voxel;
 pub mod render;
 pub mod components;
+pub mod controller;
+pub mod systems;
 
 use avalon::input;
 use avalon::debug::GpuAnnotation;
@@ -17,69 +20,53 @@ use avalon::texture::algorithms;
 use avalon::texture::data;
 use avalon::texture::{ Component, GpuTexture3d, GpuTexture2d };
 use avalon::texture::gpu::{ self, Arguments2d, UniqueTexture, Access, Sampler, Image };
+use avalon::ecs::component;
+use avalon::ecs::system::System;
+use avalon::ecs::GrowablePool;
 
 fn main() {
     let mut engine = avalon::engine();
 
     let asset_library = avalon::asset_library::Library::new_with_scan("./assets/bins/");
 
-    let mut camera = render::Camera::new(vec2(1920, 1080));
-    camera.transform.set_position(vec3(0.0, 5.0, -5.0));
-    camera.transform.set_euler_angles(avalon::transform::Euler {
-        pitch: -5.0_f32.to_radians(),
-        yaw: 45.0_f32.to_radians(),
-        roll: 0.0_f32.to_radians()
-    });
-
     let mut grid: voxel::Grid<32, 1> = voxel::Grid::new();
-    let mut set_cell = |position: TVec3<u8>, id: u32| {
-        let mut cell = grid.cell_mut(position);
-        cell.set_empty(0);
-        if id == 2 {
-            cell.set_opaque(0);
-        } else {
-            cell.set_opaque(1);
-        }
-        cell.set_cell_id(id);
-    };
-
     for x in 0..20 {
         for z in 0..32 {
-            set_cell(vec3(x, 0, z), 1);
+            *grid.cell_mut(vec3(x, 0, z)) = voxel::CellType::Floor.into();
         }
     }
 
     for x in 13..20 {
         for y in 1..8 {
-            set_cell(vec3(x, y, 15), 1);
+            *grid.cell_mut(vec3(x, y, 15)) = voxel::CellType::Floor.into();
         }
     }
 
     for x in 5..10 {
         for y in 1..10 {
-            set_cell(vec3(x, y, 15), 1);
+            *grid.cell_mut(vec3(x, y, 15)) = voxel::CellType::Floor.into();
         }
     }
 
     for x in 1..=5 {
         for y in 1..=5 {
-            set_cell(vec3(x, y, 3), 1);
-            set_cell(vec3(x, y, 8), 1);
+            *grid.cell_mut(vec3(x, y, 3)) = voxel::CellType::Floor.into();
+            *grid.cell_mut(vec3(x, y, 8)) = voxel::CellType::Floor.into();
         }
 
         for z in 3..=8 {
-            set_cell(vec3(x, 6, z), 1);
+            *grid.cell_mut(vec3(x, 6, z)) = voxel::CellType::Floor.into();
         }
     }
 
     for x in 15..=18 {
         for z in 20..30 {
-            set_cell(vec3(x, 1, z), 2);
-            set_cell(vec3(x, 1, z), 2);
-            set_cell(vec3(x, 2, z), 2);
-            set_cell(vec3(x, 2, z), 2);
-            set_cell(vec3(x, 3, z), 2);
-            set_cell(vec3(x, 3, z), 2);
+            *grid.cell_mut(vec3(x, 1, z)) = voxel::CellType::SpaceTimeFus.into();
+            *grid.cell_mut(vec3(x, 1, z)) = voxel::CellType::SpaceTimeFus.into();
+            *grid.cell_mut(vec3(x, 2, z)) = voxel::CellType::SpaceTimeFus.into();
+            *grid.cell_mut(vec3(x, 2, z)) = voxel::CellType::SpaceTimeFus.into();
+            *grid.cell_mut(vec3(x, 3, z)) = voxel::CellType::SpaceTimeFus.into();
+            *grid.cell_mut(vec3(x, 3, z)) = voxel::CellType::SpaceTimeFus.into();
         }
     }
     grid.bake();
@@ -103,14 +90,19 @@ fn main() {
         .build();
     let mut inputs = input::Engine::new(&mut engine, action_map);
     inputs.push_layer("test_layer");
-    let mut context = inputs.active_layer_mut().unwrap().context_handler()
-        .name("flycamera")
-        .action("move_forward")
-        .action("move_backward")
-        .action("strafe_left")
-        .action("strafe_right")
-        .action("look")
-        .build();
+
+
+    let mut particle_system = systems::ParticleSystem::new();
+    let mut controller_system = controller::PlayerControllerSystem::new(inputs.active_layer_mut().unwrap());
+    let mut camera_system = systems::CameraSystem::new();
+    camera_system.camera.transform.set_position(vec3(0.0, 5.0, -5.0));
+    camera_system.camera.transform.set_euler_angles(avalon::transform::Euler {
+        pitch: -5.0_f32.to_radians(),
+        yaw: 45.0_f32.to_radians(),
+        roll: 0.0_f32.to_radians()
+    });
+
+    let mut entities = component::Bag::new();
 
     let mut render_pass = render::RenderPass::new();
     let mut debug_render_pass = render::DebugRenderPass::new();
@@ -129,38 +121,21 @@ fn main() {
         accumulator += frame_start.elapsed();
         frame_start = std::time::Instant::now();
 
-        let mut move_direction = vec3(0.0, 0.0, 0.0);
-        let mut camera_euler = camera.transform.euler_angles();
-        while let Some(action) = context.pop() {
-            match action.id.name.as_str() {
-                "move_forward" => move_direction += camera.transform.forward(),
-                "move_backward" => move_direction -= camera.transform.forward(),
-                "strafe_left" => move_direction += camera.transform.left(),
-                "strafe_right" => move_direction -= camera.transform.left(),
-                "look" => {
-                    let direction = vec2(
-                        action.data.retrieve::<f32>("axis_x").unwrap(),
-                        action.data.retrieve::<f32>("axis_y").unwrap()
-                    );
-                    camera_euler.pitch += direction.y * 0.05;
-                    camera_euler.yaw += -direction.x * 0.05;
-                },
-                _ => {},
-            }
-        }
-        camera_euler.pitch = camera_euler.pitch.clamp(-80.0_f32.to_radians(), 80.0_f32.to_radians());
-        camera.transform.set_euler_angles(camera_euler);
-
         while accumulator > update_rate {
-            if move_direction.magnitude_squared() > 0.0 {
-                move_direction = move_direction.normalize();
-                camera.transform.translate(move_direction * 15.0 * update_rate.as_secs_f32());
+            let dt = update_rate.as_secs_f32();
+            {
+                let query = controller::PlayerControllerSystem::query();
+                let relevant_entities = entities.entities_with_components(query);
+                //controller_system.tick(grid, dt, );
             }
+            //particle_system.tick(dt, );
             accumulator -= update_rate;
         }
+
+        //camera_system.tick();
         engine.render();
-        render_pass.execute(&asset_library, &camera, &grid);
-        debug_render_pass.execute(&asset_library, &camera, &render_pass.lights);
+        render_pass.execute(&asset_library, &camera_system.camera, &grid);
+        debug_render_pass.execute(&asset_library, &camera_system.camera, &render_pass.lights);
         engine.swap();
         engine.end_frame();
     }

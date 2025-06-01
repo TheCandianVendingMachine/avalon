@@ -8,7 +8,7 @@ pub struct Euler {
     pub roll: f32,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Transform {
     position: Vec3,
     right: Vec3,

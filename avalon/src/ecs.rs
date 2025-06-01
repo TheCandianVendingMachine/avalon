@@ -4,8 +4,8 @@ bitfield::bitfield!{
     #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
     pub struct Handle(u64);
     impl Debug;
-    idx, set_idx: 16, 0;
-    pool_id, set_pool_id: 64, 11;
+    pub global_id, set_idx: 16, 0;
+    pub individual_id, set_pool_id: 64, 11;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -18,6 +18,13 @@ pub mod component {
     use bit_set::BitSet;
     use aligned_vec::{ AVec, ConstAlign };
     use crate::ecs::Entity;
+
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(u8)]
+    pub enum Mutability {
+        Mutable,
+        Constant
+    }
 
     pub trait Tag {
         fn uid(&self) -> u32;
@@ -32,7 +39,27 @@ pub mod component {
     }
 
     pub trait Store<T: Component> {
+        fn stored() -> u32 { T::tag().uid() }
         fn components_matching_entities(&self, entities: &[Entity]) -> Vec<(Entity, T)>;
+        fn update_components(&mut self, components: &[T]) -> Vec<(Entity, T)>;
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Query {
+        components: BitSet
+    }
+
+    impl Query {
+        pub fn new() -> Query {
+            Query {
+                components: BitSet::new()
+            }
+        }
+
+        pub fn select<T: Component>(mut self) -> Query {
+            self.components.insert(T::tag().uid() as usize);
+            self
+        }
     }
 
     #[derive(Debug, Copy, Clone)]
@@ -40,6 +67,7 @@ pub mod component {
         stride: usize,
         component: usize,
         tag: u32,
+        mutability: Mutability
     }
 
     pub struct Group<const BLOCK_SIZE: usize = 64> {
@@ -84,7 +112,7 @@ pub mod component {
             }
         }
 
-        pub fn assign<T: Component>(&mut self, component: T) {
+        pub fn assign<T: Component>(&mut self, component: T, mutability: Mutability) {
             // only one of each component can be in a block
             debug_assert!(!self.item_map.contains_key(&T::tag().uid()));
 
@@ -130,7 +158,8 @@ pub mod component {
             let metadata = Metadata {
                 stride: metadata_stride + alignment_error + component_stride,
                 component: metadata_stride + alignment_error,
-                tag: T::tag().uid()
+                tag: T::tag().uid(),
+                mutability
             };
 
             // Proof of Safety:
@@ -220,12 +249,18 @@ pub mod component {
             self.entity_map.iter().map(|pair| (pair.entity, &pair.components))
         }
 
-        pub fn entities_with_components(&self, components: BitSet) -> Vec<Entity> {
+        pub fn entities_with_components(&self, components: Query) -> Vec<Entity> {
             self.iter()
-                .filter(|(_, c)| c.is_subset(&components))
+                .filter(|(_, c)| c.is_subset(&components.components))
                 .map(|(e, _)| e)
                 .collect()
         }
+    }
+}
+
+pub mod system {
+    pub trait System {
+        fn query() -> crate::ecs::component::Query;
     }
 }
 
@@ -302,7 +337,7 @@ impl<T: Poolable> GrowablePool<T> {
     }
 
     pub fn deallocate_handle(&mut self, handle: Handle) {
-        self.pools[handle.pool_id() as usize].deallocate(handle);
+        self.pools[handle.individual_id() as usize].deallocate(handle);
     }
 }
 

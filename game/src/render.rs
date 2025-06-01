@@ -52,6 +52,7 @@ pub struct DebugLight {
 
 unsafe impl avalon::Pod for DebugLight {}
 
+#[derive(Debug, Copy, Clone)]
 pub struct Camera {
     pub transform: avalon::transform::Transform,
     focal: f32,

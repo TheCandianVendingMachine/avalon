@@ -1,9 +1,12 @@
 pub mod algorithms;
+pub mod cells;
 
 use bitfield::bitfield;
 use nalgebra_glm::TVec3;
 use avalon::texture::GpuTexture3d;
 use anyhow::Error;
+
+pub use cells::Cell as CellType;
 
 bitfield!{
     pub struct Cell(u32);
@@ -33,7 +36,7 @@ impl Cell {
     }
 }
 
-pub struct Grid<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> where
+pub struct Grid<const SIDE_LENGTH: usize = 32, const VOXELS_PER_METER: u32 = 1> where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:,
     {
     cells: Vec<Cell>,
