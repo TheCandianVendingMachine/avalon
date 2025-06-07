@@ -1,7 +1,7 @@
 use bitfield;
 
 bitfield::bitfield!{
-    #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct Handle(u32);
     impl Debug;
     pub individual_id, set_id: 15, 0;
@@ -32,7 +32,7 @@ impl From<u32> for Handle {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Entity {
     handle: Handle,
 }
@@ -308,11 +308,11 @@ impl<T: Poolable> Pool<T> {
     }
 
     fn get(&self, handle: Handle) -> Option<&T> {
-        self.objects[handle.individual_id()]
+        self.objects[handle.individual_id() as usize].as_ref()
     }
 
     fn get_mut(&mut self, handle: Handle) -> Option<&mut T> {
-        self.objects[handle.individual_id()]
+        self.objects[handle.individual_id() as usize].as_mut()
     }
 
     fn allocate(&mut self, pool_idx: usize) -> Option<T> {
@@ -350,12 +350,12 @@ impl<T: Poolable> GrowablePool<T> {
         self.pools.iter().flat_map(|p| p.iter())
     }
 
-    pub fn get(&self, handle: Handle) -> &T {
-        self.pools[handle.global_id()].get(handle)
+    pub fn get(&self, handle: Handle) -> Option<&T> {
+        self.pools[handle.global_id() as usize].get(handle)
     }
 
-    pub fn get_mut(&mut self, handle: Handle) -> &mut T {
-        self.pools[handle.global_id()].get_mut(handle)
+    pub fn get_mut(&mut self, handle: Handle) -> Option<&mut T> {
+        self.pools[handle.global_id() as usize].get_mut(handle)
     }
 
     pub fn allocate(&mut self) -> T {

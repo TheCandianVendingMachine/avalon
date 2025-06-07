@@ -134,7 +134,12 @@ fn main() {
             {
                 let query = controller::PlayerControllerSystem::query();
                 let relevant_entities = entities.entities_with_components(query);
-                //controller_system.tick(grid, dt, );
+                let mut groups = Vec::new();
+                for entity in relevant_entities {
+                    let mut components = component::Group::new(entity);
+                    groups.push(components)
+                }
+                controller_system.tick(&grid, dt, &mut groups);
             }
             //particle_system.tick(dt, );
             accumulator -= update_rate;
