@@ -1,9 +1,28 @@
 use avalon::ecs::component::{ Tag, Component };
-use avalon::ecs::Poolable;
+use avalon::ecs::{ Handle, Poolable };
 use avalon::transform;
 use avalon::input::context;
 use nalgebra_glm::Vec3;
 use std::time::Instant;
+
+macro_rules! impl_component {
+    ($component:tt) => {
+        impl Component for $component {
+            fn tag() -> impl Tag { Kind::$component }
+            fn id(&self) -> u32 { self.id }
+        }
+        impl Poolable for $component {
+            fn with_handle(handle: Handle) -> Self {
+                let mut component = Self::default();
+                component.id = handle.into();
+                component
+            }
+            fn handle(&self) -> Handle {
+                self.id.into()
+            }
+        }
+    }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
@@ -25,10 +44,19 @@ pub enum MoveState {
     Fall
 }
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct PlayerState {
-    state: MoveState = MoveState::Idle,
+    state: MoveState,
     enter_time: Instant
+}
+
+impl Default for PlayerState {
+    fn default() -> PlayerState {
+        PlayerState {
+            state: MoveState::Idle,
+            enter_time: Instant::now()
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -48,6 +76,7 @@ pub struct Transform {
     id: u32,
     pub transform: transform::Transform
 }
+impl_component!(Transform);
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Collider {
@@ -55,6 +84,7 @@ pub struct Collider {
     pub hull: Hull = Hull::Sphere { radius: 0.0 },
     pub movement: Movement = Movement::Dynamic
 }
+impl_component!(Collider);
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Particle {
@@ -62,6 +92,7 @@ pub struct Particle {
     pub velocity: Vec3,
     pub acceleration: Vec3
 }
+impl_component!(Particle);
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct PlayerController {
@@ -69,33 +100,14 @@ pub struct PlayerController {
     pub max_speed: f32,
     pub state: PlayerState
 }
+impl_component!(PlayerController);
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Camera {
     id: u32,
 }
+impl_component!(Camera);
 
 impl Tag for Kind {
     fn uid(&self) -> u32 { *self as u32 }
 }
-
-macro_rules! impl_component {
-    ($component:tt) => {
-        impl Component for $component {
-            fn tag() -> impl Tag { Kind::$component }
-            fn id(&self) -> u32 { self.id }
-        }
-        /*impl Poolable for $component {
-            fn with_handle(handle: Handle) -> Self {
-                Self::default()
-            }
-            fn handle(&self) -> Handle;
-        }*/
-    }
-}
-
-impl_component!(Transform);
-impl_component!(Collider);
-impl_component!(Particle);
-impl_component!(PlayerController);
-impl_component!(Camera);

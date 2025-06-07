@@ -6,6 +6,7 @@ use nalgebra_glm::{ Mat4, Mat3, Vec3, TVec3, Vec2, IVec2, vec2, vec3 };
 
 pub mod voxel;
 pub mod render;
+pub mod stores;
 pub mod components;
 pub mod controller;
 pub mod systems;
@@ -18,11 +19,13 @@ use avalon::model;
 use avalon::shader::{ self, Source, Program, };
 use avalon::texture::algorithms;
 use avalon::texture::data;
-use avalon::texture::{ Component, GpuTexture3d, GpuTexture2d };
+use avalon::texture::{ GpuTexture3d, GpuTexture2d };
 use avalon::texture::gpu::{ self, Arguments2d, UniqueTexture, Access, Sampler, Image };
-use avalon::ecs::component;
+use avalon::ecs::Poolable;
+use avalon::ecs::component::{ self, Component };
 use avalon::ecs::system::System;
-use avalon::ecs::GrowablePool;
+
+use crate::stores::Store;
 
 fn main() {
     let mut engine = avalon::engine();
@@ -91,6 +94,11 @@ fn main() {
     let mut inputs = input::Engine::new(&mut engine, action_map);
     inputs.push_layer("test_layer");
 
+    let mut transforms: Store<components::Transform> = Store::new();
+    let mut colliders: Store<components::Collider> = Store::new();
+    let mut particles: Store<components::Particle> = Store::new();
+    let mut player_controllers: Store<components::PlayerController> = Store::new();
+    let mut cameras: Store<components::Camera> = Store::new();
 
     let mut particle_system = systems::ParticleSystem::new();
     let mut controller_system = controller::PlayerControllerSystem::new(inputs.active_layer_mut().unwrap());

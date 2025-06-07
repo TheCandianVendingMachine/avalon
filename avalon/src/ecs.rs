@@ -2,10 +2,34 @@ use bitfield;
 
 bitfield::bitfield!{
     #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-    pub struct Handle(u64);
+    pub struct Handle(u32);
     impl Debug;
-    pub global_id, set_idx: 16, 0;
-    pub individual_id, set_pool_id: 64, 11;
+    pub individual_id, set_id: 15, 0;
+    pub global_id, set_global_id: 32, 16;
+}
+
+impl From<Handle> for u32 {
+    fn from(handle: Handle) -> u32 {
+        handle.0
+    }
+}
+
+impl From<&Handle> for u32 {
+    fn from(handle: &Handle) -> u32 {
+        handle.0
+    }
+}
+
+impl From<&mut Handle> for u32 {
+    fn from(handle: &mut Handle) -> u32 {
+        handle.0
+    }
+}
+
+impl From<u32> for Handle {
+    fn from(handle: u32) -> Handle {
+        Handle(handle)
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -41,7 +65,7 @@ pub mod component {
     pub trait Store<T: Component> {
         fn stored() -> u32 { T::tag().uid() }
         fn components_matching_entities(&self, entities: &[Entity]) -> Vec<(Entity, T)>;
-        fn update_components(&mut self, components: &[T]) -> Vec<(Entity, T)>;
+        fn update_components(&mut self, components: &[T]);
     }
 
     #[derive(Debug, Clone)]
@@ -269,7 +293,6 @@ pub trait Poolable: Sized + Copy {
     fn handle(&self) -> Handle;
 }
 
-
 struct Pool<T: Poolable> {
     objects: Vec<Option<T>>,
     free_indices: Vec<usize>
@@ -284,18 +307,27 @@ impl<T: Poolable> Pool<T> {
         }
     }
 
+    fn get(&self, handle: Handle) -> Option<&T> {
+        self.objects[handle.individual_id()]
+    }
+
+    fn get_mut(&mut self, handle: Handle) -> Option<&mut T> {
+        self.objects[handle.individual_id()]
+    }
+
     fn allocate(&mut self, pool_idx: usize) -> Option<T> {
         let free_index = self.free_indices.pop()?;
         let mut handle = Handle(0);
-        handle.set_idx(free_index as u64);
-        handle.set_pool_id(pool_idx as u64);
+        handle.set_id(free_index as u32);
+        handle.set_global_id(pool_idx as u32);
         self.objects[free_index] = Some(T::with_handle(handle));
         self.objects[free_index]
     }
 
     fn deallocate(&mut self, handle: Handle) {
-        self.objects[handle.idx() as usize] = None;
-        self.free_indices.push(handle.idx() as usize);
+        let idx = handle.individual_id() as usize;
+        self.objects[idx] = None;
+        self.free_indices.push(idx);
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &T> {
@@ -310,12 +342,20 @@ pub struct GrowablePool<T: Poolable> {
 impl<T: Poolable> GrowablePool<T> {
     pub fn new() -> GrowablePool<T> {
         GrowablePool {
-            pools: Vec::with_capacity(4)
+            pools: Vec::with_capacity(16)
         }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.pools.iter().flat_map(|p| p.iter())
+    }
+
+    pub fn get(&self, handle: Handle) -> &T {
+        self.pools[handle.global_id()].get(handle)
+    }
+
+    pub fn get_mut(&mut self, handle: Handle) -> &mut T {
+        self.pools[handle.global_id()].get_mut(handle)
     }
 
     pub fn allocate(&mut self) -> T {
@@ -327,6 +367,7 @@ impl<T: Poolable> GrowablePool<T> {
 
         // If we are here, we were unable to allocate from any existing pool so we create
         // a new one
+        assert!((self.pools.len() + 1) < 2_usize.pow(16));
         self.pools.push(Pool::new());
         let pool_idx = self.pools.len() - 1;
         self.pools.last_mut().unwrap().allocate(pool_idx).unwrap()
