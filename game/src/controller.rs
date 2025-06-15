@@ -36,6 +36,7 @@ impl PlayerControllerSystem {
     }
 
     pub fn tick(&mut self, grid: &Grid, dt: f32, entities: &mut [Group]) {
+        println!("tick!");
         for entity in entities.iter_mut() {
             let controller = *entity.get::<PlayerController>();
             let transform = entity.get_mut::<Transform>();

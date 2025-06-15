@@ -22,7 +22,7 @@ use avalon::texture::data;
 use avalon::texture::{ GpuTexture3d, GpuTexture2d };
 use avalon::texture::gpu::{ self, Arguments2d, UniqueTexture, Access, Sampler, Image };
 use avalon::ecs::Poolable;
-use avalon::ecs::component::{ self, Component };
+use avalon::ecs::component::{ self, Component, Store as ComponentStore, Mutability };
 use avalon::ecs::system::System;
 
 use crate::stores::Store;
@@ -134,10 +134,38 @@ fn main() {
             {
                 let query = controller::PlayerControllerSystem::query();
                 let relevant_entities = entities.entities_with_components(query);
+
+                let mut transforms = transforms.components_matching_entities(&relevant_entities);
+                let mut colliders = colliders.components_matching_entities(&relevant_entities);
+                let mut particles = particles.components_matching_entities(&relevant_entities);
+                let mut player_controllers = player_controllers.components_matching_entities(&relevant_entities);
+                let mut cameras = cameras.components_matching_entities(&relevant_entities);
+
+                transforms.sort_unstable_by(|l, r| l.0.cmp(&r.0));
+                colliders.sort_unstable_by(|l, r| l.0.cmp(&r.0));
+                particles.sort_unstable_by(|l, r| l.0.cmp(&r.0));
+                player_controllers.sort_unstable_by(|l, r| l.0.cmp(&r.0));
+                cameras.sort_unstable_by(|l, r| l.0.cmp(&r.0));
+
                 let mut groups = Vec::new();
-                for entity in relevant_entities {
-                    let mut components = component::Group::new(entity);
-                    groups.push(components)
+                for (idx, entity) in relevant_entities.into_iter().enumerate() {
+                    let mut component_group = component::Group::<64>::new(entity);
+                    if !transforms.is_empty() {
+                        component_group.assign(transforms[idx].1, Mutability::Constant);
+                    }
+                    if !colliders.is_empty() {
+                        component_group.assign(colliders[idx].1, Mutability::Constant);
+                    }
+                    if !particles.is_empty() {
+                        component_group.assign(particles[idx].1, Mutability::Constant);
+                    }
+                    if !player_controllers.is_empty() {
+                        component_group.assign(player_controllers[idx].1, Mutability::Constant);
+                    }
+                    if !cameras.is_empty() {
+                        component_group.assign(cameras[idx].1, Mutability::Constant);
+                    }
+                    groups.push(component_group)
                 }
                 controller_system.tick(&grid, dt, &mut groups);
             }
