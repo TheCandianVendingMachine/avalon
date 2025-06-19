@@ -17,6 +17,11 @@ impl<T: Component + Poolable> Store<T> {
 }
 
 impl<T: Component + Poolable> ComponentStore<T> for Store<T> {
+    fn allocate(&mut self, entity: Entity) {
+        let handle = self.pool.allocate().handle();
+        self.entity_component_map.insert(entity, handle);
+    }
+
     fn components_matching_entities(&self, entities: &[Entity]) -> Vec<(Entity, T)> {
         let mut pairs = Vec::with_capacity(entities.len());
         for entity in entities {

@@ -22,7 +22,7 @@ use avalon::texture::data;
 use avalon::texture::{ GpuTexture3d, GpuTexture2d };
 use avalon::texture::gpu::{ self, Arguments2d, UniqueTexture, Access, Sampler, Image };
 use avalon::ecs::Poolable;
-use avalon::ecs::component::{ self, Component, Store as ComponentStore, Mutability };
+use avalon::ecs::component::{ self, Query, Component, Store as ComponentStore, Mutability };
 use avalon::ecs::system::System;
 
 use crate::stores::Store;
@@ -112,6 +112,18 @@ fn main() {
 
     let mut entities = component::Bag::new();
 
+    let player = entities.create(
+        Query::new()
+            .select::<components::Transform>()
+            .select::<components::Particle>()
+            .select::<components::PlayerController>()
+            .select::<components::Camera>()
+    );
+    transforms.allocate(player);
+    particles.allocate(player);
+    player_controllers.allocate(player);
+    cameras.allocate(player);
+
     let mut render_pass = render::RenderPass::new();
     let mut debug_render_pass = render::DebugRenderPass::new();
 
@@ -121,6 +133,7 @@ fn main() {
     let start = std::time::Instant::now();
     let mut frame_start = std::time::Instant::now();
     while engine.is_open() {
+        dbg!(1.0 / engine.quantatives.average_frame_time().as_secs_f32());
         engine.start_frame();
         engine.poll_events();
         inputs.poll();
@@ -133,36 +146,36 @@ fn main() {
             let dt = update_rate.as_secs_f32();
             {
                 let query = controller::PlayerControllerSystem::query();
-                let relevant_entities = entities.entities_with_components(query);
+                let mut relevant_entities = entities.entities_with_components(query);
+                relevant_entities.sort_unstable();
 
-                let mut transforms = transforms.components_matching_entities(&relevant_entities);
-                let mut colliders = colliders.components_matching_entities(&relevant_entities);
-                let mut particles = particles.components_matching_entities(&relevant_entities);
-                let mut player_controllers = player_controllers.components_matching_entities(&relevant_entities);
-                let mut cameras = cameras.components_matching_entities(&relevant_entities);
-
-                transforms.sort_unstable_by(|l, r| l.0.cmp(&r.0));
-                colliders.sort_unstable_by(|l, r| l.0.cmp(&r.0));
-                particles.sort_unstable_by(|l, r| l.0.cmp(&r.0));
-                player_controllers.sort_unstable_by(|l, r| l.0.cmp(&r.0));
-                cameras.sort_unstable_by(|l, r| l.0.cmp(&r.0));
+                let transforms = transforms.components_matching_entities(&relevant_entities);
+                let colliders = colliders.components_matching_entities(&relevant_entities);
+                let particles = particles.components_matching_entities(&relevant_entities);
+                let player_controllers = player_controllers.components_matching_entities(&relevant_entities);
+                let cameras = cameras.components_matching_entities(&relevant_entities);
 
                 let mut groups = Vec::new();
                 for (idx, entity) in relevant_entities.into_iter().enumerate() {
                     let mut component_group = component::Group::<64>::new(entity);
                     if !transforms.is_empty() {
+                        assert_eq!(entity, transforms[idx].0);
                         component_group.assign(transforms[idx].1, Mutability::Constant);
                     }
                     if !colliders.is_empty() {
+                        assert_eq!(entity, colliders[idx].0);
                         component_group.assign(colliders[idx].1, Mutability::Constant);
                     }
                     if !particles.is_empty() {
+                        assert_eq!(entity, particles[idx].0);
                         component_group.assign(particles[idx].1, Mutability::Constant);
                     }
                     if !player_controllers.is_empty() {
+                        assert_eq!(entity, player_controllers[idx].0);
                         component_group.assign(player_controllers[idx].1, Mutability::Constant);
                     }
                     if !cameras.is_empty() {
+                        assert_eq!(entity, cameras[idx].0);
                         component_group.assign(cameras[idx].1, Mutability::Constant);
                     }
                     groups.push(component_group)

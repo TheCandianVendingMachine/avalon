@@ -5,7 +5,7 @@ bitfield::bitfield!{
     pub struct Handle(u32);
     impl Debug;
     pub individual_id, set_id: 15, 0;
-    pub global_id, set_global_id: 32, 16;
+    pub global_id, set_global_id: 31, 16;
 }
 
 impl From<Handle> for u32 {
@@ -41,7 +41,7 @@ pub mod component {
     use std::collections::{ HashMap, BinaryHeap };
     use bit_set::BitSet;
     use aligned_vec::{ AVec, ConstAlign };
-    use crate::ecs::Entity;
+    use crate::ecs::{ Handle, Entity };
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(u8)]
@@ -64,19 +64,20 @@ pub mod component {
 
     pub trait Store<T: Component> {
         fn stored() -> u32 { T::tag().uid() }
+        fn allocate(&mut self, entity: Entity);
         fn components_matching_entities(&self, entities: &[Entity]) -> Vec<(Entity, T)>;
         fn update_components(&mut self, components: &[T]);
     }
 
     #[derive(Debug, Clone)]
     pub struct Query {
-        components: BitSet
+        components: BitSet,
     }
 
     impl Query {
         pub fn new() -> Query {
             Query {
-                components: BitSet::new()
+                components: BitSet::new(),
             }
         }
 
@@ -190,7 +191,7 @@ pub mod component {
             // We know from axiom (1) that there is enough space to treat this area of
             // memory as contigious, and with enough size to store the metadata. So we can
             // naively copy bits to the element at the index
-            debug_assert!(metadata_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
+            debug_assert!(metadata_stride.div_ceil(BLOCK_SIZE) + self.available_block <= self.blocks.len());
             debug_assert_eq!(self.available_idx % metadata_alignment, 0);
             {
                 let ptr = &mut self.blocks[self.available_block][self.available_idx] as *mut u8;
@@ -201,7 +202,7 @@ pub mod component {
             };
 
             // 2) push component
-            debug_assert!(component_stride.div_ceil(BLOCK_SIZE) + self.available_block < self.blocks.len());
+            debug_assert!(component_stride.div_ceil(BLOCK_SIZE) + self.available_block <= self.blocks.len());
 
             self.available_idx += metadata_stride + alignment_error;
             if self.available_idx >= BLOCK_SIZE {
@@ -223,7 +224,7 @@ pub mod component {
 
             self.item_map.insert(T::tag().uid(), (self.available_block, self.available_idx));
             self.available_idx += component_stride;
-            if self.available_idx >= BLOCK_SIZE {
+            while self.available_idx >= BLOCK_SIZE {
                 self.available_block += 1;
                 self.available_idx -= BLOCK_SIZE;
             }
@@ -231,6 +232,8 @@ pub mod component {
             if self.available_idx % metadata_alignment != 0 {
                 self.available_idx += metadata_alignment - (self.available_idx % metadata_alignment);
             }
+
+            debug_assert!(self.available_idx < BLOCK_SIZE);
         }
     }
 
@@ -259,14 +262,25 @@ pub mod component {
     }
 
     pub struct Bag {
-        entity_map: BinaryHeap<EntityPair>
+        entity_map: BinaryHeap<EntityPair>,
+        last_handle: Handle
     }
 
     impl Bag {
         pub fn new() -> Bag {
             Bag {
-                entity_map: BinaryHeap::with_capacity(2_usize.pow(16))
+                entity_map: BinaryHeap::with_capacity(2_usize.pow(16)),
+                last_handle: Handle(1)
             }
+        }
+
+        pub fn create(&mut self, components: Query) -> Entity {
+            let handle = self.last_handle;
+            self.last_handle.0 += 1;
+            let entity = Entity { handle };
+
+            self.entity_map.push(EntityPair { entity, components: components.components });
+            entity
         }
 
         pub fn iter(&self) -> impl Iterator<Item = (Entity, &BitSet)> {
@@ -275,7 +289,7 @@ pub mod component {
 
         pub fn entities_with_components(&self, components: Query) -> Vec<Entity> {
             self.iter()
-                .filter(|(_, c)| c.is_subset(&components.components))
+                .filter(|(_, c)| components.components.is_subset(&c))
                 .map(|(e, _)| e)
                 .collect()
         }
