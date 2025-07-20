@@ -1,8 +1,18 @@
+use std::vec;
+
 use avalon::shader::{ self, Source };
 use avalon::texture::{ Component, data::Data };
 use avalon::texture::gpu::{ UniqueTexture, Access, SizedComponent, Arguments3d, Texture3d, Mipmap };
-use crate::voxel::Grid;
-use nalgebra_glm::vec3;
+use crate::voxel::{ cells, Cell, Grid };
+use nalgebra_glm::{ self as glm, TVec3, Vec3, vec3 };
+
+#[derive(Debug, Clone, Copy)]
+pub struct RaycastResult {
+    pub start_position: Vec3,
+    pub end_position: Vec3,
+    pub distance: f32,
+    pub cell: Option<Cell>
+}
 
 impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VOXELS_PER_METER> where
     [(); SIDE_LENGTH * SIDE_LENGTH * SIDE_LENGTH]:, {
@@ -104,5 +114,66 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
             cell_data.set(idx, cell.0);
         }
         self.gpu_grid.as_mut().unwrap().bind().write_pixels(0, cell_data);
+    }
+
+    pub fn ray_while_condition(&self, start: TVec3<f32>, direction: TVec3<f32>, condition: impl Fn(&Cell) -> bool) -> RaycastResult {
+        let position = start;
+
+        let mut map_pos = position.map(|c| c.floor() as i16);
+        let delta_dist = direction.map(|c| c.abs().recip()).map(|c| if c.is_finite() { c } else { f32::MAX });
+        let ray_step = direction.map(|c| c.signum() as i16);
+        let ray_dir_sign = direction.map(|c| c.signum());
+        let mut t_max = delta_dist.component_mul(&(
+            ray_dir_sign.component_mul(&(map_pos.cast() - position))
+            + (ray_dir_sign * 0.5)
+            + vec3(0.5, 0.5, 0.5)
+        ));
+
+        let mut mask = TVec3::default();
+        while {
+            map_pos.iter().all(|&c| c >= 0 && c < SIDE_LENGTH as i16) &&
+            condition(self.cell(map_pos.cast()).unwrap_or(&cells::Cell::Void.into()))
+        } {
+            mask = glm::less_than_equal(&t_max.xyz(), &glm::min2(&t_max.yzx(), &t_max.zxy()));
+            t_max += mask.map(|c| c as u16 as f32).component_mul(&delta_dist);
+            map_pos += (mask.map(|c| c as i16).component_mul(&ray_step)).map(|c| c as i16);
+        }
+
+        let normal = if (mask.x) {
+            -vec3(1, 0, 0).component_mul(&ray_step)
+        } else if (mask.y) {
+            -vec3(0, 1, 0).component_mul(&ray_step)
+        } else if (mask.z) {
+            -vec3(0, 0, 1).component_mul(&ray_step)
+        } else {
+            vec3(0, 0, 0)
+        };
+
+        let back_step = -(0.5 * -ray_step.component_mul(&mask.map(|c| c as i16)).map(|c| c as f32) + vec3(0.5, 0.5, 0.5));
+        let center = map_pos - (back_step + glm::not(&mask).map(|c| c as u16 as f32) * 0.5).map(|c| c as i16);
+        let t: f32 = (|| {
+            let normal = normal.map(|c| c as f32);
+            let denom = glm::dot(&normal, &direction);
+            if (denom.abs() > 0.0) {
+                let t = glm::dot(&(center.map(|c| c as f32) - start), &normal) / denom;
+                if (t >= 0.0) {
+                    return t;
+                }
+            }
+            f32::INFINITY
+        })();
+        let intersect = start + direction * (t + 0.00001 * glm::dot(&-back_step, &vec3(1.0, 1.0, 1.0)));
+
+        let final_cell = self.cell(map_pos.cast());
+        RaycastResult {
+            start_position: start,
+            end_position: intersect,
+            distance: t,
+            cell: final_cell.copied()
+        }
+    }
+
+    pub fn ray_until_nonempty(&self, start: TVec3<f32>, direction: TVec3<f32>) -> RaycastResult {
+        self.ray_while_condition(start, direction, |cell| cell.is_empty())
     }
 }

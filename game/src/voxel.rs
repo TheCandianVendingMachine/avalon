@@ -69,12 +69,27 @@ impl<const SIDE_LENGTH: usize, const VOXELS_PER_METER: u32> Grid<SIDE_LENGTH, VO
         position
     }
 
-    pub fn cell(&self, position: TVec3<u8>) -> &Cell {
+    pub fn cell_at_position(&self, position: TVec3<f32>) -> Option<&Cell> {
+        let position = position * VOXELS_PER_METER as f32;
+        let position = TVec3::new(
+            position.x.floor() as u8,
+            position.y.floor() as u8,
+            position.z.floor() as u8
+        );
+
+        self.cell(position.cast())
+    }
+
+    pub fn cell(&self, position: impl Into<TVec3<i16>>) -> Option<&Cell> {
+        let position = position.into();
         if position.iter().any(|v| (*v) as usize >= SIDE_LENGTH) {
-            panic!("Attempting to index grid out of bounds!");
+            return None
+        }
+        if position.iter().any(|v| *v < 0) {
+            return None
         }
 
-        &self.cells[self.vec_to_index(position)]
+        Some(&self.cells[self.vec_to_index(position.map(|c| c as u8))])
     }
 
     pub fn cell_mut(&mut self, position: TVec3<u8>) -> &mut Cell {

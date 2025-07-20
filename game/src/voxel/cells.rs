@@ -6,6 +6,13 @@ pub enum Cell {
     Air =           0,
     Floor =         1,
     SpaceTimeFus =  2,
+    Void =          255,
+}
+
+impl From<Cell> for u32 {
+    fn from(cell: Cell) -> u32 {
+        cell as u32
+    }
 }
 
 impl From<Cell> for CanonCell {
@@ -27,6 +34,11 @@ impl From<Cell> for CanonCell {
                 canon_cell.set_empty(0);
                 canon_cell.set_opaque(0);
                 canon_cell.set_collision_flag(2);
+            },
+            Cell::Void => {
+                canon_cell.set_empty(1);
+                canon_cell.set_opaque(0);
+                canon_cell.set_collision_flag(0);
             },
         };
         canon_cell
