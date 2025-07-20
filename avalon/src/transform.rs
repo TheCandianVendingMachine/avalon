@@ -8,7 +8,7 @@ pub struct Euler {
     pub roll: f32,
 }
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Transform {
     position: Vec3,
     right: Vec3,
@@ -19,9 +19,15 @@ pub struct Transform {
     dirty: bool
 }
 
+impl Default for Transform {
+    fn default() -> Transform {
+        Transform::new()
+    }
+}
+
 impl Transform {
     pub fn new() -> Transform {
-        Transform {
+        let mut transform = Transform {
             position: Vec3::zeros(),
             right: vec3(1.0, 0.0, 0.0),
             up: vec3(0.0, 1.0, 0.0),
@@ -29,7 +35,11 @@ impl Transform {
             euler_angles: Euler::default(),
             transformation_matrix: Mat4::identity(),
             dirty: true
-        }
+        };
+
+        transform.set_euler_angles(Euler { pitch: 0.0, yaw: 0.0, roll: 0.0 });
+
+        transform
     }
 
     pub fn left(&self) -> Vec3 {

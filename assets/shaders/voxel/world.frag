@@ -107,7 +107,7 @@ void main() {
         iMapPos = ivec3(floor(mapPos));
         bool inBounds = all(lessThan(iMapPos, mapBounds)) && all(greaterThanEqual(iMapPos, ivec3(0)));
         if (previousBounds && !inBounds) { iter = ITER_MAX; break; }
-        if (!previousBounds) { iter += 3; }
+        if (!previousBounds) { iter += max(3, int(ceil(float(iter) * 0.05))); }
 
         if (inBounds) {
             getGridData(iMapPos, cellEmpty, cellOpaque, cellStep, cellId);
@@ -159,11 +159,14 @@ void main() {
             }
 
             iter += cellStep;
+            vec3 accumulator = vec3(0.0);
             for (int i = 0; i < cellStep; i++) {
-                mask = lessThanEqual(tMax.xyz, min(tMax.yzx, tMax.zxy));
-                tMax += vec3(mask) * deltaDist;
-                mapPos += vec3(mask) * rayStep;
+                vec3 testTMax = tMax + accumulator * deltaDist;
+                mask = lessThanEqual(testTMax.xyz, min(testTMax.yzx, testTMax.zxy));
+                accumulator += vec3(mask);
             }
+            tMax += accumulator * deltaDist;
+            mapPos += accumulator * rayStep;
 
             if (!cellEmpty) {
                 previousCell = cellId;

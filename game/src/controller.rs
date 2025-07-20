@@ -40,8 +40,6 @@ impl PlayerControllerSystem {
             let controller = *entity.get::<PlayerController>();
             let transform = entity.get_mut::<Transform>();
 
-            //dbg!(&controller, &transform);
-
             let mut move_direction = vec3(0.0, 0.0, 0.0);
             let mut camera_euler = transform.transform.euler_angles();
             while let Some(action) = self.input.pop() {

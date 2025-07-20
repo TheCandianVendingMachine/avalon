@@ -97,7 +97,7 @@ impl_component!(Particle);
 #[derive(Default, Debug, Copy, Clone)]
 pub struct PlayerController {
     id: u32,
-    pub max_speed: f32,
+    pub max_speed: f32 = 10.0,
     pub state: PlayerState
 }
 impl_component!(PlayerController);

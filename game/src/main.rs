@@ -27,6 +27,85 @@ use avalon::ecs::system::System;
 
 use crate::stores::Store;
 
+struct Stores {
+    transform_store: Store<components::Transform>,
+    collider_store: Store<components::Collider>,
+    particle_store: Store<components::Particle>,
+    player_controller_store: Store<components::PlayerController>,
+    camera_store: Store<components::Camera>,
+}
+
+impl Stores {
+    fn new() -> Self {
+        Stores {
+            transform_store: Store::new(),
+            collider_store: Store::new(),
+            particle_store: Store::new(),
+            player_controller_store: Store::new(),
+            camera_store: Store::new(),
+        }
+    }
+
+    fn tick_system<F>(&mut self, entities: &component::Bag, dt: f32, query: component::Query, system_tick: F) where
+        F: FnOnce(f32, &mut [component::Group])
+    {
+        let mut relevant_entities = entities.entities_with_components(query);
+        relevant_entities.sort_unstable();
+
+        let transforms = self.transform_store.components_matching_entities(&relevant_entities);
+        let colliders = self.collider_store.components_matching_entities(&relevant_entities);
+        let particles = self.particle_store.components_matching_entities(&relevant_entities);
+        let player_controllers = self.player_controller_store.components_matching_entities(&relevant_entities);
+        let cameras = self.camera_store.components_matching_entities(&relevant_entities);
+
+        let mut groups = Vec::new();
+        for (idx, entity) in relevant_entities.into_iter().enumerate() {
+            let mut component_group = component::Group::<64>::new(entity);
+            if !transforms.is_empty() {
+                assert_eq!(entity, transforms[idx].0);
+                component_group.assign(transforms[idx].1, Mutability::Constant);
+            }
+            if !colliders.is_empty() {
+                assert_eq!(entity, colliders[idx].0);
+                component_group.assign(colliders[idx].1, Mutability::Constant);
+            }
+            if !particles.is_empty() {
+                assert_eq!(entity, particles[idx].0);
+                component_group.assign(particles[idx].1, Mutability::Constant);
+            }
+            if !player_controllers.is_empty() {
+                assert_eq!(entity, player_controllers[idx].0);
+                component_group.assign(player_controllers[idx].1, Mutability::Constant);
+            }
+            if !cameras.is_empty() {
+                assert_eq!(entity, cameras[idx].0);
+                component_group.assign(cameras[idx].1, Mutability::Constant);
+            }
+            groups.push(component_group)
+        }
+        system_tick(dt, &mut groups);
+
+        let mut transforms = Vec::new();
+        let mut colliders = Vec::new();
+        let mut particles = Vec::new();
+        let mut player_controllers = Vec::new();
+        let mut cameras = Vec::new();
+        for group in groups.into_iter() {
+            transforms.push(*group.get());
+            //colliders.push(*group.get());
+            particles.push(*group.get());
+            player_controllers.push(*group.get());
+            cameras.push(*group.get());
+        }
+
+        self.transform_store.update_components(&transforms);
+        self.collider_store.update_components(&colliders);
+        self.particle_store.update_components(&particles);
+        self.player_controller_store.update_components(&player_controllers);
+        self.camera_store.update_components(&cameras);
+    }
+}
+
 fn main() {
     let mut engine = avalon::engine();
 
@@ -94,11 +173,6 @@ fn main() {
     let mut inputs = input::Engine::new(&mut engine, action_map);
     inputs.push_layer("test_layer");
 
-    let mut transforms: Store<components::Transform> = Store::new();
-    let mut colliders: Store<components::Collider> = Store::new();
-    let mut particles: Store<components::Particle> = Store::new();
-    let mut player_controllers: Store<components::PlayerController> = Store::new();
-    let mut cameras: Store<components::Camera> = Store::new();
 
     let mut particle_system = systems::ParticleSystem::new();
     let mut controller_system = controller::PlayerControllerSystem::new(inputs.active_layer_mut().unwrap());
@@ -111,6 +185,7 @@ fn main() {
     });
 
     let mut entities = component::Bag::new();
+    let mut stores = Stores::new();
 
     let player = entities.create(
         Query::new()
@@ -119,10 +194,11 @@ fn main() {
             .select::<components::PlayerController>()
             .select::<components::Camera>()
     );
-    transforms.allocate(player);
-    particles.allocate(player);
-    player_controllers.allocate(player);
-    cameras.allocate(player);
+    stores.transform_store.allocate(player);
+    stores.particle_store.allocate(player);
+    stores.player_controller_store.allocate(player);
+    stores.camera_store.allocate(player);
+
 
     let mut render_pass = render::RenderPass::new();
     let mut debug_render_pass = render::DebugRenderPass::new();
@@ -133,7 +209,6 @@ fn main() {
     let start = std::time::Instant::now();
     let mut frame_start = std::time::Instant::now();
     while engine.is_open() {
-        dbg!(1.0 / engine.quantatives.average_frame_time().as_secs_f32());
         engine.start_frame();
         engine.poll_events();
         inputs.poll();
@@ -144,45 +219,20 @@ fn main() {
 
         while accumulator > update_rate {
             let dt = update_rate.as_secs_f32();
-            {
-                let query = controller::PlayerControllerSystem::query();
-                let mut relevant_entities = entities.entities_with_components(query);
-                relevant_entities.sort_unstable();
+            let query = controller::PlayerControllerSystem::query();
+            stores.tick_system(&entities, dt, query, |dt, entities| {
+                controller_system.tick(&grid, dt, entities);
+            });
 
-                let transforms = transforms.components_matching_entities(&relevant_entities);
-                let colliders = colliders.components_matching_entities(&relevant_entities);
-                let particles = particles.components_matching_entities(&relevant_entities);
-                let player_controllers = player_controllers.components_matching_entities(&relevant_entities);
-                let cameras = cameras.components_matching_entities(&relevant_entities);
+            let query = systems::ParticleSystem::query();
+            stores.tick_system(&entities, dt, query, |dt, entities| {
+                particle_system.tick(dt, entities);
+            });
 
-                let mut groups = Vec::new();
-                for (idx, entity) in relevant_entities.into_iter().enumerate() {
-                    let mut component_group = component::Group::<64>::new(entity);
-                    if !transforms.is_empty() {
-                        assert_eq!(entity, transforms[idx].0);
-                        component_group.assign(transforms[idx].1, Mutability::Constant);
-                    }
-                    if !colliders.is_empty() {
-                        assert_eq!(entity, colliders[idx].0);
-                        component_group.assign(colliders[idx].1, Mutability::Constant);
-                    }
-                    if !particles.is_empty() {
-                        assert_eq!(entity, particles[idx].0);
-                        component_group.assign(particles[idx].1, Mutability::Constant);
-                    }
-                    if !player_controllers.is_empty() {
-                        assert_eq!(entity, player_controllers[idx].0);
-                        component_group.assign(player_controllers[idx].1, Mutability::Constant);
-                    }
-                    if !cameras.is_empty() {
-                        assert_eq!(entity, cameras[idx].0);
-                        component_group.assign(cameras[idx].1, Mutability::Constant);
-                    }
-                    groups.push(component_group)
-                }
-                controller_system.tick(&grid, dt, &mut groups);
-            }
-            //particle_system.tick(dt, );
+            let query = systems::CameraSystem::query();
+            stores.tick_system(&entities, dt, query, |dt, entities| {
+                camera_system.tick(entities);
+            });
             accumulator -= update_rate;
         }
 
