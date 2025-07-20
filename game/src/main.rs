@@ -166,6 +166,9 @@ fn main() {
         .map("strafe_right")
             .key(input::action::Keyboard::Hold(input::action::Key::Scancode(input::keyboard::Scancode::D)))
             .finish()
+        .map("jump")
+            .key(input::action::Keyboard::Hold(input::action::Key::Scancode(input::keyboard::Scancode::Space)))
+            .finish()
         .map("look")
             .mouse(input::action::Mouse::Move)
             .finish()
@@ -194,7 +197,7 @@ fn main() {
             .select::<components::PlayerController>()
             .select::<components::Camera>()
     );
-    stores.transform_store.allocate(player);
+    stores.transform_store.allocate_mut(player).transform.set_position(vec3(12.0, 2.0 + 1.7, 2.0));
     stores.particle_store.allocate(player);
     stores.player_controller_store.allocate(player);
     stores.camera_store.allocate(player);

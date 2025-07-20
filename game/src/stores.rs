@@ -22,6 +22,12 @@ impl<T: Component + Poolable> ComponentStore<T> for Store<T> {
         self.entity_component_map.insert(entity, handle);
     }
 
+    fn allocate_mut(&mut self, entity: Entity) -> &mut T {
+        let handle = self.pool.allocate().handle();
+        self.entity_component_map.insert(entity, handle);
+        self.pool.get_mut(handle).unwrap()
+    }
+
     fn components_matching_entities(&self, entities: &[Entity]) -> Vec<(Entity, T)> {
         let mut pairs = Vec::with_capacity(entities.len());
         for entity in entities {

@@ -65,6 +65,7 @@ pub mod component {
     pub trait Store<T: Component> {
         fn stored() -> u32 { T::tag().uid() }
         fn allocate(&mut self, entity: Entity);
+        fn allocate_mut(&mut self, entity: Entity) -> &mut T;
         fn components_matching_entities(&self, entities: &[Entity]) -> Vec<(Entity, T)>;
         fn update_components(&mut self, components: &[T]);
     }

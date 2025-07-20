@@ -34,20 +34,21 @@ pub enum Kind {
     Camera =            5,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveState {
     Idle,
     Walk,
     Sprint,
     Slide,
-    Jump,
+    JumpStart,
+    JumpFree,
     Fall
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct PlayerState {
-    state: MoveState,
-    enter_time: Instant
+    pub state: MoveState,
+    pub enter_time: Instant
 }
 
 impl Default for PlayerState {
@@ -98,6 +99,7 @@ impl_component!(Particle);
 pub struct PlayerController {
     id: u32,
     pub max_speed: f32 = 10.0,
+    pub height: f32 = 1.7,
     pub state: PlayerState
 }
 impl_component!(PlayerController);
