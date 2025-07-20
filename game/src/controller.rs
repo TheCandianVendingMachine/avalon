@@ -85,7 +85,6 @@ impl PlayerControllerSystem {
                             !cell.is_empty() && cell.cell_id() == voxel::CellType::SpaceTimeFus.into()
                         }
                     );
-                    dbg!(&raycast);
                     if raycast.distance.is_finite() {
                         let scale = 0.5_f32.powf((1.0 + raycast.distance).log2());
                         move_direction.z *= scale;
